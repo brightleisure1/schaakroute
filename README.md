@@ -4,7 +4,7 @@ Een gratis, open-source webapp om schaakopeningen te **leren, oefenen, onthouden
 10 populairste openingsfamilies voor wit en de 10 populairste voor zwart, inclusief **alle 2.246 benoemde
 varianten en subvarianten** uit de openbare Lichess-openingsdatabase.
 
-**Live:** https://brightleisure1.github.io/schaakroute/
+**Live:** https://chess.stuby.nl (ook bereikbaar via https://brightleisure1.github.io/schaakroute/, dat doorverwijst)
 
 Geen account, geen abonnement, geen betaalde API's. Alle voortgang staat lokaal (IndexedDB) en de app werkt
 na de eerste keer laden offline (PWA).
