@@ -1,5 +1,5 @@
 import { db } from './db'
-import { epdsOf } from './chess'
+import { epdsOf, formatMoves } from './chess'
 import type { FamilyFile, Manifest, PuzzleFile, StatsFile, Variation } from './types'
 
 // Laadt de dataset uit public/data. Elk bestand wordt na de eerste keer in IndexedDB bewaard
@@ -113,7 +113,9 @@ export function variationById(file: FamilyFile, id: string): Variation | undefin
 }
 
 export function displayName(v: Variation, familyName?: string): string {
-  const base = v.path.length ? v.path.join(', ') : familyName ?? v.name
+  // basislijnen hebben geen eigen variantnaam: noem dan de laatste zetten, zodat ze te onderscheiden zijn
+  if (!v.path.length) return `${familyName ?? v.name}, basislijn ${formatMoves(v.san.slice(-2), v.san.length - 2)}`
+  const base = v.path.join(', ')
   return v.lineNo ? `${base} (lijn ${v.lineNo})` : base
 }
 

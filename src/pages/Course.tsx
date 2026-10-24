@@ -4,6 +4,7 @@ import { familyProgress, useCardMap, useFamily, useProgressMap, variationMastery
 import { displayName } from '../lib/data'
 import { variationLine } from '../lib/daily'
 import { endSession, startSession } from '../lib/progress'
+import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, PageHeader, ProgressBar, Spinner, Stars } from '../components/ui'
 import type { FamilyFile, Lesson, TrainMode, Variation } from '../lib/types'
@@ -38,7 +39,7 @@ export function Course() {
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Course: ${file.family.name}`} subtitle={`${file.lessons.length} lessen met alle ${file.variations.length} varianten — belangrijkste lijnen eerst.`}
+      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${file.lessons.length} lessen met alle ${file.variations.length} varianten — belangrijkste lijnen eerst.`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={p.pct} />
@@ -61,13 +62,13 @@ export function Course() {
                   const s = lessonState(lesson, file, progress)
                   const current = firstOpen?.id === lesson.id
                   return (
-                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} className={`card flex items-center gap-3 p-3 transition hover:border-brand ${current ? 'border-brand ring-2 ring-brand/25' : ''}`}>
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold ${s.complete ? 'bg-brand text-white' : current ? 'bg-brand-soft text-brand-strong' : 'bg-surface-2 text-muted'}`}>
-                        {s.complete ? '✓' : `${s.done}/${s.vs.length}`}
+                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} title={`${lesson.title}: ${s.done} van ${s.vs.length} varianten afgerond`} aria-current={current ? 'step' : undefined} className={`card flex items-center gap-3 p-3 transition hover:border-brand ${current ? 'border-brand ring-2 ring-brand/25' : ''}`}>
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold ${s.complete ? 'bg-brand text-on-brand' : current ? 'bg-brand-soft text-brand-strong' : 'bg-surface-2 text-muted'}`}>
+                        {s.complete ? <Check size={20} aria-label="afgerond" /> : <span aria-label={`${s.done} van ${s.vs.length} afgerond`}>{s.done}/{s.vs.length}</span>}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{lesson.title}</span>
-                        <span className="block text-xs text-muted">{s.vs.length} {s.vs.length === 1 ? 'variant' : 'varianten'}{current ? ' · aanbevolen' : ''}</span>
+                        <span className="block text-xs text-muted">{s.vs.length} {s.vs.length === 1 ? 'variant' : 'varianten'}{current ? ' · hier ben je' : ''}</span>
                       </span>
                       {s.complete && <Stars count={s.stars} size="text-sm" />}
                     </Link>
@@ -81,8 +82,8 @@ export function Course() {
           <h2 className="text-lg font-bold">Mastery</h2>
           <p className="mb-3 text-sm text-muted">Speel de geleerde varianten zonder hints uit je hoofd. Spaced repetition bepaalt wanneer je ze herhaalt.</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="card p-4 hover:border-brand"><div className="font-semibold">🧠 Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
-            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="card p-4 hover:border-brand"><div className="font-semibold">🎯 Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="card p-4 hover:border-brand"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="card p-4 hover:border-brand"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>
           </div>
         </li>
       </ol>
@@ -132,11 +133,11 @@ export function LessonRun() {
   if (finished) {
     const practice = results.filter((_, i) => queue[i].mode !== 'learn')
     const stars = practice.length ? Math.min(...practice.map(r => r.stars)) : 0
-    const total = results.reduce((a, r) => ({ ...a, userMoves: a.userMoves + r.userMoves, correctFirstTry: a.correctFirstTry + r.correctFirstTry, mistakes: a.mistakes + r.mistakes, xp: a.xp + r.xp, badges: [...a.badges, ...r.badges] }), { userMoves: 0, correctFirstTry: 0, mistakes: 0, hints: 0, alternatives: 0, shown: 0, stars, xp: 0, newCards: 0, badges: [] } as LineResult)
+    const total = results.reduce((a, r) => ({ ...a, userMoves: a.userMoves + r.userMoves, correctFirstTry: a.correctFirstTry + r.correctFirstTry, mistakes: a.mistakes + r.mistakes, xp: a.xp + r.xp, badges: [...a.badges, ...r.badges] }), { userMoves: 0, correctFirstTry: 0, mistakes: 0, hints: 0, alternatives: 0, shown: 0, stars, xp: 0, newCards: 0, badges: [], misses: [] } as LineResult)
     return (
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
         <Confetti fire={1} />
-        <div className="text-4xl">🎉</div>
+        <Trophy size={40} strokeWidth={1.5} aria-hidden className="mx-auto text-star" />
         <h2 className="mt-2 text-xl font-bold">Les afgerond: {lesson.title}</h2>
         <div className="mt-2"><Stars count={stars} size="text-3xl" /></div>
         <ResultNumbers result={total} />
@@ -153,7 +154,7 @@ export function LessonRun() {
     <div>
       <Confetti fire={fire} />
       <div className="mb-4 flex items-center justify-between gap-3">
-        <Link to={`/cursus/${file.family.id}`} className="text-sm text-muted hover:text-ink">← Leerpad</Link>
+        <Link to={`/cursus/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Leerpad</Link>
         <div className="flex-1 sm:max-w-sm"><ProgressBar value={index / queue.length} /><div className="mt-1 text-right text-xs text-muted">{lesson.title} · stap {index + 1} van {queue.length}</div></div>
       </div>
       <Trainer
@@ -164,15 +165,14 @@ export function LessonRun() {
         sessionId={sessionId}
         autoIntro={item.mode === 'learn'}
         onComplete={r => { if (r.stars === 3) setFire(f => f + 1) }}
-        renderEnd={(r) => (
-          <div className="card mx-auto max-w-md p-6 text-center animate-pop">
-            <div className="text-sm text-muted">{displayName(item.v, file.family.name)}</div>
-            <h2 className="mt-1 text-xl font-bold">{item.mode === 'learn' ? 'Doorlopen — nu zelf spelen!' : 'Goed gedaan'}</h2>
-            {item.mode !== 'learn' && <Stars count={r.stars} size="text-2xl" />}
-            <ResultNumbers result={r} />
-            <button className="btn btn-primary mt-4 w-full" autoFocus onClick={() => { setResults(x => [...x, r]); setIndex(i => i + 1) }}>Verder</button>
-          </div>
-        )}
+        renderEnd={r => {
+          const nextItem = queue[index + 1]
+          return (
+            <button className="btn btn-primary min-h-12" autoFocus onClick={() => { setResults(x => [...x, r]); setIndex(i => i + 1) }}>
+              {!nextItem ? 'Les afronden' : nextItem.v.id === item.v.id ? 'Nu zelf spelen, zonder pijlen' : `Verder: ${displayName(nextItem.v, file.family.name)}`}
+            </button>
+          )
+        }}
       />
     </div>
   )

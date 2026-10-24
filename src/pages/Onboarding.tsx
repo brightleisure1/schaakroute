@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { Check, ChessKing } from 'lucide-react'
 import { saveSettings, type UserSettings } from '../lib/db'
 import { useManifest } from '../lib/hooks'
 import { OPENING_INFO } from '../content/openingInfo'
@@ -17,7 +18,7 @@ export function Onboarding() {
   const current = useSettings()
   const { data: manifest, error } = useManifest()
   const [step, setStep] = useState(0)
-  const [elo, setElo] = useState(1200)
+  const [elo, setElo] = useState(1400)
   const [strength, setStrength] = useState<UserSettings['strength']>('club')
   const [sides, setSides] = useState<UserSettings['sides']>('both')
   const [openings, setOpenings] = useState<string[]>([])
@@ -42,12 +43,11 @@ export function Onboarding() {
   if (error) return <ErrorBox error={error} />
   if (!manifest) return <Spinner />
 
-  const families = manifest.families.filter(f => sides === 'both' || f.side === sides)
   const toggle = (id: string) => setOpenings(o => (o.includes(id) ? o.filter(x => x !== id) : [...o, id]))
 
   async function finish() {
-    const chosen = openings.length ? openings : families.slice(0, sides === 'both' ? 2 : 1).map(f => f.id)
-    await saveSettings({ onboarded: true, elo, strength, sides, openings: chosen, dailyMinutes: minutes })
+    if (!openings.length) return
+    await saveSettings({ onboarded: true, elo, strength, sides, openings, dailyMinutes: minutes })
     setFinished(true)
   }
 
@@ -56,7 +56,7 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Hoe sterk speel je?</h2>
       <div className="grid gap-2 sm:grid-cols-2">
         {STRENGTHS.map(s => (
-          <button key={s.value} className={`card p-4 text-left transition ${strength === s.value ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => { setStrength(s.value); setElo(s.elo) }}>
+          <button key={s.value} aria-pressed={strength === s.value} className={`card p-4 text-left transition ${strength === s.value ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => { setStrength(s.value); setElo(s.elo) }}>
             <div className="font-semibold">{s.label}</div>
             <div className="text-sm text-muted">{s.text}</div>
           </button>
@@ -72,8 +72,8 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Met welke kleur wil je oefenen?</h2>
       <div className="grid grid-cols-3 gap-2">
         {(['white', 'black', 'both'] as const).map(s => (
-          <button key={s} className={`card p-4 text-center font-semibold ${sides === s ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => { setSides(s); setOpenings([]) }}>
-            <div className="text-3xl">{s === 'white' ? '♔' : s === 'black' ? '♚' : '♔♚'}</div>
+          <button key={s} aria-pressed={sides === s} className={`card flex flex-col items-center gap-1 p-4 text-center font-semibold ${sides === s ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => { setSides(s); setOpenings(o => o.filter(id => s === 'both' || manifest.families.find(f => f.id === id)?.side === s)) }}>
+            <span aria-hidden className="flex gap-1">{s !== 'black' && <ChessKing size={28} strokeWidth={1.5} />}{s !== 'white' && <ChessKing size={28} strokeWidth={1.5} className="fill-current" />}</span>
             {s === 'white' ? 'Wit' : s === 'black' ? 'Zwart' : 'Beide'}
           </button>
         ))}
@@ -81,14 +81,15 @@ export function Onboarding() {
     </div>,
     <div key="2" className="space-y-4">
       <h2 className="text-xl font-bold">Welke openingen wil je leren?</h2>
-      <p className="text-sm text-muted">De 20 populairste openingsfamilies op Lichess, op basis van {manifest.source.games.usedGames.toLocaleString('nl-NL')} echte partijen. Je kunt dit later altijd aanpassen.</p>
+      <p className="text-sm text-muted">De 20 populairste openingsfamilies op Lichess, op basis van {manifest.source.games.usedGames.toLocaleString('nl-NL')} echte partijen. Kies er minstens één; je kunt dit later altijd aanpassen.</p>
+      <p className="text-sm font-semibold" aria-live="polite">{openings.length ? `${openings.length} gekozen` : 'Nog niets gekozen'}</p>
       {(['white', 'black'] as const).filter(s => sides === 'both' || sides === s).map(side => (
         <div key={side}>
           <h3 className="mb-2 font-semibold">{side === 'white' ? 'Met wit' : 'Met zwart'}</h3>
           <div className="grid gap-2 sm:grid-cols-2">
             {manifest.families.filter(f => f.side === side).map(f => (
-              <button key={f.id} className={`card flex items-center gap-3 p-3 text-left ${openings.includes(f.id) ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => toggle(f.id)}>
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${openings.includes(f.id) ? 'border-brand bg-brand text-white' : 'border-line'}`}>{openings.includes(f.id) ? '✓' : ''}</span>
+              <button key={f.id} aria-pressed={openings.includes(f.id)} className={`card flex items-center gap-3 p-3 text-left ${openings.includes(f.id) ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => toggle(f.id)}>
+                <span aria-hidden className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${openings.includes(f.id) ? 'border-brand bg-brand text-on-brand' : 'border-line'}`}>{openings.includes(f.id) && <Check size={16} strokeWidth={3} />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">{f.name}</span>
                   <span className="block text-xs text-muted">{OPENING_INFO[f.id]?.nameNl} · {f.variationCount} varianten · {pct(f.share, 1)} van de partijen</span>
@@ -103,7 +104,7 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Hoeveel minuten per dag?</h2>
       <div className="grid grid-cols-4 gap-2">
         {([5, 10, 15, 20] as const).map(m => (
-          <button key={m} className={`card p-4 text-center ${minutes === m ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => setMinutes(m)}>
+          <button key={m} aria-pressed={minutes === m} className={`card p-4 text-center ${minutes === m ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => setMinutes(m)}>
             <div className="text-2xl font-bold">{m}</div>
             <div className="text-xs text-muted">minuten</div>
           </button>
@@ -120,13 +121,14 @@ export function Onboarding() {
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Welkom bij SchaakRoute</h1>
         <p className="mt-1 text-muted">Leer openingen door ze zelf te spelen — met alle varianten uit de openbare Lichess-database.</p>
       </div>
-      <div className="mb-4 flex gap-1.5">{steps.map((_, i) => <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-surface-2'}`} />)}</div>
+      <div className="mb-4 flex gap-1.5" aria-hidden>{steps.map((_, i) => <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-line'}`} />)}</div>
       <div className="card p-5 sm:p-6">{steps[step]}</div>
-      <div className="mt-4 flex justify-between">
-        <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)} disabled={step === 0}>Vorige</button>
+      <div className="sticky bottom-0 -mx-4 mt-4 flex items-center justify-between gap-3 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none">
+        <button className="btn btn-ghost min-h-11" onClick={() => setStep(s => s - 1)} disabled={step === 0}>Vorige</button>
+        <span className="text-sm text-muted">Stap {step + 1} van {steps.length}</span>
         {step < steps.length - 1
-          ? <button className="btn btn-primary" onClick={() => setStep(s => s + 1)}>Volgende</button>
-          : <button className="btn btn-primary" onClick={finish}>Aan de slag</button>}
+          ? <button className="btn btn-primary min-h-11" onClick={() => setStep(s => s + 1)} disabled={step === 2 && !openings.length}>Volgende</button>
+          : <button className="btn btn-primary min-h-11" onClick={finish} disabled={!openings.length}>Aan de slag</button>}
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Chessboard, type Arrow } from 'react-chessboard'
+import { Chessboard, defaultPieces, type Arrow } from 'react-chessboard'
 import { Chess, type Square } from 'chess.js'
 import { needsPromotion } from '../lib/chess'
 import type { Side } from '../lib/types'
@@ -17,11 +17,12 @@ export interface BoardProps {
   id?: string
   animationMs?: number
   showNotation?: boolean
+  /** Toegankelijke naam van het bord, bijv. "Schaakbord, je speelt wit" */
+  label?: string
 }
 
 const PROMO = ['q', 'r', 'b', 'n'] as const
 const PROMO_NAME: Record<string, string> = { q: 'Dame', r: 'Toren', b: 'Loper', n: 'Paard' }
-const GLYPH: Record<string, string> = { wq: '♕', wr: '♖', wb: '♗', wn: '♘', bq: '♛', br: '♜', bb: '♝', bn: '♞' }
 
 /**
  * Schaakbord op basis van react-chessboard v5. Ondersteunt slepen én klikken op twee velden,
@@ -30,8 +31,37 @@ const GLYPH: Record<string, string> = { wq: '♕', wr: '♖', wb: '♗', wn: '�
 // react-chessboard gebruikt het id in CSS-selectors: alleen veilige tekens toestaan
 const safeId = (id: string) => 'b' + id.replace(/[^a-zA-Z0-9_-]/g, '-')
 
-export function Board({ fen, orientation, movable, onMove, lastMove, arrows = [], hintSquare, flash, id = 'board', animationMs = 220, showNotation = true }: BoardProps) {
+const PIECE_NAME: Record<string, string> = { k: 'koning', q: 'dame', r: 'toren', b: 'loper', n: 'paard', p: 'pion' }
+
+/** Tekstuele beschrijving van een stelling voor schermlezers */
+export function describePosition(fen: string): string {
+  const c = new Chess(fen)
+  const side = (color: 'w' | 'b') => {
+    const pieces = c.board().flat().filter(p => p && p.color === color) as { type: string; square: string }[]
+    const order = ['k', 'q', 'r', 'b', 'n', 'p']
+    pieces.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))
+    return pieces.map(p => `${PIECE_NAME[p.type]} ${p.square}`).join(', ')
+  }
+  return `Wit: ${side('w')}. Zwart: ${side('b')}. ${c.turn() === 'w' ? 'Wit' : 'Zwart'} aan zet.`
+}
+
+export function Board({ fen, orientation, movable, onMove, lastMove, arrows = [], hintSquare, flash, id = 'board', animationMs = 220, showNotation = true, label }: BoardProps) {
   const [selected, setSelected] = useState<string | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // De stukken van react-chessboard zijn focusbare 'buttons' zonder naam. Ze zijn alleen voor muis/touch;
+  // toetsenbord- en schermlezergebruikers zetten via het zetinvoerveld. Haal ze daarom uit de tabvolgorde.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const fix = () => el.querySelectorAll('[role="button"], [tabindex="0"]').forEach(n => {
+      n.setAttribute('tabindex', '-1')
+    })
+    fix()
+    const mo = new MutationObserver(fix)
+    mo.observe(el, { childList: true, subtree: true })
+    return () => mo.disconnect()
+  }, [])
   const [promo, setPromo] = useState<{ from: string; to: string } | null>(null)
   const chess = useMemo(() => {
     try {
@@ -114,7 +144,9 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
   }
 
   return (
-    <div className="relative w-full select-none" style={{ touchAction: 'none' }}>
+    <div className="relative w-full select-none" style={{ touchAction: 'none' }} role="group" aria-label={label ?? 'Schaakbord'}>
+      <p className="sr-only" aria-live="off">{describePosition(fen)}{lastMove ? ` Laatste zet van ${lastMove[0]} naar ${lastMove[1]}.` : ''}</p>
+      <div ref={wrapRef} aria-hidden="true">
       <Chessboard
         options={{
           id: safeId(id),
@@ -134,18 +166,20 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
           boardStyle: { borderRadius: '12px', overflow: 'hidden', boxShadow: '0 6px 22px rgba(30, 40, 30, 0.14)' },
           lightSquareStyle: { backgroundColor: 'var(--board-light)' },
           darkSquareStyle: { backgroundColor: 'var(--board-dark)' },
-          lightSquareNotationStyle: { color: 'var(--board-dark)', fontWeight: 600 },
-          darkSquareNotationStyle: { color: 'var(--board-light)', fontWeight: 600 },
+          lightSquareNotationStyle: { color: 'var(--notation-on-light)', fontWeight: 600 },
+          darkSquareNotationStyle: { color: 'var(--notation-on-dark)', fontWeight: 600 },
           dropSquareStyle: { boxShadow: 'inset 0 0 1px 5px rgba(47, 125, 79, 0.6)' },
         }}
       />
+      </div>
       {promo && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/35" onClick={() => setPromo(null)}>
-          <div className="card flex gap-2 p-3 shadow-xl animate-pop" onClick={e => e.stopPropagation()} role="dialog" aria-label="Kies promotiestuk">
+          <div className="card flex gap-2 p-3 shadow-xl animate-pop" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setPromo(null) }} role="dialog" aria-modal="true" aria-label="Kies promotiestuk">
             {PROMO.map(p => (
               <button
                 key={p}
                 className="btn btn-ghost h-16 w-16 text-4xl"
+                autoFocus={p === 'q'}
                 title={PROMO_NAME[p]}
                 aria-label={`Promoveer tot ${PROMO_NAME[p]}`}
                 onClick={() => {
@@ -155,7 +189,7 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
                   onMove?.(from, to, p)
                 }}
               >
-                {GLYPH[chess.turn() + p]}
+                <span aria-hidden className="block h-12 w-12">{defaultPieces[`${chess.turn()}${p.toUpperCase()}`]?.()}</span>
               </button>
             ))}
           </div>
@@ -168,7 +202,7 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
 /** Klein statisch voorbeeldbord */
 export function MiniBoard({ fen, orientation = 'white', id }: { fen: string; orientation?: Side; id: string }) {
   return (
-    <div className="pointer-events-none w-full">
+    <div className="pointer-events-none w-full" inert aria-hidden="true">
       <Chessboard
         options={{
           id: safeId(id),

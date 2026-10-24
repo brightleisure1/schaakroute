@@ -1,4 +1,5 @@
-import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { BookMarked, ChartColumn, ChessKnight, Download, GitBranch, House, Menu, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -25,19 +26,39 @@ const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ defaul
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
 
-const NAV = [
-  { to: '/', label: 'Start', icon: '⌂', mobile: true },
-  { to: '/openingen', label: 'Openingen', icon: '♞', mobile: true },
-  { to: '/dagelijks', label: 'Dagelijks', icon: '☀', mobile: true },
-  { to: '/mastery', label: 'Mastery', icon: '🔁', mobile: true },
-  { to: '/variaties', label: 'Variaties', icon: '🌳' },
-  { to: '/crushing', label: 'Crushing', icon: '⚔' },
-  { to: '/advantage', label: 'Advantage', icon: '📈' },
-  { to: '/repertoire', label: 'Repertoire', icon: '📖' },
-  { to: '/statistieken', label: 'Statistieken', icon: '📊' },
-  { to: '/import', label: 'Mijn partijen', icon: '⤓' },
-  { to: '/instellingen', label: 'Instellingen', icon: '⚙' },
+// Navigatie in drie groepen. De trainingsmodi houden bewust hun Engelse namen (Course, Variations, …).
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Trainen',
+    items: [
+      { to: '/', label: 'Start', icon: House, mobile: true },
+      { to: '/dagelijks', label: 'Daily Training', short: 'Daily', icon: Sun, mobile: true },
+      { to: '/mastery', label: 'Mastery', icon: Repeat, mobile: true, badge: true },
+      { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true },
+      { to: '/variaties', label: 'Variations', icon: GitBranch },
+    ],
+  },
+  {
+    title: 'Verdiepen',
+    items: [
+      { to: '/crushing', label: 'Crushing', icon: Swords },
+      { to: '/advantage', label: 'Advantage', icon: TrendingUp },
+      { to: '/repertoire', label: 'Repertoire', icon: BookMarked },
+      { to: '/import', label: 'Mijn partijen', icon: Download },
+    ],
+  },
+  {
+    title: 'Jij',
+    items: [
+      { to: '/statistieken', label: 'Statistieken', icon: ChartColumn },
+      { to: "/instellingen", label: "Instellingen", icon: SettingsIcon },
+    ],
+  },
 ]
+interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean }
+const NAV = NAV_GROUPS.flatMap(g => g.items)
+// Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven
+const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|mastery|dagelijks)/
 
 function ThemeSync() {
   const s = useSettings()
@@ -69,7 +90,7 @@ class ErrorBoundary extends Component<{ children: ReactNode; resetKey: string },
     if (!this.state.error) return this.props.children
     return (
       <div className="card mx-auto max-w-lg p-6 text-center">
-        <div className="text-3xl">♘</div>
+        <ChessKnight size={32} strokeWidth={1.5} aria-hidden className="mx-auto text-muted" />
         <h2 className="mt-2 font-bold">Er ging iets mis op deze pagina</h2>
         <p className="mt-1 text-sm text-muted">{this.state.error.message}</p>
         <p className="mt-1 text-xs text-muted">Je voortgang is veilig opgeslagen.</p>
@@ -94,7 +115,8 @@ function RouteMemory() {
   useEffect(() => {
     const p = loc.pathname + loc.search
     if (/^\/(train|cursus|les|crushing\/|advantage\/|repertoire\/\d+\/train|mastery)/.test(p)) {
-      db.settings.update('me', { lastRoute: p, lastRouteLabel: document.title }).catch(() => {})
+      // het label (naam van de variant) zet het scherm zelf zodra die bekend is
+      db.settings.update('me', { lastRoute: p }).catch(() => {})
     }
   }, [loc])
   return null
@@ -105,30 +127,45 @@ function Shell() {
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
   const loc = useLocation()
   if (!settings) return <Spinner />
+  const onboarding = loc.pathname === '/welkom' && !settings.onboarded
   if (!settings.onboarded && loc.pathname !== '/welkom' && loc.pathname !== '/bronnen') return <Navigate to="/welkom" replace />
+  const focus = FOCUS_ROUTES.test(loc.pathname)
+  const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`
   return (
     <div className="min-h-dvh lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 lg:flex">
-        <NavLink to="/" className="mb-6 flex items-center gap-2 px-2 text-xl font-extrabold tracking-tight">
-          <img src="./icon.svg" alt="" className="h-8 w-8" /> SchaakRoute
-        </NavLink>
-        <nav className="flex flex-col gap-0.5">
-          {NAV.map(n => (
-            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`}>
-              <span className="w-5 text-center" aria-hidden>{n.icon}</span>{n.label}
-              {n.to === '/mastery' && due > 0 && <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-white">{due}</span>}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="mt-auto px-2 text-xs text-muted">Gratis & open source · <NavLink to="/bronnen" className="underline">bronnen</NavLink></div>
-      </aside>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">Naar de inhoud</a>
+      {!onboarding && (
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
+          <NavLink to="/" className="mb-5 flex items-center gap-2 px-2 text-xl font-extrabold tracking-tight">
+            <img src="./icon.svg" alt="" className="h-8 w-8" /> SchaakRoute
+          </NavLink>
+          <nav aria-label="Hoofdmenu" className="flex flex-col gap-4">
+            {NAV_GROUPS.map(g => (
+              <div key={g.title}>
+                <h2 className="px-3 pb-1 text-xs font-semibold text-muted">{g.title}</h2>
+                <ul className="flex flex-col gap-0.5">
+                  {g.items.map(n => (
+                    <li key={n.to}>
+                      <NavLink to={n.to} end={n.to === '/'} className={navClass}>
+                        <n.icon size={18} strokeWidth={1.75} aria-hidden />{n.label}
+                        {n.badge && due > 0 && <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+          <div className="mt-auto px-2 pt-4 text-xs text-muted">Gratis en open source · <NavLink to="/bronnen" className="underline">bronnen</NavLink></div>
+        </aside>
+      )}
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-bg/90 px-4 py-3 backdrop-blur lg:hidden">
-          <NavLink to="/" className="flex items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-7 w-7" />SchaakRoute</NavLink>
-          <MoreMenu />
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-bg/90 px-4 py-2 backdrop-blur lg:hidden">
+          <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-7 w-7" />SchaakRoute</NavLink>
+          {!onboarding && <MoreMenu due={due} />}
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
+        <main id="main" className={`mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:pb-10 lg:pt-8 ${focus || onboarding ? 'pb-8' : 'pb-28'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
           <Suspense fallback={<Spinner />}>
             <Routes>
@@ -158,34 +195,55 @@ function Shell() {
           </Suspense>
           </ErrorBoundary>
         </main>
-        <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur lg:hidden" aria-label="Hoofdmenu">
-          {NAV.filter(n => n.mobile).map(n => (
-            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${isActive ? 'text-brand' : 'text-muted'}`}>
-              <span className="text-lg leading-none" aria-hidden>{n.icon}</span>{n.label}
-              {n.to === '/mastery' && due > 0 && <span className="absolute right-[22%] top-1 rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{due}</span>}
-            </NavLink>
-          ))}
-          <NavLink to="/repertoire" className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${isActive ? 'text-brand' : 'text-muted'}`}>
-            <span className="text-lg leading-none" aria-hidden>📖</span>Repertoire
-          </NavLink>
-        </nav>
+        {!focus && !onboarding && (
+          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 backdrop-blur lg:hidden" aria-label="Hoofdmenu">
+            {NAV.filter(n => n.mobile).map(n => (
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-semibold ${isActive ? 'text-brand-strong' : 'text-muted'}`}>
+                <n.icon size={22} strokeWidth={1.75} aria-hidden />{n.short ?? n.label}
+                {n.badge && due > 0 && <span className="absolute right-[24%] top-1.5 rounded-full bg-accent px-1.5 text-xs font-bold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
+              </NavLink>
+            ))}
+          </nav>
+        )}
       </div>
     </div>
   )
 }
 
-function MoreMenu() {
+function MoreMenu({ due }: { due: number }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const loc = useLocation()
+  useEffect(() => setOpen(false), [loc.pathname])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const onDown = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onDown)
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown) }
+  }, [open])
   return (
-    <details className="relative">
-      <summary className="btn btn-ghost list-none px-3 py-1.5" aria-label="Meer">☰</summary>
-      <div className="card absolute right-0 z-40 mt-2 w-56 p-2 shadow-xl">
-        {NAV.filter(n => !n.mobile).map(n => (
-          <NavLink key={n.to} to={n.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-surface-2" onClick={e => (e.currentTarget.closest('details') as HTMLDetailsElement)?.removeAttribute('open')}>
-            <span className="w-5 text-center" aria-hidden>{n.icon}</span>{n.label}
-          </NavLink>
-        ))}
-      </div>
-    </details>
+    <div className="relative" ref={ref}>
+      <button className="btn btn-ghost min-h-11 min-w-11 px-3" aria-label={open ? 'Menu sluiten' : 'Menu openen'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(o => !o)}>
+        {open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
+      </button>
+      {open && (
+        <nav id="mobile-menu" aria-label="Alle onderdelen" className="card absolute right-0 z-40 mt-2 max-h-[75dvh] w-64 overflow-y-auto p-2 shadow-xl animate-fade-up">
+          {NAV_GROUPS.map(g => (
+            <div key={g.title} className="py-1">
+              <h2 className="px-3 pb-1 text-xs font-semibold text-muted">{g.title}</h2>
+              {g.items.map(n => (
+                <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm ${isActive ? 'bg-brand-soft text-brand-strong' : 'hover:bg-surface-2'}`}>
+                  <n.icon size={18} strokeWidth={1.75} aria-hidden />{n.label}
+                  {n.badge && due > 0 && <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-ink">{due}</span>}
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
+      )}
+    </div>
   )
 }
 

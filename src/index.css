@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter/wght.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -7,19 +8,28 @@
   --surface: #ffffff;
   --surface-2: #f3eee6;
   --ink: #1f2a24;
-  --muted: #6a6f67;
+  --muted: #5c615a;
   --line: #e6dfd2;
   --brand: #2f7d4f;
   --brand-strong: #22603b;
   --brand-soft: #e2f0e6;
   --accent: #d99a2b;
   --accent-soft: #fbf0da;
+  /* tekstvarianten: haal ≥4.5:1 op alle oppervlakken (gemeten) */
+  --accent-ink: #8a5a00;
   --danger: #c0453a;
   --danger-soft: #f9e3e0;
+  --danger-ink: #a8362c;
   --info: #3a6ea5;
   --info-soft: #e3edf8;
+  --info-ink: #2d5c8f;
+  --star: #b4780f;
+  --star-empty: #9a917f;
   --board-light: #f1e9d8;
   --board-dark: #8fae86;
+  --notation-on-light: #4c6a46;
+  --notation-on-dark: #20341d;
+  --on-brand: #ffffff;
   --chart-1: #2f7d4f;
   --chart-2: #d99a2b;
   --chart-grid: #ece6db;
@@ -38,12 +48,20 @@
   --brand-soft: #1d3326;
   --accent: #e8b04a;
   --accent-soft: #3a2f19;
+  --accent-ink: #e8b04a;
   --danger: #e2675b;
   --danger-soft: #3b1f1c;
+  --danger-ink: #ef8a7f;
   --info: #7aa7d8;
   --info-soft: #1c2a3a;
+  --info-ink: #8db5e0;
+  --star: #e8b04a;
+  --star-empty: #6f776f;
   --board-light: #d9d0bd;
   --board-dark: #6d8f68;
+  --notation-on-light: #3f5c3b;
+  --notation-on-dark: #142212;
+  --on-brand: #0d1510;
   --chart-1: #4aa86f;
   --chart-2: #c4862a;
   --chart-grid: #2a312c;
@@ -62,11 +80,17 @@
   --color-brand-soft: var(--brand-soft);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-info-ink: var(--info-ink);
+  --color-star: var(--star);
+  --color-star-empty: var(--star-empty);
+  --color-on-brand: var(--on-brand);
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 html,
@@ -79,6 +103,23 @@ body {
 body {
   font-family: var(--font-sans);
   min-height: 100dvh;
+  font-feature-settings: "cv11", "ss01";
+  caret-color: var(--brand);
+  scrollbar-color: var(--line) transparent;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+table, .tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 .card {
@@ -101,9 +142,8 @@ body {
 }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.45; pointer-events: none; }
-.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary { background: var(--brand); color: var(--on-brand); }
 .btn-primary:hover { background: var(--brand-strong); }
-.dark .btn-primary { color: #0d1510; }
 .btn-ghost { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
 .btn-ghost:hover { border-color: var(--brand); }
 .btn-quiet { color: var(--muted); }
@@ -122,6 +162,8 @@ body {
   color: var(--muted);
   white-space: nowrap;
 }
+.chip-sm { padding: 0.05rem 0.45rem; }
+button.chip { min-height: 2rem; }
 .chip-on { background: var(--brand-soft); color: var(--brand-strong); border-color: var(--brand); }
 
 .input {

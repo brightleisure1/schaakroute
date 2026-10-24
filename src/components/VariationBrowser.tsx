@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { ArrowLeftRight, ChevronRight } from 'lucide-react'
 import type { FamilyFile, Variation } from '../lib/types'
 import type { TrainingCard, VariationProgress } from '../lib/db'
 import { variationMastery } from '../lib/hooks'
@@ -9,7 +10,7 @@ import { Stars, pct } from './ui'
 export type VariationFilter = 'all' | 'popular' | 'main' | 'side' | 'gambit' | 'tactical' | 'rare' | 'sub' | 'new' | 'hard' | 'mastered'
 
 export const FILTER_LABEL: Record<VariationFilter, string> = {
-  all: 'Boom',
+  all: 'Alle varianten',
   popular: 'Meest gespeeld',
   main: 'Hoofdvarianten',
   side: 'Zijvarianten',
@@ -29,11 +30,16 @@ interface Props {
   progress: Map<string, VariationProgress>
   cards: Map<string, TrainingCard>
   initialFilter?: VariationFilter
-  filters?: VariationFilter[]
+  /** Wordt aangeroepen als een variant aangewezen of gefocust wordt (voor een voorbeeldbord) */
+  onPreview?: (v: Variation | null) => void
 }
 
-export function VariationBrowser({ file, progress, cards, initialFilter = 'all', filters }: Props) {
-  const [filter, setFilter] = useState<VariationFilter>(initialFilter)
+const FILTERS: VariationFilter[] = ['all', 'main', 'side', 'gambit', 'tactical', 'rare', 'sub', 'new', 'hard', 'mastered']
+const PreviewContext = createContext<((v: Variation | null) => void) | undefined>(undefined)
+
+export function VariationBrowser({ file, progress, cards, initialFilter = 'all', onPreview }: Props) {
+  const [view, setView] = useState<'tree' | 'list'>(initialFilter === 'popular' ? 'list' : 'tree')
+  const [filter, setFilter] = useState<VariationFilter>(initialFilter === 'popular' ? 'all' : initialFilter)
   const [query, setQuery] = useState('')
   const side = file.family.side
 
@@ -67,23 +73,31 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all',
     ? file.variations.filter(v => v.name.toLowerCase().includes(q) || v.eco.toLowerCase() === q || v.san.join(' ').toLowerCase().includes(q))
     : file.variations
   const list = searched.filter(v => matches(v, filter))
-  const sorted = filter === 'popular' || q ? [...list].sort((a, b) => (b.reach ?? -1) - (a.reach ?? -1) || a.san.length - b.san.length) : list
-  const flat = filter !== 'all' || !!q
-  const shownFilters = filters ?? (Object.keys(FILTER_LABEL) as VariationFilter[])
+  const flat = view === 'list' || filter !== 'all' || !!q
+  const sorted = flat ? [...list].sort((a, b) => (b.reach ?? -1) - (a.reach ?? -1) || a.san.length - b.san.length) : list
 
   return (
-    <div>
-      <div className="mb-3 flex flex-col gap-3">
-        <input className="input" type="search" placeholder={`Zoek in ${file.variations.length} varianten (naam, ECO of zetten, bijv. "Najdorf" of "Nf3")`} value={query} onChange={e => setQuery(e.target.value)} aria-label="Zoek variant" />
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-thin">
-          {shownFilters.map(f => {
-            const count = f === 'all' ? searched.length : searched.filter(v => matches(v, f)).length
-            return (
-              <button key={f} className={`chip ${filter === f ? 'chip-on' : ''}`} onClick={() => setFilter(f)}>
-                {FILTER_LABEL[f]} <span className="tabular-nums opacity-70">{count}</span>
+    <PreviewContext.Provider value={onPreview}>
+    <div onMouseLeave={() => onPreview?.(null)}>
+      <div className="mb-3 flex flex-col gap-2">
+        <input className="input min-h-11" type="search" placeholder={`Zoek in ${file.variations.length} varianten: naam, ECO of zetten (bijv. Najdorf of Nf3)`} value={query} onChange={e => setQuery(e.target.value)} aria-label="Zoek variant" />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-xl border border-line bg-surface-2 p-1" role="group" aria-label="Weergave">
+            {(['tree', 'list'] as const).map(v => (
+              <button key={v} aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-10 rounded-lg px-3 text-sm font-semibold transition ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}>
+                {v === 'tree' ? 'Boom' : 'Meest gespeeld'}
               </button>
-            )
-          })}
+            ))}
+          </div>
+          <label className="sr-only" htmlFor={`filter-${file.family.id}`}>Filter varianten</label>
+          <select id={`filter-${file.family.id}`} className="input min-h-11 w-auto max-w-full flex-1 sm:flex-none" value={filter} onChange={e => setFilter(e.target.value as VariationFilter)}>
+            {FILTERS.map(f => {
+              const count = f === 'all' ? searched.length : searched.filter(v => matches(v, f)).length
+              return <option key={f} value={f}>{FILTER_LABEL[f]} ({count})</option>
+            })}
+          </select>
+          {(filter !== 'all' || q) && <button className="btn btn-quiet min-h-11 text-sm" onClick={() => { setFilter('all'); setQuery('') }}>Wis filter</button>}
+          <span className="ml-auto text-sm text-muted" aria-live="polite">{sorted.length === file.variations.length ? `${sorted.length} varianten` : `${sorted.length} van ${file.variations.length}`}</span>
         </div>
       </div>
       {sorted.length === 0 ? (
@@ -96,6 +110,7 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all',
         <Tree file={file} meta={meta} progress={progress} />
       )}
     </div>
+    </PreviewContext.Provider>
   )
 }
 
@@ -165,8 +180,8 @@ function Group({ node, file, meta, progress, depth }: { node: TreeNode; file: Fa
   if (single) return <VariationRow v={node.variations[0]} file={file} meta={meta.get(node.variations[0].id)!} progress={progress.get(node.variations[0].id)} label={node.name} />
   return (
     <li>
-      <button className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => setOpen(o => !o)} aria-expanded={open}>
-        <span className={`inline-block w-4 text-muted transition ${open ? 'rotate-90' : ''}`} aria-hidden>▸</span>
+      <button className="flex min-h-12 w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <ChevronRight size={16} aria-hidden className={`shrink-0 text-muted transition ${open ? 'rotate-90' : ''}`} />
         <span className="min-w-0 flex-1 truncate font-medium">{node.name}</span>
         <span className="shrink-0 text-xs tabular-nums text-muted">{learned}/{node.total}</span>
       </button>
@@ -186,24 +201,25 @@ function Group({ node, file, meta, progress, depth }: { node: TreeNode; file: Fa
 
 function VariationRow({ v, file, meta, progress, label, showFull }: { v: Variation; file: FamilyFile; meta: ReturnType<typeof variationMastery> & { hard: boolean }; progress?: VariationProgress; label?: string; showFull?: boolean }) {
   const title = label ?? (showFull ? (v.path.join(' › ') || file.family.name) : v.path[v.path.length - 1] ?? file.family.name)
+  const preview = useContext(PreviewContext)
   return (
     <li>
-      <Link to={`/train/${file.family.id}/${v.id}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-2">
+      <Link to={`/train/${file.family.id}/${v.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2.5 hover:bg-surface-2 focus-visible:bg-surface-2" onMouseEnter={() => preview?.(v)} onFocus={() => preview?.(v)}>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="font-medium">{title}{v.lineNo && !label ? ` (lijn ${v.lineNo})` : ''}</span>
             <span className="text-xs text-muted">{v.eco}</span>
-            {v.tags.filter(t => t !== 'sub').slice(0, 3).map(t => <span key={t} className={`chip !px-1.5 !py-0 !text-[10px] ${t === 'gambit' ? '!text-accent' : ''}`}>{TAG_LABEL[t]}</span>)}
-            {v.transposesTo && <span className="chip !px-1.5 !py-0 !text-[10px]" title={`Transpositie: ${v.transposesTo.map(t => t.name).slice(0, 3).join('; ')}`}>⇄ transpositie</span>}
+            {v.tags.filter(t => t !== 'sub').slice(0, 3).map(t => <span key={t} className={`chip chip-sm ${t === 'gambit' ? '!text-accent-ink' : ''}`}>{TAG_LABEL[t]}</span>)}
+            {v.transposesTo && <span className="chip chip-sm" title={`Transpositie: ${v.transposesTo.map(t => t.name).slice(0, 3).join('; ')}`}><ArrowLeftRight size={12} aria-hidden />transpositie</span>}
           </div>
           <div className="truncate font-mono text-xs text-muted">{formatMoves(v.san)}</div>
         </div>
         <div className="hidden w-24 shrink-0 text-right text-xs text-muted sm:block" title="Aandeel van de partijen in deze opening dat deze stelling bereikte (Lichess-steekproef)">
           {v.reach !== null ? pct(v.freq, v.freq < 0.01 ? 1 : 0) : '–'}
-          <div className="text-[10px]">{v.reach !== null ? `${v.reach.toLocaleString('nl-NL')} partijen` : 'te zeldzaam'}</div>
+          <div className="text-xs">{v.reach !== null ? `${v.reach.toLocaleString('nl-NL')} partijen` : 'te zeldzaam'}</div>
         </div>
         <div className="w-16 shrink-0 text-right">
-          {meta.mastered ? <span className="chip chip-on !text-[10px]">beheerst</span> : progress?.bestStars ? <Stars count={progress.bestStars} size="text-sm" /> : <span className="text-xs text-muted">{meta.seen ? `${meta.score}%` : 'nieuw'}</span>}
+          {meta.mastered ? <span className="chip chip-on chip-sm">beheerst</span> : progress?.bestStars ? <Stars count={progress.bestStars} size="text-sm" /> : <span className="text-xs text-muted">{meta.seen ? `${meta.score}%` : 'nieuw'}</span>}
         </div>
       </Link>
     </li>

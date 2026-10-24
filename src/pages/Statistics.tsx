@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { Lock } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, today, type DailyActivity } from '../lib/db'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
@@ -7,7 +8,7 @@ import { BADGES } from '../lib/gamification'
 import { streak, totalXp } from '../lib/progress'
 import { stageOf } from '../lib/srs'
 import { displayName } from '../lib/data'
-import { Empty, PageHeader, ProgressBar, Spinner, StatTile, Tabs, pct } from '../components/ui'
+import { Empty, PageHeader, ProgressBar, Spinner, StatTile, Stars, Tabs, pct } from '../components/ui'
 
 // Uitsluitend echte, lokaal opgeslagen gebruikersgegevens. Lege toestanden in plaats van voorbeelddata.
 
@@ -148,7 +149,7 @@ export function Statistics() {
                   <tr key={r.v.id} className="border-t border-line">
                     <td className="py-1.5">{displayName(r.v, r.f.family.name)}<div className="text-xs text-muted">{r.f.family.name}</div></td>
                     <td className="text-right tabular-nums">{r.p.completions}</td>
-                    <td className="text-right text-accent">{'★'.repeat(r.p.bestStars)}</td>
+                    <td className="text-right"><Stars count={r.p.bestStars} size="text-sm" /></td>
                     <td className="text-right tabular-nums">{r.m.mastered ? 'beheerst' : `${r.m.score}%`}</td>
                   </tr>))}</tbody>
               </table>
@@ -159,19 +160,23 @@ export function Statistics() {
 
       <section className="card p-4">
         <h2 className="mb-3 font-semibold">Badges ({badges.length}/{BADGES.length})</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <ul className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {BADGES.map(b => {
             const has = badges.find(x => x.id === b.id)
             return (
-              <div key={b.id} className={`rounded-xl border p-3 ${has ? 'border-accent bg-accent-soft' : 'border-line opacity-60'}`}>
-                <div className="text-2xl" aria-hidden>{has ? b.icon : '🔒'}</div>
-                <div className="text-sm font-semibold">{b.title}</div>
-                <div className="text-xs text-muted">{b.description}</div>
-                {has && <div className="mt-1 text-[10px] text-muted">{new Date(has.earnedAt).toLocaleDateString('nl-NL')}</div>}
-              </div>
+              <li key={b.id} className="flex items-start gap-3">
+                <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${has ? 'bg-accent-soft text-accent-ink' : 'bg-surface-2 text-muted'}`}>
+                  {has ? <b.icon size={20} /> : <Lock size={18} />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">{b.title}{!has && <span className="sr-only"> (nog niet behaald)</span>}</span>
+                  <span className="block text-sm text-muted">{b.description}</span>
+                  {has && <span className="block text-xs text-muted">behaald op {new Date(has.earnedAt).toLocaleDateString('nl-NL')}</span>}
+                </span>
+              </li>
             )
           })}
-        </div>
+        </ul>
       </section>
     </div>
   )
@@ -200,8 +205,8 @@ function DailyBars({ days, byDay }: { days: string[]; byDay: Map<string, DailyAc
       <div className="relative">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Goede zetten en fouten per dag" onMouseLeave={() => setHover(null)}>
           {[0.5, 1].map(f => <line key={f} x1={pad} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--chart-grid)" />)}
-          <text x={0} y={y(max) + 4} fontSize="10" fill="var(--muted)">{max}</text>
-          <text x={0} y={H - pad + 4} fontSize="10" fill="var(--muted)">0</text>
+          <text x={0} y={y(max) + 4} fontSize="11" fill="var(--muted)">{max}</text>
+          <text x={0} y={H - pad + 4} fontSize="11" fill="var(--muted)">0</text>
           {data.map((x, i) => {
             const bx = pad + i * bw + 1
             const w = Math.max(2, bw - 3)
@@ -212,7 +217,7 @@ function DailyBars({ days, byDay }: { days: string[]; byDay: Map<string, DailyAc
                 <rect x={pad + i * bw} y={0} width={bw} height={H - pad} fill="transparent" />
                 {x.c > 0 && <rect x={bx} y={H - pad - hc} width={w} height={hc} rx={Math.min(3, w / 2)} fill="var(--chart-1)" />}
                 {x.m > 0 && <rect x={bx} y={H - pad - hc - hm - (x.c ? 2 : 0)} width={w} height={hm} rx={Math.min(3, w / 2)} fill="var(--chart-2)" />}
-                {(i === data.length - 1 || ((data.length - 1 - i) % 7 === 0 && data.length - 1 - i >= 7)) && <text x={bx + w / 2} y={H - 6} fontSize="10" textAnchor="middle" fill="var(--muted)">{shortDate(x.d)}</text>}
+                {(i === data.length - 1 || ((data.length - 1 - i) % 7 === 0 && data.length - 1 - i >= 7)) && <text x={i === data.length - 1 ? W : bx + w / 2} y={H - 6} fontSize="11" textAnchor={i === data.length - 1 ? 'end' : 'middle'} fill="var(--muted)">{shortDate(x.d)}</text>}
               </g>
             )
           })}
@@ -241,10 +246,10 @@ function Legend({ onTable, tableLabel }: { onTable: () => void; tableLabel: stri
 
 function LineChart({ days, values }: { days: string[]; values: number[] }) {
   const [hover, setHover] = useState<number | null>(null)
-  const W = 360, H = 150, pad = 22
+  const W = 360, H = 150, pad = 22, top = 22
   const max = Math.max(5, ...values)
   const x = (i: number) => pad + (i / Math.max(1, values.length - 1)) * (W - pad - 6)
-  const y = (v: number) => H - pad - (v / max) * (H - pad - 10)
+  const y = (v: number) => H - pad - (v / max) * (H - pad - top)
   const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
   return (
     <div className="relative">
@@ -257,14 +262,14 @@ function LineChart({ days, values }: { days: string[]; values: number[] }) {
         onMouseLeave={() => setHover(null)}>
         <line x1={pad} x2={W} y1={y(max)} y2={y(max)} stroke="var(--chart-grid)" />
         <line x1={pad} x2={W} y1={y(0)} y2={y(0)} stroke="var(--chart-grid)" />
-        <text x={0} y={y(max) + 4} fontSize="10" fill="var(--muted)">{max}</text>
+        <text x={0} y={y(max) + 4} fontSize="11" fill="var(--muted)">{max}</text>
         <path d={d} fill="none" stroke="var(--chart-1)" strokeWidth={2} strokeLinejoin="round" />
         {hover !== null && <>
           <line x1={x(hover)} x2={x(hover)} y1={8} y2={H - pad} stroke="var(--muted)" strokeDasharray="3 3" />
           <circle cx={x(hover)} cy={y(values[hover])} r={4} fill="var(--chart-1)" stroke="var(--surface)" strokeWidth={2} />
         </>}
-        <text x={pad} y={H - 6} fontSize="10" fill="var(--muted)">{shortDate(days[0])}</text>
-        <text x={W - 6} y={H - 6} fontSize="10" textAnchor="end" fill="var(--muted)">{shortDate(days[days.length - 1])}</text>
+        <text x={pad} y={H - 6} fontSize="11" fill="var(--muted)">{shortDate(days[0])}</text>
+        <text x={W - 6} y={H - 6} fontSize="11" textAnchor="end" fill="var(--muted)">{shortDate(days[days.length - 1])}</text>
         <text x={x(values.length - 1)} y={y(values[values.length - 1]) - 6} fontSize="11" textAnchor="end" fill="var(--ink)" fontWeight={600}>{values[values.length - 1]}</text>
       </svg>
       {hover !== null && <div className="pointer-events-none absolute right-0 top-0 rounded-lg border border-line bg-surface px-2 py-1 text-xs shadow">{shortDate(days[hover])}: <b>{values[hover]}</b> posities</div>}
@@ -285,10 +290,10 @@ function Heatmap({ byDay }: { byDay: Map<string, DailyActivity> }) {
           const a = byDay.get(d)
           const n = (a?.correct ?? 0) + (a?.mistakes ?? 0)
           const level = n === 0 ? 0 : Math.ceil((n / max) * 4)
-          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · dagelijkse training ✓' : ''}`} className="aspect-square rounded-[3px]" style={{ background: level ? 'var(--chart-1)' : 'var(--surface-2)', opacity: level ? 0.25 + level * 0.1875 : 1 }} />
+          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · Daily Training voltooid' : ''}`} className="aspect-square rounded-[3px]" style={{ background: level ? 'var(--chart-1)' : 'var(--surface-2)', opacity: level ? 0.25 + level * 0.1875 : 1 }} />
         })}
       </div>
-      <div className="mt-2 flex items-center justify-end gap-1 text-[10px] text-muted">minder {[0, 1, 2, 3, 4].map(l => <span key={l} className="h-2.5 w-2.5 rounded-[2px]" style={{ background: l ? 'var(--chart-1)' : 'var(--surface-2)', opacity: l ? 0.25 + l * 0.1875 : 1 }} />)} meer</div>
+      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">minder {[0, 1, 2, 3, 4].map(l => <span key={l} className="h-2.5 w-2.5 rounded-[2px]" style={{ background: l ? 'var(--chart-1)' : 'var(--surface-2)', opacity: l ? 0.25 + l * 0.1875 : 1 }} />)} meer</div>
     </div>
   )
 }

@@ -38,7 +38,7 @@ export function Sources() {
                 <tbody>{ranking.data[side].slice(0, 25).map(e => (
                   <tr key={e.family} className={`border-t border-line ${e.rank && e.rank <= 10 ? 'font-medium' : 'text-muted'}`}>
                     <td>{e.rank ?? '–'}</td>
-                    <td>{e.family}{e.excluded && <div className="text-[10px] text-muted">niet geselecteerd: {e.excluded}</div>}</td>
+                    <td>{e.family}{e.excluded && <div className="text-xs text-muted">niet geselecteerd: {e.excluded}</div>}</td>
                     <td className="text-right">{nf(e.games)}</td>
                     <td className="text-right">{pct(e.share, 2)}</td>
                     <td className="text-right">{e.lines}</td>

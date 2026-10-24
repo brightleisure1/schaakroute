@@ -42,9 +42,9 @@ function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: St
           return (
             <tr key={m[0]} className={`border-t border-line ${highlight === m[0] ? 'bg-brand-soft' : ''} ${onPick ? 'cursor-pointer hover:bg-surface-2' : ''}`} onClick={() => onPick?.(m[0])}>
               <td className="py-1.5 font-mono font-semibold">{m[1]}</td>
-              <td className="text-right">{pct(m[2] / total)}<div className="text-[10px] text-muted">{nf(m[2])}</div></td>
-              <td className="text-right">{bandTotal ? pct(mine.n / bandTotal) : '–'}<div className="text-[10px] text-muted">{nf(mine.n)}</div></td>
-              <td className="pl-3"><ResultBar w={s.win} d={s.draw} l={s.loss} /><div className="text-[10px] text-muted">score {pct(s.score)}{mine.n < 10 ? ' (alle niveaus)' : ''}</div></td>
+              <td className="text-right">{pct(m[2] / total)}<div className="text-xs text-muted">{nf(m[2])}</div></td>
+              <td className="text-right">{bandTotal ? pct(mine.n / bandTotal) : '–'}<div className="text-xs text-muted">{nf(mine.n)}</div></td>
+              <td className="pl-3"><ResultBar w={s.win} d={s.draw} l={s.loss} /><div className="text-xs text-muted">score {pct(s.score)}{mine.n < 10 ? ' (alle niveaus)' : ''}</div></td>
             </tr>
           )
         })}
@@ -140,7 +140,7 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
       <div className="mx-auto w-full max-w-[min(92vw,600px)]">
         <Board id="explorer" fen={fen} orientation={side} movable={turn} onMove={play} lastMove={last} />
         <div className="mt-2 flex gap-2">
-          <button className="btn btn-ghost flex-1" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>◀ Terug</button>
+          <button className="btn btn-ghost flex-1" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>Terug</button>
           <button className="btn btn-ghost flex-1" onClick={() => setUci(rootUci)}>⟲ Begin van de opening</button>
         </div>
       </div>
@@ -163,7 +163,7 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
             <p className="mt-1 text-sm text-muted">De Lichess Explorer vereist sinds 2025 een gratis persoonlijk Lichess-token. Voeg er een toe in Instellingen voor actuele aantallen per ratinggroep. Zonder token werkt alles met de offline data.</p>
           ) : !live ? (
             <button className="btn btn-ghost mt-2 w-full" onClick={fetchLive}>Haal live statistieken op (rating {ratingGroupsFor(elo).join(', ')})</button>
-          ) : live.loading ? <div className="text-sm text-muted">Laden…</div> : live.error ? <div className="text-sm text-danger">{live.error}</div> : live.data && (
+          ) : live.loading ? <div className="text-sm text-muted">Laden…</div> : live.error ? <div className="text-sm text-danger-ink">{live.error}</div> : live.data && (
             <div className="mt-2">
               <table className="w-full text-sm tabular-nums">
                 <tbody>
@@ -175,7 +175,7 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
                     return (
                       <tr key={m.uci} className="border-t border-line">
                         <td className="py-1.5 font-mono font-semibold">{m.san}</td>
-                        <td className="text-right">{pct(n / Math.max(1, total))}<div className="text-[10px] text-muted">{nf(n)}</div></td>
+                        <td className="text-right">{pct(n / Math.max(1, total))}<div className="text-xs text-muted">{nf(n)}</div></td>
                         <td className="w-1/2 pl-3"><ResultBar w={win} d={m.draws / n} l={loss} /></td>
                       </tr>
                     )
@@ -266,12 +266,12 @@ function PracticeTrainer({ rootUci, side, stats, elo, names }: { rootUci: string
       </div>
       <aside className="space-y-3">
         <div className="card p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-brand">Praktijktraining · rating {BAND_LABEL[band]}</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-brand-strong">Praktijktraining · rating {BAND_LABEL[band]}</div>
           <div className="mt-1 text-sm text-muted">{nameAt(names, uci) ?? ''}</div>
           <div className="mt-1 font-mono text-xs">{formatMoves(san)}</div>
           <div className="mt-2 text-sm">Beste praktische keuzes: <b>{score.good}</b> van {score.total}</div>
         </div>
-        {feedback && <div className={`rounded-2xl px-4 py-3 text-sm ${feedback.tone === 'good' ? 'bg-brand-soft text-brand-strong' : feedback.tone === 'bad' ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}>{feedback.text}</div>}
+        {feedback && <div className={`rounded-2xl px-4 py-3 text-sm ${feedback.tone === 'good' ? 'bg-brand-soft text-brand-strong' : feedback.tone === 'bad' ? 'bg-danger-soft text-danger-ink' : 'bg-info-soft text-info-ink'}`}>{feedback.text}</div>}
         {ended ? (
           <div className="card p-4">
             <div className="font-semibold">Einde van de betrouwbare data</div>

@@ -7,9 +7,9 @@ import type { FamilySummary } from '../lib/types'
 export function FamilyPicker({ value, onChange, families, mine }: { value: string; onChange: (id: string) => void; families: FamilySummary[]; mine: string[] }) {
   const sorted = [...families].sort((a, b) => Number(mine.includes(b.id)) - Number(mine.includes(a.id)))
   return (
-    <select className="input sm:max-w-sm" value={value} onChange={e => onChange(e.target.value)} aria-label="Kies opening">
-      <optgroup label="Wit">{sorted.filter(f => f.side === 'white').map(f => <option key={f.id} value={f.id}>{mine.includes(f.id) ? '★ ' : ''}{f.name} ({f.variationCount})</option>)}</optgroup>
-      <optgroup label="Zwart">{sorted.filter(f => f.side === 'black').map(f => <option key={f.id} value={f.id}>{mine.includes(f.id) ? '★ ' : ''}{f.name} ({f.variationCount})</option>)}</optgroup>
+    <select className="input min-h-11 sm:max-w-sm" value={value} onChange={e => onChange(e.target.value)} aria-label="Kies opening">
+      <optgroup label="Wit">{sorted.filter(f => f.side === 'white').map(f => <option key={f.id} value={f.id}>{f.name} ({f.variationCount}){mine.includes(f.id) ? ' · mijn opening' : ''}</option>)}</optgroup>
+      <optgroup label="Zwart">{sorted.filter(f => f.side === 'black').map(f => <option key={f.id} value={f.id}>{f.name} ({f.variationCount}){mine.includes(f.id) ? ' · mijn opening' : ''}</option>)}</optgroup>
     </select>
   )
 }

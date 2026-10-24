@@ -38,14 +38,14 @@ export function Settings() {
         <h2 className="font-semibold">Profiel</h2>
         <label className="block text-sm">Rating: <b>{s.elo}</b><input type="range" min={400} max={2800} step={25} value={s.elo} onChange={e => set({ elo: Number(e.target.value) })} className="mt-1 w-full accent-[var(--brand)]" /></label>
         <div className="flex flex-wrap items-center gap-2 text-sm">Dagelijks:
-          {([5, 10, 15, 20] as const).map(m => <button key={m} className={`chip ${s.dailyMinutes === m ? 'chip-on' : ''}`} onClick={() => set({ dailyMinutes: m })}>{m} min</button>)}
+          {([5, 10, 15, 20] as const).map(m => <button key={m} aria-pressed={s.dailyMinutes === m} className={`chip min-h-11 px-3 ${s.dailyMinutes === m ? 'chip-on' : ''}`} onClick={() => set({ dailyMinutes: m })}>{m} min</button>)}
         </div>
         <Link to="/welkom" className="btn btn-ghost">Openingen, kleur en niveau opnieuw kiezen</Link>
       </section>
       <section className="card space-y-3 p-4">
         <h2 className="font-semibold">Weergave</h2>
         <div className="flex gap-2">
-          {([['system', 'Systeem'], ['light', 'Licht'], ['dark', 'Donker']] as const).map(([v, l]) => <button key={v} className={`chip ${s.theme === v ? 'chip-on' : ''}`} onClick={() => set({ theme: v })}>{l}</button>)}
+          {([['system', 'Systeem'], ['light', 'Licht'], ['dark', 'Donker']] as const).map(([v, l]) => <button key={v} aria-pressed={s.theme === v} className={`chip min-h-11 px-3 ${s.theme === v ? 'chip-on' : ''}`} onClick={() => set({ theme: v })}>{l}</button>)}
         </div>
       </section>
       <section className="card space-y-3 p-4">
@@ -71,7 +71,7 @@ export function Settings() {
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-ghost" onClick={backup}>Back-up downloaden</button>
           <label className="btn btn-ghost cursor-pointer">Back-up terugzetten<input type="file" accept="application/json" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (!f) return; try { await importBackup(JSON.parse(await f.text())); setMsg('Back-up teruggezet.') } catch (err) { setMsg((err as Error).message) } }} /></label>
-          <button className="btn btn-ghost text-danger" onClick={async () => { if (confirm('Weet je zeker dat je ALLE voortgang wilt wissen? Dit kan niet ongedaan worden gemaakt.')) { await Promise.all(db.tables.map(t => t.clear())); location.reload() } }}>Alles wissen</button>
+          <button className="btn btn-ghost text-danger-ink" onClick={async () => { if (confirm('Weet je zeker dat je ALLE voortgang wilt wissen? Dit kan niet ongedaan worden gemaakt.')) { await Promise.all(db.tables.map(t => t.clear())); location.reload() } }}>Alles wissen</button>
         </div>
       </section>
       <section className="card p-4 text-sm text-muted">

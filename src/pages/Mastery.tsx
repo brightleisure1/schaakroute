@@ -7,8 +7,8 @@ import { loadFamily } from '../lib/data'
 import { useAsync, useCardMap, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
 import { masteryScore } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
-import { Trainer, ResultNumbers } from '../components/Trainer'
-import { Empty, PageHeader, ProgressBar, Spinner, Stars, Tabs, useSettings } from '../components/ui'
+import { Trainer } from '../components/Trainer'
+import { Empty, PageHeader, ProgressBar, Spinner, Tabs, useSettings } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
 
 export function Mastery() {
@@ -20,7 +20,7 @@ export function Mastery() {
     <div>
       <PageHeader title="Mastery" subtitle="Spaced repetition (SM-2): wat je fout doet komt snel terug, wat je goed kent steeds later." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Tabs value={type} onChange={t => setSearch({ type: t, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: '🎯 Losse posities' }, { value: 'lines', label: '🧠 Complete varianten' }]} />
+        <Tabs value={type} onChange={t => setSearch({ type: t, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: 'Losse posities' }, { value: 'lines', label: 'Complete varianten' }]} />
         {manifest && (
           <select className="input sm:max-w-xs" value={family} onChange={e => setSearch({ type, ...(e.target.value ? { family: e.target.value } : {}) })} aria-label="Filter op opening">
             <option value="">Alle openingen</option>
@@ -67,7 +67,6 @@ function PositionReview({ family }: { family: string }) {
   if (index >= queue.length) {
     return queue.length ? (
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
-        <div className="text-4xl">🎯</div>
         <h2 className="mt-2 text-xl font-bold">{extra ? 'Extra oefening klaar' : 'Alle herhalingen gedaan!'}</h2>
         <p className="mt-1 text-muted">{stats.good} direct goed · {stats.bad} met fouten</p>
         <div className="mt-4 grid gap-2">
@@ -96,12 +95,8 @@ function PositionReview({ family }: { family: string }) {
       autoIntro={false}
       header={<div className="mb-2"><ProgressBar value={index / queue.length} /><div className="mt-1 text-xs text-muted">Positie {index + 1} van {queue.length}{extra ? ' (extra)' : ''}</div></div>}
       onComplete={r => setStats(s => ({ good: s.good + (r.mistakes + r.hints + r.shown === 0 ? 1 : 0), bad: s.bad + (r.mistakes + r.hints + r.shown > 0 ? 1 : 0) }))}
-      renderEnd={r => (
-        <div className="card mx-auto max-w-sm p-5 text-center animate-pop">
-          <div className="text-3xl">{r.mistakes + r.hints + r.shown === 0 ? '✅' : '🔁'}</div>
-          <p className="mt-1 font-semibold">{r.mistakes + r.hints + r.shown === 0 ? 'Goed onthouden — het interval wordt langer.' : 'Deze positie komt over 10 minuten terug.'}</p>
-          <button className="btn btn-primary mt-4 w-full" autoFocus onClick={() => setIndex(i => i + 1)}>Volgende positie</button>
-        </div>
+      renderEnd={() => (
+        <button className="btn btn-primary min-h-12" autoFocus onClick={() => setIndex(i => i + 1)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
       )}
     />
   )
@@ -153,17 +148,12 @@ function LineReview({ family }: { family: string }) {
           family={current.file}
           sessionId={sessionId}
           autoIntro={false}
-          renderEnd={(r, restart) => (
-            <div className="card mx-auto max-w-md p-6 text-center animate-pop">
-              <h2 className="text-xl font-bold">Uit het hoofd gespeeld</h2>
-              <Stars count={r.stars} size="text-3xl" />
-              <ResultNumbers result={r} />
-              <div className="mt-4 grid gap-2">
-                {next && next.v.id !== current.v.id && <button className="btn btn-primary" onClick={() => setCurrent({ file: next.file, v: next.v })}>Volgende variant</button>}
-                <button className="btn btn-ghost" onClick={restart}>Nog een keer</button>
-                <button className="btn btn-ghost" onClick={() => setCurrent(null)}>Overzicht</button>
-              </div>
-            </div>
+          renderEnd={(_r, restart) => (
+            <>
+              {next && next.v.id !== current.v.id && <button className="btn btn-primary min-h-12" autoFocus onClick={() => setCurrent({ file: next.file, v: next.v })}>Volgende variant: {next.v.path.join(', ') || next.file.family.name}</button>}
+              <button className="btn btn-ghost min-h-11" onClick={restart}>Nog een keer</button>
+              <button className="btn btn-ghost min-h-11" onClick={() => setCurrent(null)}>Overzicht</button>
+            </>
           )}
         />
       </div>
@@ -181,8 +171,8 @@ function LineReview({ family }: { family: string }) {
           <li key={x.v.id}>
             <button className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => setCurrent({ file: x.file, v: x.v })}>
               <span className="min-w-0 flex-1"><span className="block truncate font-medium">{x.v.path.join(', ') || x.file.family.name}</span><span className="text-xs text-muted">{x.file.family.name} · {x.v.eco}</span></span>
-              {x.due && <span className="chip !text-[10px] !text-accent">herhalen</span>}
-              <span className="w-20"><ProgressBar value={x.score / 100} /><span className="text-[10px] text-muted">{x.score}% beheersing</span></span>
+              {x.due && <span className="chip !text-xs !text-accent-ink">herhalen</span>}
+              <span className="w-20"><ProgressBar value={x.score / 100} /><span className="text-xs text-muted">{x.score}% beheersing</span></span>
             </button>
           </li>
         ))}

@@ -9,3 +9,6 @@ data-raw/*.meta.json
 .DS_Store
 tsconfig.tsbuildinfo
 *.local
+
+# Impeccable-werkbestanden (lokaal)
+.impeccable/

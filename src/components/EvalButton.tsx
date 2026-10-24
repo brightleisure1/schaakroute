@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
 import { analyse, formatEval, whiteCp, type Analysis } from '../lib/engine'
 import { parseUci } from '../lib/chess'
+import { Cpu } from 'lucide-react'
 import { useSettings } from './ui'
 
 /** Optionele lokale Stockfish-evaluatie. Verschijnt alleen als de engine in de instellingen aan staat. */
@@ -15,7 +16,7 @@ export function EvalButton({ fen, label = 'Stockfish-evaluatie', multipv = 1 }: 
     const a = await analyse(fen, { depth: 14, multipv })
     setState({ loading: false, a })
   }
-  if (!state.a && !state.loading) return <button className="btn btn-ghost w-full text-sm" onClick={run}>🖥 {label}</button>
+  if (!state.a && !state.loading) return <button className="btn btn-ghost min-h-11 w-full text-sm" onClick={run}><Cpu size={16} aria-hidden />{label}</button>
   if (state.loading) return <div className="text-sm text-muted">Stockfish rekent (lokaal)…</div>
   if (!state.a) return <div className="text-sm text-muted">Stockfish kon niet laden. De training werkt gewoon verder zonder engine.</div>
   return (

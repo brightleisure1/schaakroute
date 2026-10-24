@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { ChessKnight, Star } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type UserSettings } from '../lib/db'
 
@@ -17,11 +18,13 @@ export function ProgressBar({ value, className = '', tone = 'brand', label }: { 
   )
 }
 
+const STAR_PX: Record<string, number> = { 'text-sm': 14, 'text-base': 16, 'text-2xl': 24, 'text-3xl': 30 }
 export function Stars({ count, max = 3, size = 'text-base' }: { count: number; max?: number; size?: string }) {
+  const px = STAR_PX[size] ?? 16
   return (
-    <span className={`inline-flex ${size}`} aria-label={`${count} van ${max} sterren`}>
+    <span className="inline-flex gap-0.5 align-middle" role="img" aria-label={`${count} van ${max} sterren`}>
       {Array.from({ length: max }, (_, i) => (
-        <span key={i} className={i < count ? 'text-accent' : 'text-line'}>★</span>
+        <Star key={i} size={px} strokeWidth={2} aria-hidden className={i < count ? 'fill-star text-star' : 'text-star-empty'} />
       ))}
     </span>
   )
@@ -42,10 +45,10 @@ export function PageHeader({ title, subtitle, back, actions }: { title: ReactNod
   )
 }
 
-export function StatTile({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: string }) {
+export function StatTile({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-2 text-sm text-muted">{icon && <span aria-hidden>{icon}</span>}{label}</div>
+      <div className="flex items-center gap-2 text-sm text-muted">{icon && <span aria-hidden className="text-brand-strong">{icon}</span>}{label}</div>
       <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
       {hint && <div className="mt-0.5 text-xs text-muted">{hint}</div>}
     </div>
@@ -55,7 +58,7 @@ export function StatTile({ label, value, hint, icon }: { label: string; value: R
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="card flex flex-col items-center gap-2 p-8 text-center">
-      <div className="text-3xl" aria-hidden>♘</div>
+      <ChessKnight size={32} strokeWidth={1.5} aria-hidden className="text-muted" />
       <h3 className="font-semibold">{title}</h3>
       {children && <div className="max-w-md text-sm text-muted">{children}</div>}
       {action && <div className="mt-2">{action}</div>}
@@ -73,7 +76,7 @@ export function Spinner({ label = 'Laden…' }: { label?: string }) {
 }
 
 export function ErrorBox({ error }: { error: unknown }) {
-  return <div className="card border-danger bg-danger-soft p-4 text-sm text-danger">{String((error as Error)?.message ?? error)}</div>
+  return <div className="card border-danger bg-danger-soft p-4 text-sm text-danger-ink">{String((error as Error)?.message ?? error)}</div>
 }
 
 const CONFETTI_COLORS = ['#2f7d4f', '#d99a2b', '#e9b44c', '#3a6ea5', '#c0453a', '#8fae86']
@@ -103,7 +106,7 @@ export function Tabs<T extends string>({ value, onChange, options }: { value: T;
           key={o.value}
           role="tab"
           aria-selected={value === o.value}
-          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${value === o.value ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+          className={`min-h-11 rounded-lg px-4 py-2 text-sm font-semibold transition ${value === o.value ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
           onClick={() => onChange(o.value)}
         >
           {o.label}
@@ -114,7 +117,14 @@ export function Tabs<T extends string>({ value, onChange, options }: { value: T;
 }
 
 export function pct(v: number, digits = 0) {
+  const min = 10 ** -digits / 100
+  if (v > 0 && v < min) return `<${(min * 100).toFixed(digits).replace('.', ',')}%` // nooit "0,0%" voor iets dat wel voorkomt
   return `${(v * 100).toFixed(digits).replace('.', ',')}%`
+}
+
+/** Nederlands meervoud: plural(1, 'fout', 'fouten') → "1 fout" */
+export function plural(n: number, one: string, many: string) {
+  return `${n.toLocaleString('nl-NL')} ${n === 1 ? one : many}`
 }
 
 export function nf(v: number) {

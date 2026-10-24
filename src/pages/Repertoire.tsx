@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
+import { ChessKing, ChevronRight } from 'lucide-react'
 import { db, type RepertoireMove } from '../lib/db'
 import { addLine, deleteMove, repertoireLines, setMain, updateComment } from '../lib/repertoire'
 import { loadFamily, loadNames, loadStats } from '../lib/data'
@@ -11,8 +12,8 @@ import { parsePgn, splitGames, treeToPgn } from '../lib/pgn'
 import { useAsync, useManifest } from '../lib/hooks'
 import { endSession, startSession } from '../lib/progress'
 import { Board } from '../components/Board'
-import { MoveList, Trainer, ResultNumbers } from '../components/Trainer'
-import { Empty, ErrorBox, PageHeader, ProgressBar, Spinner, Stars, pct, sideLabel } from '../components/ui'
+import { MoveList, Trainer } from '../components/Trainer'
+import { Empty, ErrorBox, PageHeader, ProgressBar, Spinner, pct, sideLabel } from '../components/ui'
 import type { Side, StatsFile } from '../lib/types'
 
 export function RepertoireList() {
@@ -43,7 +44,7 @@ export function RepertoireList() {
         <div className="space-y-3">
           {reps.length === 0 ? <Empty title="Nog geen repertoire">Maak hiernaast je eerste repertoire, of voeg een variant toe vanuit het eindscherm van een training.</Empty> : reps.map(r => (
             <div key={r.id} className="card flex flex-wrap items-center gap-3 p-4">
-              <span className="text-2xl">{r.side === 'white' ? '♔' : '♚'}</span>
+              <ChessKing size={28} strokeWidth={1.5} aria-label={r.side === 'white' ? 'Wit' : 'Zwart'} className={r.side === 'black' ? 'fill-current' : ''} />
               <div className="min-w-0 flex-1">
                 <div className="font-semibold">{r.name}</div>
                 <div className="text-xs text-muted">{sideLabel(r.side)} · {counts.get(r.id!) ?? 0} zetten · bijgewerkt {new Date(r.updatedAt).toLocaleDateString('nl-NL')}</div>
@@ -61,7 +62,7 @@ export function RepertoireList() {
             {manifest?.families.map(f => <option key={f.id} value={f.id}>Op basis van {f.name} ({sideLabel(f.side)})</option>)}
           </select>
           {!familyId && (
-            <div className="flex gap-2">{(['white', 'black'] as const).map(s => <button key={s} className={`chip ${side === s ? 'chip-on' : ''}`} onClick={() => setSide(s)}>{sideLabel(s)}</button>)}</div>
+            <div className="flex gap-2">{(['white', 'black'] as const).map(s => <button key={s} aria-pressed={side === s} className={`chip min-h-11 px-3 ${side === s ? 'chip-on' : ''}`} onClick={() => setSide(s)}>{sideLabel(s)}</button>)}</div>
           )}
           <button className="btn btn-primary w-full" onClick={create}>Aanmaken</button>
         </div>
@@ -163,7 +164,7 @@ export function RepertoireEditor() {
         <div className="mx-auto w-full max-w-[min(92vw,600px)]">
           <Board id="rep-editor" fen={fen} orientation={rep.side} movable={fen.split(' ')[1] === 'w' ? 'white' : 'black'} onMove={(f, t, p) => { play(f, t, p); return true }} lastMove={last} />
           <div className="mt-2 flex gap-2">
-            <button className="btn btn-ghost flex-1" onClick={() => setPath(p => p.slice(0, -1))} disabled={!path.length}>◀ Terug</button>
+            <button className="btn btn-ghost flex-1" onClick={() => setPath(p => p.slice(0, -1))} disabled={!path.length}>Terug</button>
             <button className="btn btn-ghost flex-1" onClick={() => setPath([])}>⟲ Begin</button>
           </div>
         </div>
@@ -181,8 +182,8 @@ export function RepertoireEditor() {
                   <li key={m.id} className="rounded-lg border border-line p-2">
                     <div className="flex items-center gap-2">
                       <button className="font-mono font-semibold hover:underline" onClick={() => setPath(p => [...p, m.uci])}>{m.san}</button>
-                      {myTurn && (m.main ? <span className="chip chip-on !text-[10px]">hoofdzet</span> : <button className="chip !text-[10px]" onClick={() => setMain(m.id!)}>maak hoofdzet</button>)}
-                      <button className="ml-auto text-xs text-muted hover:text-danger" onClick={() => { if (confirm(`${m.san} en alles erna verwijderen?`)) deleteMove(m.id!) }}>verwijderen</button>
+                      {myTurn && (m.main ? <span className="chip chip-on !text-xs">hoofdzet</span> : <button className="chip !text-xs" onClick={() => setMain(m.id!)}>maak hoofdzet</button>)}
+                      <button className="ml-auto text-xs text-muted hover:text-danger-ink" onClick={() => { if (confirm(`${m.san} en alles erna verwijderen?`)) deleteMove(m.id!) }}>verwijderen</button>
                     </div>
                     <input className="mt-1 w-full bg-transparent text-xs text-muted outline-none" placeholder="notitie…" defaultValue={m.comment ?? ''} onBlur={e => updateComment(m.id!, e.target.value)} />
                   </li>
@@ -193,7 +194,7 @@ export function RepertoireEditor() {
               <div className="mt-3 border-t border-line pt-3">
                 <div className="mb-1 text-xs font-semibold text-muted">Vaak gespeeld hier (Lichess-steekproef) — klik om toe te voegen</div>
                 <div className="flex flex-wrap gap-1">
-                  {pos.m.slice(0, 8).map(m => <button key={m[0]} className="chip" onClick={() => play(m[0].slice(0, 2), m[0].slice(2, 4), m[0][4])}>{m[1]} <span className="opacity-60">{pct(m[2] / pos.n)}</span></button>)}
+                  {pos.m.slice(0, 8).map(m => <button key={m[0]} className="chip" onClick={() => play(m[0].slice(0, 2), m[0].slice(2, 4), m[0][4])}>{m[1]} <span className="font-normal">{pct(m[2] / pos.n)}</span></button>)}
                 </div>
               </div>
             )}
@@ -206,8 +207,8 @@ export function RepertoireEditor() {
                 {manifest?.families.filter(f => f.side === rep.side).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <div className="flex gap-2">
-                <button className={`chip ${importFilter === 'main' ? 'chip-on' : ''}`} onClick={() => setImportFilter('main')}>Alleen hoofdvarianten</button>
-                <button className={`chip ${importFilter === 'all' ? 'chip-on' : ''}`} onClick={() => setImportFilter('all')}>Alle varianten</button>
+                <button aria-pressed={importFilter === 'main'} className={`chip min-h-11 px-3 ${importFilter === 'main' ? 'chip-on' : ''}`} onClick={() => setImportFilter('main')}>Alleen hoofdvarianten</button>
+                <button aria-pressed={importFilter === 'all'} className={`chip min-h-11 px-3 ${importFilter === 'all' ? 'chip-on' : ''}`} onClick={() => setImportFilter('all')}>Alle varianten</button>
               </div>
               <button className="btn btn-ghost w-full" onClick={importFamily} disabled={!importFam}>Toevoegen</button>
               <hr className="border-line" />
@@ -219,7 +220,7 @@ export function RepertoireEditor() {
             </div>
           </details>
           <div className="card p-4">
-            <button className="font-semibold" onClick={() => setShowTree(s => !s)}>{showTree ? '▾' : '▸'} Complete variantenboom</button>
+            <button className="flex min-h-11 items-center gap-1 font-semibold" onClick={() => setShowTree(s => !s)} aria-expanded={showTree}><ChevronRight size={18} aria-hidden className={`transition ${showTree ? 'rotate-90' : ''}`} />Complete variantenboom</button>
             {showTree && <RepTree byEpd={byEpd} onGo={setPath} />}
           </div>
         </aside>
@@ -286,16 +287,11 @@ export function RepertoireTrain() {
         family={family.data}
         sessionId={sessionId}
         autoIntro={false}
-        renderEnd={(r, restart) => (
-          <div className="card mx-auto max-w-md p-6 text-center animate-pop">
-            <h2 className="text-xl font-bold">Lijn afgerond</h2>
-            <Stars count={r.stars} size="text-2xl" />
-            <ResultNumbers result={r} />
-            <div className="mt-4 grid gap-2">
-              <button className="btn btn-primary" autoFocus onClick={() => setIndex(i => i + 1)}>Volgende lijn</button>
-              <button className="btn btn-ghost" onClick={restart}>Opnieuw</button>
-            </div>
-          </div>
+        renderEnd={(_r, restart) => (
+          <>
+            <button className="btn btn-primary min-h-12" autoFocus onClick={() => setIndex(i => i + 1)}>Volgende lijn</button>
+            <button className="btn btn-ghost min-h-11" onClick={restart}>Opnieuw</button>
+          </>
         )}
       />
     </div>
