@@ -1,0 +1,11 @@
+node_modules
+dist
+dev-dist
+# grote ruwe downloads (Lichess-partijen en -puzzels); reproduceerbaar via npm run data:games / data:puzzles
+data-raw/*.zst
+data-raw/*.tsv
+data-raw/*.log
+data-raw/*.meta.json
+.DS_Store
+tsconfig.tsbuildinfo
+*.local

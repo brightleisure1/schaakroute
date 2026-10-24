@@ -1,0 +1,728 @@
+{
+ "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2",
+ "totalGames": 514654,
+ "white": [
+  {
+   "family": "Queen's Pawn Game",
+   "games": 31242,
+   "share": 0.06070486190722311,
+   "lines": 43,
+   "rootPgn": "1. d4",
+   "excluded": "verzamelnaam voor 1.d4-stellingen zonder benoemde opening",
+   "rank": null
+  },
+  {
+   "family": "Italian Game",
+   "games": 25743,
+   "share": 0.05002001344592678,
+   "lines": 187,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4",
+   "excluded": null,
+   "rank": 1
+  },
+  {
+   "family": "London System",
+   "games": 19272,
+   "share": 0.03744651746610344,
+   "lines": 22,
+   "rootPgn": "1. d4 Nf6 2. Bf4",
+   "excluded": null,
+   "rank": 2
+  },
+  {
+   "family": "King's Pawn Game",
+   "games": 19085,
+   "share": 0.037083166554617276,
+   "lines": 38,
+   "rootPgn": "1. e4",
+   "excluded": "verzamelnaam voor 1.e4 e5-stellingen zonder benoemde opening",
+   "rank": null
+  },
+  {
+   "family": "Queen's Gambit",
+   "games": 18509,
+   "share": 0.03596396802511979,
+   "lines": 275,
+   "rootPgn": "1. d4 d5 2. c4",
+   "excluded": null,
+   "rank": 3
+  },
+  {
+   "family": "English Opening",
+   "games": 14800,
+   "share": 0.028757184438477114,
+   "lines": 176,
+   "rootPgn": "1. c4",
+   "excluded": null,
+   "rank": 4
+  },
+  {
+   "family": "Scotch Game",
+   "games": 12143,
+   "share": 0.02359449261056943,
+   "lines": 53,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. d4",
+   "excluded": null,
+   "rank": 5
+  },
+  {
+   "family": "Bishop's Opening",
+   "games": 11159,
+   "share": 0.02168252845601122,
+   "lines": 41,
+   "rootPgn": "1. e4 e5 2. Bc4",
+   "excluded": null,
+   "rank": 6
+  },
+  {
+   "family": "Ruy Lopez",
+   "games": 10964,
+   "share": 0.02130363312050426,
+   "lines": 235,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. Bb5",
+   "excluded": null,
+   "rank": 7
+  },
+  {
+   "family": "Zukertort Opening",
+   "games": 9963,
+   "share": 0.019358637064901856,
+   "lines": 47,
+   "rootPgn": "1. Nf3",
+   "excluded": "verzamelnaam voor 1.Nf3-stellingen zonder benoemde opening",
+   "rank": null
+  },
+  {
+   "family": "King's Gambit",
+   "games": 7443,
+   "share": 0.014462143498350347,
+   "lines": 191,
+   "rootPgn": "1. e4 e5 2. f4",
+   "excluded": null,
+   "rank": 8
+  },
+  {
+   "family": "Vienna Game",
+   "games": 7376,
+   "share": 0.014331958947176161,
+   "lines": 56,
+   "rootPgn": "1. e4 e5 2. Nc3",
+   "excluded": null,
+   "rank": 9
+  },
+  {
+   "family": "Van't Kruijs Opening",
+   "games": 6923,
+   "share": 0.013451755936998449,
+   "lines": 5,
+   "rootPgn": "1. e3",
+   "excluded": "verzamelnaam voor 1.e3 zonder vervolgsysteem",
+   "rank": null
+  },
+  {
+   "family": "Hungarian Opening",
+   "games": 5453,
+   "share": 0.010595468023176737,
+   "lines": 20,
+   "rootPgn": "1. g3",
+   "excluded": null,
+   "rank": 10
+  },
+  {
+   "family": "Nimzo-Larsen Attack",
+   "games": 5279,
+   "share": 0.01025737680072437,
+   "lines": 18,
+   "rootPgn": "1. b3",
+   "excluded": null,
+   "rank": 11
+  },
+  {
+   "family": "Bird Opening",
+   "games": 5065,
+   "share": 0.009841563458168012,
+   "lines": 28,
+   "rootPgn": "1. f4",
+   "excluded": null,
+   "rank": 12
+  },
+  {
+   "family": "Center Game",
+   "games": 4145,
+   "share": 0.008053954695776192,
+   "lines": 19,
+   "rootPgn": "1. e4 e5 2. d4",
+   "excluded": null,
+   "rank": 13
+  },
+  {
+   "family": "Three Knights Opening",
+   "games": 3539,
+   "share": 0.006876464576200709,
+   "lines": 6,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. Nc3",
+   "excluded": null,
+   "rank": 14
+  },
+  {
+   "family": "Rapport-Jobava System",
+   "games": 3215,
+   "share": 0.006246915403358373,
+   "lines": 4,
+   "rootPgn": "1. d4 d5 2. Nc3 Nf6 3. Bf4",
+   "excluded": null,
+   "rank": 15
+  },
+  {
+   "family": "King's Indian Attack",
+   "games": 2837,
+   "share": 0.005512441368375647,
+   "lines": 29,
+   "rootPgn": "1. Nf3 d5 2. g3",
+   "excluded": null,
+   "rank": 16
+  },
+  {
+   "family": "Colle System",
+   "games": 2609,
+   "share": 0.005069425283782891,
+   "lines": 15,
+   "rootPgn": "1. d4 d5 2. Nf3 Nf6 3. e3",
+   "excluded": null,
+   "rank": 17
+  },
+  {
+   "family": "Ponziani Opening",
+   "games": 2427,
+   "share": 0.0047157896373097264,
+   "lines": 16,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. c3",
+   "excluded": null,
+   "rank": 18
+  },
+  {
+   "family": "Polish Opening",
+   "games": 2379,
+   "share": 0.004622523093184936,
+   "lines": 27,
+   "rootPgn": "1. b4",
+   "excluded": null,
+   "rank": 19
+  },
+  {
+   "family": "Blackmar-Diemer Gambit",
+   "games": 2376,
+   "share": 0.0046166939341771365,
+   "lines": 49,
+   "rootPgn": "1. d4 d5 2. e4",
+   "excluded": null,
+   "rank": 20
+  },
+  {
+   "family": "King's Knight Opening",
+   "games": 2374,
+   "share": 0.004612807828171937,
+   "lines": 3,
+   "rootPgn": "1. e4 e5 2. Nf3",
+   "excluded": null,
+   "rank": 21
+  },
+  {
+   "family": "Mieses Opening",
+   "games": 2240,
+   "share": 0.004352438725823563,
+   "lines": 4,
+   "rootPgn": "1. d3",
+   "excluded": null,
+   "rank": 22
+  },
+  {
+   "family": "Danish Gambit",
+   "games": 1733,
+   "share": 0.0033673108535054617,
+   "lines": 8,
+   "rootPgn": "1. e4 e5 2. d4 exd4 3. c3",
+   "excluded": null,
+   "rank": 23
+  },
+  {
+   "family": "Van Geet Opening",
+   "games": 1461,
+   "share": 0.002838800436798315,
+   "lines": 33,
+   "rootPgn": "1. Nc3",
+   "excluded": null,
+   "rank": 24
+  },
+  {
+   "family": "Grob Opening",
+   "games": 1454,
+   "share": 0.002825199065780116,
+   "lines": 20,
+   "rootPgn": "1. g4",
+   "excluded": null,
+   "rank": 25
+  },
+  {
+   "family": "Saragossa Opening",
+   "games": 1121,
+   "share": 0.0021781624159143815,
+   "lines": 1,
+   "rootPgn": "1. c3",
+   "excluded": null,
+   "rank": 26
+  },
+  {
+   "family": "Trompowsky Attack",
+   "games": 966,
+   "share": 0.0018769892005114116,
+   "lines": 10,
+   "rootPgn": "1. d4 Nf6 2. Bg5",
+   "excluded": null,
+   "rank": 27
+  },
+  {
+   "family": "Torre Attack",
+   "games": 850,
+   "share": 0.0016515950522098342,
+   "lines": 22,
+   "rootPgn": "1. d4 Nf6 2. Nf3 e6 3. Bg5",
+   "excluded": null,
+   "rank": 28
+  },
+  {
+   "family": "Réti Opening",
+   "games": 749,
+   "share": 0.001455346698947254,
+   "lines": 43,
+   "rootPgn": "1. Nf3 d5 2. c4",
+   "excluded": null,
+   "rank": 29
+  },
+  {
+   "family": "Kádas Opening",
+   "games": 583,
+   "share": 0.0011327999005156862,
+   "lines": 9,
+   "rootPgn": "1. h4",
+   "excluded": null,
+   "rank": 30
+  },
+  {
+   "family": "Catalan Opening",
+   "games": 556,
+   "share": 0.0010803374694454916,
+   "lines": 32,
+   "rootPgn": "1. d4 Nf6 2. c4 e6 3. g3",
+   "excluded": null,
+   "rank": 31
+  },
+  {
+   "family": "Barnes Opening",
+   "games": 413,
+   "share": 0.0008024808900737194,
+   "lines": 6,
+   "rootPgn": "1. f3",
+   "excluded": null,
+   "rank": 32
+  },
+  {
+   "family": "Ware Opening",
+   "games": 409,
+   "share": 0.0007947086780633202,
+   "lines": 7,
+   "rootPgn": "1. a4",
+   "excluded": null,
+   "rank": 33
+  },
+  {
+   "family": "Richter-Veresov Attack",
+   "games": 373,
+   "share": 0.0007247587699697272,
+   "lines": 8,
+   "rootPgn": "1. d4 Nf6 2. Nc3 d5 3. Bg5",
+   "excluded": null,
+   "rank": 34
+  },
+  {
+   "family": "Anderssen's Opening",
+   "games": 340,
+   "share": 0.0006606380208839336,
+   "lines": 2,
+   "rootPgn": "1. a3",
+   "excluded": null,
+   "rank": 35
+  },
+  {
+   "family": "Clemenz Opening",
+   "games": 314,
+   "share": 0.0006101186428163388,
+   "lines": 2,
+   "rootPgn": "1. h3",
+   "excluded": null,
+   "rank": 36
+  }
+ ],
+ "black": [
+  {
+   "family": "Sicilian Defense",
+   "games": 52072,
+   "share": 0.10117865595137704,
+   "lines": 400,
+   "rootPgn": "1. e4 c5",
+   "excluded": null,
+   "rank": 1
+  },
+  {
+   "family": "French Defense",
+   "games": 31043,
+   "share": 0.06031819435970574,
+   "lines": 209,
+   "rootPgn": "1. e4 e6",
+   "excluded": null,
+   "rank": 2
+  },
+  {
+   "family": "Caro-Kann Defense",
+   "games": 29113,
+   "share": 0.05656810206468812,
+   "lines": 110,
+   "rootPgn": "1. e4 c6",
+   "excluded": null,
+   "rank": 3
+  },
+  {
+   "family": "Scandinavian Defense",
+   "games": 26890,
+   "share": 0.05224869523990876,
+   "lines": 45,
+   "rootPgn": "1. e4 d5",
+   "excluded": null,
+   "rank": 4
+  },
+  {
+   "family": "Philidor Defense",
+   "games": 13432,
+   "share": 0.02609908793092058,
+   "lines": 44,
+   "rootPgn": "1. e4 e5 2. Nf3 d6",
+   "excluded": null,
+   "rank": 5
+  },
+  {
+   "family": "Pirc Defense",
+   "games": 10219,
+   "share": 0.019856058633567406,
+   "lines": 28,
+   "rootPgn": "1. e4 d6",
+   "excluded": null,
+   "rank": 6
+  },
+  {
+   "family": "Modern Defense",
+   "games": 9712,
+   "share": 0.018870930761249304,
+   "lines": 39,
+   "rootPgn": "1. e4 g6",
+   "excluded": null,
+   "rank": 7
+  },
+  {
+   "family": "Englund Gambit",
+   "games": 8495,
+   "share": 0.016506235257085344,
+   "lines": 16,
+   "rootPgn": "1. d4 e5",
+   "excluded": null,
+   "rank": 8
+  },
+  {
+   "family": "Petrov's Defense",
+   "games": 7869,
+   "share": 0.015289884077457865,
+   "lines": 50,
+   "rootPgn": "1. e4 e5 2. Nf3 Nf6",
+   "excluded": null,
+   "rank": 9
+  },
+  {
+   "family": "Four Knights Game",
+   "games": 7822,
+   "share": 0.015198560586335674,
+   "lines": 49,
+   "rootPgn": "1. e4 e5 2. Nf3 Nc6 3. Nc3 Nf6",
+   "excluded": null,
+   "rank": 10
+  },
+  {
+   "family": "Horwitz Defense",
+   "games": 6265,
+   "share": 0.012173227061287777,
+   "lines": 2,
+   "rootPgn": "1. d4 e6",
+   "excluded": null,
+   "rank": 11
+  },
+  {
+   "family": "Nimzowitsch Defense",
+   "games": 6186,
+   "share": 0.012019725874082393,
+   "lines": 43,
+   "rootPgn": "1. e4 Nc6",
+   "excluded": null,
+   "rank": 12
+  },
+  {
+   "family": "Indian Defense",
+   "games": 6169,
+   "share": 0.011986693973038197,
+   "lines": 50,
+   "rootPgn": "1. d4 Nf6",
+   "excluded": "verzamelnaam voor 1.d4 Nf6-stellingen zonder benoemde opening",
+   "rank": null
+  },
+  {
+   "family": "Owen Defense",
+   "games": 5510,
+   "share": 0.010706222044324925,
+   "lines": 8,
+   "rootPgn": "1. e4 b6",
+   "excluded": null,
+   "rank": 13
+  },
+  {
+   "family": "Slav Defense",
+   "games": 5315,
+   "share": 0.010327326708817964,
+   "lines": 52,
+   "rootPgn": "1. d4 d5 2. c4 c6",
+   "excluded": null,
+   "rank": 14
+  },
+  {
+   "family": "Benoni Defense",
+   "games": 4973,
+   "share": 0.00966280258192883,
+   "lines": 66,
+   "rootPgn": "1. d4 c5",
+   "excluded": null,
+   "rank": 15
+  },
+  {
+   "family": "Alekhine Defense",
+   "games": 3977,
+   "share": 0.007727521791339424,
+   "lines": 56,
+   "rootPgn": "1. e4 Nf6",
+   "excluded": null,
+   "rank": 16
+  },
+  {
+   "family": "King's Indian Defense",
+   "games": 3917,
+   "share": 0.007610938611183436,
+   "lines": 119,
+   "rootPgn": "1. d4 Nf6 2. c4 g6 3. g3",
+   "excluded": null,
+   "rank": 17
+  },
+  {
+   "family": "Dutch Defense",
+   "games": 3060,
+   "share": 0.005945742187955403,
+   "lines": 69,
+   "rootPgn": "1. d4 f5",
+   "excluded": null,
+   "rank": 18
+  },
+  {
+   "family": "English Defense",
+   "games": 2462,
+   "share": 0.00478379649240072,
+   "lines": 7,
+   "rootPgn": "1. d4 b6",
+   "excluded": null,
+   "rank": 19
+  },
+  {
+   "family": "Rat Defense",
+   "games": 2383,
+   "share": 0.004630295305195335,
+   "lines": 11,
+   "rootPgn": "1. e4 d6 2. f4",
+   "excluded": null,
+   "rank": 20
+  },
+  {
+   "family": "Semi-Slav Defense",
+   "games": 2040,
+   "share": 0.003963828125303602,
+   "lines": 73,
+   "rootPgn": "1. d4 d5 2. c4 e6 3. Nc3 c6",
+   "excluded": null,
+   "rank": 21
+  },
+  {
+   "family": "Elephant Gambit",
+   "games": 1930,
+   "share": 0.0037500922950176236,
+   "lines": 4,
+   "rootPgn": "1. e4 e5 2. Nf3 d5",
+   "excluded": null,
+   "rank": 22
+  },
+  {
+   "family": "Nimzo-Indian Defense",
+   "games": 1365,
+   "share": 0.0026522673485487335,
+   "lines": 104,
+   "rootPgn": "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4",
+   "excluded": null,
+   "rank": 23
+  },
+  {
+   "family": "Old Indian Defense",
+   "games": 1310,
+   "share": 0.0025453994334057443,
+   "lines": 14,
+   "rootPgn": "1. d4 d6 2. c4",
+   "excluded": null,
+   "rank": 24
+  },
+  {
+   "family": "Mikenas Defense",
+   "games": 1063,
+   "share": 0.0020654653417635925,
+   "lines": 4,
+   "rootPgn": "1. d4 Nc6",
+   "excluded": null,
+   "rank": 25
+  },
+  {
+   "family": "Grünfeld Defense",
+   "games": 840,
+   "share": 0.001632164522183836,
+   "lines": 59,
+   "rootPgn": "1. d4 Nf6 2. c4 g6 3. Nc3 d5",
+   "excluded": null,
+   "rank": 26
+  },
+  {
+   "family": "St. George Defense",
+   "games": 840,
+   "share": 0.001632164522183836,
+   "lines": 4,
+   "rootPgn": "1. e4 a6",
+   "excluded": null,
+   "rank": 27
+  },
+  {
+   "family": "Latvian Gambit",
+   "games": 635,
+   "share": 0.0012338386566508762,
+   "lines": 26,
+   "rootPgn": "1. e4 e5 2. Nf3 f5",
+   "excluded": null,
+   "rank": 28
+  },
+  {
+   "family": "Borg Defense",
+   "games": 532,
+   "share": 0.0010337041973830963,
+   "lines": 5,
+   "rootPgn": "1. d4 g5",
+   "excluded": null,
+   "rank": 29
+  },
+  {
+   "family": "Duras Gambit",
+   "games": 501,
+   "share": 0.0009734695543025023,
+   "lines": 1,
+   "rootPgn": "1. e4 f5",
+   "excluded": null,
+   "rank": 30
+  },
+  {
+   "family": "Czech Defense",
+   "games": 477,
+   "share": 0.0009268362822401069,
+   "lines": 1,
+   "rootPgn": "1. e4 d6 2. d4 Nf6 3. Nc3 c6",
+   "excluded": null,
+   "rank": 31
+  },
+  {
+   "family": "Tarrasch Defense",
+   "games": 456,
+   "share": 0.000886032169185511,
+   "lines": 27,
+   "rootPgn": "1. d4 d5 2. c4 e6 3. Nc3 c5",
+   "excluded": null,
+   "rank": 32
+  },
+  {
+   "family": "East Indian Defense",
+   "games": 435,
+   "share": 0.0008452280561309152,
+   "lines": 1,
+   "rootPgn": "1. d4 Nf6 2. Nf3 g6",
+   "excluded": null,
+   "rank": 33
+  },
+  {
+   "family": "Benko Gambit",
+   "games": 391,
+   "share": 0.0007597337240165238,
+   "lines": 24,
+   "rootPgn": "1. d4 Nf6 2. c4 c5 3. d5 b5",
+   "excluded": null,
+   "rank": 34
+  },
+  {
+   "family": "Queen's Indian Defense",
+   "games": 372,
+   "share": 0.0007228157169671274,
+   "lines": 73,
+   "rootPgn": "1. d4 Nf6 2. c4 e6 3. Nf3 b6",
+   "excluded": null,
+   "rank": 35
+  },
+  {
+   "family": "Ware Defense",
+   "games": 329,
+   "share": 0.0006392644378553358,
+   "lines": 2,
+   "rootPgn": "1. e4 a5",
+   "excluded": null,
+   "rank": 36
+  },
+  {
+   "family": "Goldsmith Defense",
+   "games": 304,
+   "share": 0.0005906881127903407,
+   "lines": 2,
+   "rootPgn": "1. e4 h5",
+   "excluded": null,
+   "rank": 37
+  },
+  {
+   "family": "Carr Defense",
+   "games": 239,
+   "share": 0.0004643896676213534,
+   "lines": 2,
+   "rootPgn": "1. e4 h6",
+   "excluded": null,
+   "rank": 38
+  },
+  {
+   "family": "Neo-Grünfeld Defense",
+   "games": 231,
+   "share": 0.00044884524360055495,
+   "lines": 25,
+   "rootPgn": "1. d4 Nf6 2. c4 g6 3. f3 d5",
+   "excluded": null,
+   "rank": 39
+  }
+ ]
+}
