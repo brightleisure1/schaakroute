@@ -7,7 +7,7 @@ import { db, saveSettings, today } from '../lib/db'
 import { endSession, markDailyComplete, startSession, checkBadges } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
 import { PuzzleTrainer } from '../components/PuzzleTrainer'
-import { Confetti, Empty, ProgressBar, Spinner, plural, useSettings } from '../components/ui'
+import { BadgesEarned, Confetti, Empty, ProgressBar, Spinner, plural, useSettings } from '../components/ui'
 import type { FamilyFile } from '../lib/types'
 import type { BadgeDef } from '../lib/gamification'
 
@@ -138,7 +138,7 @@ export function Daily() {
             <Stat label="Verdiende XP" value={`+${summary.xp}`} />
           </div>
           <p className="mt-4 text-sm">{summary.dueTomorrow ? <>Morgen staan er <b>{plural(summary.dueTomorrow, 'positie', 'posities')}</b> klaar om te herhalen.</> : 'Morgen leer je weer nieuwe varianten.'}</p>
-          {summary.badges.map(b => <div key={b.id} className="mt-3 rounded-xl bg-accent-soft p-2 text-sm">Nieuwe badge: <b>{b.title}</b></div>)}
+          <BadgesEarned badges={summary.badges} className="mt-3" />
           <div className="mt-5 grid gap-2">
             <Link to="/statistieken" className="btn btn-primary">Bekijk je voortgang</Link>
             <Link to="/" className="btn btn-ghost">Naar het dashboard</Link>

@@ -5,6 +5,7 @@ import { Board } from './Board'
 import { MoveInput } from './MoveInput'
 import { MoveList } from './Trainer'
 import { EvalButton } from './EvalButton'
+import { STICKY_ACTIONS, BadgesEarned } from './ui'
 import { parseUci, uciOf, START_FEN, epdOf } from '../lib/chess'
 import { recordPuzzle, checkBadges } from '../lib/progress'
 import { explainThemes } from '../content/themes'
@@ -170,8 +171,10 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
           </div>
         )}
         {done && result && (
-          <div className="card space-y-3 p-4 animate-fade-up">
+          <div className="card order-first space-y-3 p-4 animate-fade-up lg:order-none">
             <div className="text-lg font-bold">{result.solved ? 'Afgestraft!' : 'Combinatie bekeken'}</div>
+            {onNext && <div className={`${STICKY_ACTIONS} max-lg:-mx-4 max-lg:px-4`}><button className="btn btn-primary min-h-12 w-full" onClick={onNext} autoFocus>{nextLabel}</button></div>}
+            <BadgesEarned badges={result.badges} />
             <div className="text-sm">
               <div className="font-medium">Waarom werkt dit?</div>
               <ul className="mt-1 space-y-1 text-muted">
@@ -182,8 +185,6 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
             <div className="text-sm"><div className="font-medium">Oplossing</div><MoveList sans={puzzle.san} current={puzzle.san.length} startPly={(Number(puzzle.fen.split(' ')[5] ?? 1) - 1) * 2 + (puzzle.fen.split(' ')[1] === 'b' ? 1 : 0)} /></div>
             <p className="text-xs text-muted">Bron: Lichess-puzzeldatabase (CC0). De oplossing is door Lichess met Stockfish gecontroleerd; SchaakRoute verzint geen combinaties.</p>
             <EvalButton fen={fens[1]} label="Stockfish: evaluatie na de fout" />
-            {result.badges.map(b => <div key={b.id} className="rounded-xl bg-accent-soft p-2 text-sm animate-pop">Nieuwe badge: <b>{b.title}</b></div>)}
-            {onNext && <button className="btn btn-primary min-h-12 w-full" onClick={onNext} autoFocus>{nextLabel}</button>}
           </div>
         )}
         <div className="card p-4 text-sm">

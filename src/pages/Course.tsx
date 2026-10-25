@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, Navigate, useParams } from 'react-router'
 import { familyProgress, useCardMap, useFamily, useProgressMap, variationMastery } from '../lib/hooks'
 import { displayName } from '../lib/data'
 import { variationLine } from '../lib/daily'
+import { learnLessons, learnThreshold } from '../lib/course'
 import { endSession, startSession } from '../lib/progress'
 import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
@@ -33,13 +34,16 @@ export function Course() {
   if (error) return <ErrorBox error={error} />
   if (!file) return <Spinner />
   const p = familyProgress(file, progress, cards)
-  const levels = [1, 2, 3, 4, 5].map(l => ({ level: l, lessons: file.lessons.filter(x => x.level === l) })).filter(l => l.lessons.length)
-  const firstOpen = file.lessons.find(l => !lessonState(l, file, progress).complete)
+  const allLessons = learnLessons(file)
+  const levels = [1, 2, 3, 4, 5].map(l => ({ level: l, lessons: allLessons.filter(x => x.level === l) })).filter(l => l.lessons.length)
+  const firstOpen = allLessons.find(l => !lessonState(l, file, progress).complete)
+  const inCourse = allLessons.reduce((n, l) => n + l.variationIds.length, 0)
+  const short = file.variations.length - inCourse
   const learnedCount = file.variations.filter(v => (progress.get(v.id)?.completions ?? 0) > 0).length
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${file.lessons.length} lessen met alle ${file.variations.length} varianten — belangrijkste lijnen eerst.`}
+      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen met ${inCourse} varianten, belangrijkste lijnen eerst.${short ? ` ${short} korte lijnen (minder dan ${learnThreshold(file)} eigen zetten) staan alleen in de variantenboom.` : ''}`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={p.pct} />
@@ -96,7 +100,7 @@ export function LessonRun() {
   const { data: file, error } = useFamily(id)
   const progress = useProgressMap(id)
   const cards = useCardMap(id)
-  const lesson = file?.lessons.find(l => l.id === lessonId)
+  const lesson = file ? learnLessons(file).find(l => l.id === lessonId) : undefined
   const queueRef = useRef<{ v: Variation; mode: TrainMode }[] | null>(null)
   const [index, setIndex] = useState(0)
   const [results, setResults] = useState<LineResult[]>([])
@@ -125,10 +129,13 @@ export function LessonRun() {
   }, [id, lessonId])
 
   if (error) return <ErrorBox error={error} />
+  // Een les met alleen korte lijnen bestaat niet meer: terug naar het leerpad
+  if (file && !lesson) return <Navigate to={`/cursus/${file.family.id}`} replace />
   if (!file || !lesson || !queue) return <Spinner />
   const item = queue[index]
   const finished = index >= queue.length
-  const nextLesson = file.lessons[file.lessons.findIndex(l => l.id === lesson.id) + 1]
+  const lessons = learnLessons(file)
+  const nextLesson = lessons[lessons.findIndex(l => l.id === lesson.id) + 1]
 
   if (finished) {
     const practice = results.filter((_, i) => queue[i].mode !== 'learn')

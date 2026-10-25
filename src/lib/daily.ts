@@ -1,5 +1,6 @@
 import { db, type TrainingCard, type UserSettings, type VariationProgress } from './db'
 import { displayName, loadFamily, loadManifest, loadPuzzles } from './data'
+import { learnLessons } from './course'
 import type { FamilyFile, Puzzle, TrainingLine, TrainMode, Variation } from './types'
 
 // Stelt één doorlopende dagelijkse training samen binnen het gekozen aantal minuten:
@@ -40,11 +41,11 @@ export function cardLine(card: TrainingCard, title = 'Herhaling'): TrainingLine 
   }
 }
 
-/** Volgorde waarin een opening geleerd wordt: lessen van niveau 1 t/m 5 */
+/** Volgorde waarin een opening geleerd wordt: lessen van niveau 1 t/m 5, zonder korte lijnen */
 export function courseOrder(file: FamilyFile): Variation[] {
   const byId = new Map(file.variations.map(v => [v.id, v]))
   const out: Variation[] = []
-  for (const l of [...file.lessons].sort((a, b) => a.level - b.level)) for (const id of l.variationIds) out.push(byId.get(id)!)
+  for (const l of [...learnLessons(file)].sort((a, b) => a.level - b.level)) for (const id of l.variationIds) out.push(byId.get(id)!)
   return out
 }
 

@@ -6,6 +6,8 @@ import { isUserPly, judgeMove, qualityFor, starsFor } from '../src/lib/trainer'
 import { needsPromotion, epdOf } from '../src/lib/chess'
 import { parsePgn, splitGames, treeToPgn } from '../src/lib/pgn'
 import { computeStreak, levelFromXp } from '../src/lib/gamification'
+import { learnLessons, learnThreshold, userMoveCount } from '../src/lib/course'
+import type { FamilyFile, Variation } from '../src/lib/types'
 
 describe('SM-2 spaced repetition', () => {
   it('geeft groeiende intervallen bij goede antwoorden (1, 6, 15 dagen…)', () => {
@@ -159,5 +161,30 @@ describe('gamification', () => {
     expect(computeStreak(['2026-10-22', '2026-10-23', '2026-10-24'], '2026-10-24').current).toBe(3)
     expect(computeStreak(['2026-10-20', '2026-10-23'], '2026-10-24').current).toBe(1)
     expect(computeStreak(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-20'], '2026-10-24').best).toBe(3)
+  })
+})
+
+describe('leerpad zonder korte lijnen', () => {
+  const v = (id: string, plies: number) => ({ id, uci: Array(plies).fill('e2e4'), san: [], path: [], eco: 'A00', tags: [] }) as unknown as Variation
+  const fam = (side: 'white' | 'black', vars: Variation[]) => ({
+    family: { side } as FamilyFile['family'],
+    variations: vars,
+    lessons: [{ id: 'l1', level: 1, title: 'Kort', variationIds: vars.filter(x => x.uci.length < 7).map(x => x.id) }, { id: 'l2', level: 1, title: 'Gemengd', variationIds: vars.map(x => x.id) }],
+  }) as unknown as FamilyFile
+
+  it('telt alleen de eigen zetten', () => {
+    expect(userMoveCount(v('a', 7), 'white')).toBe(4)
+    expect(userMoveCount(v('a', 7), 'black')).toBe(3)
+  })
+
+  it('haalt lijnen met minder dan 4 eigen zetten uit de lessen en laat lege lessen vallen', () => {
+    const f = fam('white', [v('kort', 3), v('lang', 8)])
+    expect(learnLessons(f)).toEqual([{ id: 'l2', level: 1, title: 'Gemengd', variationIds: ['lang'] }])
+  })
+
+  it('valt terug op de langste lijn als een opening alleen korte lijnen heeft', () => {
+    const f = fam('black', [v('a', 2), v('b', 6)])
+    expect(learnThreshold(f)).toBe(3)
+    expect(learnLessons(f).flatMap(l => l.variationIds)).toEqual(['b', 'b'])
   })
 })

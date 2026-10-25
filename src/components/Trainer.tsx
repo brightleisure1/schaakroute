@@ -4,7 +4,7 @@ import type { Arrow } from 'react-chessboard'
 import { BookOpen, ChessKnight, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleX, Ellipsis, Eye, Info, Lightbulb, ListOrdered, RotateCcw, Undo2 } from 'lucide-react'
 import { Board } from './Board'
 import { MoveInput } from './MoveInput'
-import { ProgressBar, Stars, useSettings, pct, nf, plural } from './ui'
+import { ProgressBar, Stars, useSettings, pct, nf, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
 import { START_FEN, describeSan, epdOf, formatMoves, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
 import { judgeMove, isUserPly, qualityFor, starsFor, moveScore, bandCount } from '../lib/trainer'
@@ -45,7 +45,7 @@ interface PlyState {
 }
 const emptyPly = (): PlyState => ({ mistakes: 0, hints: 0, alternatives: 0, shown: false, wrong: [] })
 
-type FeedbackKind = 'correct' | 'wrong' | 'alt' | 'illegal' | 'info' | 'hint' | 'learn'
+type FeedbackKind = 'correct' | 'wrong' | 'illegal' | 'info' | 'hint' | 'learn'
 type Feedback = { kind: FeedbackKind; text: ReactNode } | null
 
 export interface TrainerProps {
@@ -57,6 +57,8 @@ export interface TrainerProps {
   onComplete?: (r: LineResult) => void
   /** Acties onder de eindsamenvatting (volgende, opnieuw …). Het bord blijft daarbij in beeld. */
   renderEnd?: (r: LineResult, restart: () => void) => ReactNode
+  /** Extra's onderaan de eindsamenvatting (repertoire, verwante varianten …), onder de terugblik */
+  renderEndExtra?: (r: LineResult) => ReactNode
   /** Kleine kop boven het bord (bijv. voortgang in een dagelijkse sessie) */
   header?: ReactNode
   /** Toon in de leermodus eerst een korte introductie */
@@ -72,7 +74,7 @@ const isTyping = (t: EventTarget | null) => {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
 }
 
-export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, header, autoIntro = true, onProgressChange }: TrainerProps) {
+export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange }: TrainerProps) {
   const settings = useSettings()
   const startPly = line.startPly ?? 0
   const endPly = Math.min(line.endPly ?? line.uci.length, line.uci.length)
@@ -263,26 +265,13 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       busy.current = false
     }, 750)
     const playedUci = uciOf(verdict.move)
-    if (verdict.kind === 'alternative') {
-      updatePly(p, s => ({ ...s, alternatives: s.alternatives + 1 }))
-      setFlash({ square: to, kind: 'info' })
-      setFeedback({
-        kind: 'alt',
-        text: verdict.source === 'book'
-          ? <><b>{verdict.move.san}</b> is ook theorie{verdict.name ? <> ({verdict.name})</> : null}, dus geen fout. In deze variant speel je alleen een andere zet. Probeer opnieuw.</>
-          : <><b>{verdict.move.san}</b> wordt in de praktijk vaak gespeeld ({pct(verdict.share ?? 0)} van {nf(verdict.games ?? 0)} partijen), maar is niet de zet van deze variant. Probeer opnieuw.</>,
-      })
-      recordMistake({ sessionId, epd: epdOf(fens[p]), expected: line.uci[p], played: playedUci, result: 'alternative', familyId: line.familyId, variationId: line.variationId }).catch(() => {})
-      return false
-    }
-    // fout
+    // Fout. Ook een zet die in een andere variant of opening theorie is: je leert hier déze variant
     const st = plyState[p] ?? emptyPly()
     const mistakes = st.mistakes + (mode === 'learn' ? 0 : 1)
     updatePly(p, s => ({ ...s, mistakes, wrong: mode === 'learn' ? s.wrong : [...s.wrong, verdict.move.san] }))
     setFlash({ square: to, kind: 'bad' })
     recordMistake({ sessionId, epd: epdOf(fens[p]), expected: line.uci[p], played: playedUci, result: 'mistake', familyId: line.familyId, variationId: line.variationId }).catch(() => {})
-    const named = verdict.name ? <> Hij heeft wel een naam ({verdict.name}), maar wordt hier zelden gespeeld.</> : null
-    let text: ReactNode = <><b>{verdict.move.san}</b> is niet de zet uit deze variant.{named} {mode === 'mastery' ? 'Probeer het nog eens.' : 'Probeer het nog eens of vraag een hint.'}</>
+    let text: ReactNode = <><b>{verdict.move.san}</b> is niet de zet uit deze variant. {mode === 'mastery' ? 'Probeer het nog eens.' : 'Probeer het nog eens of vraag een hint.'}</>
     if (mode === 'learn') text = <>Speel de aangegeven zet <b>{sans[p]}</b>.</>
     else if (mistakes >= 3) {
       updatePly(p, s => ({ ...s, shown: true }))
@@ -443,6 +432,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             selected={viewPly}
             onSelect={p => setViewPly(v => (v === p ? null : p))}
             actions={renderEnd ? renderEnd(result, restart) : <button className="btn btn-primary w-full" onClick={restart}>Nog een keer</button>}
+            extra={renderEndExtra?.(result)}
           />
         ) : (
           <>
@@ -576,7 +566,6 @@ const FEEDBACK_STYLE: Record<FeedbackKind, { tone: string; icon: ReactNode; labe
   correct: { tone: 'bg-brand-soft text-brand-strong', icon: <CircleCheck size={18} />, label: 'Goed' },
   learn: { tone: 'bg-brand-soft text-brand-strong', icon: <ChessKnight size={18} />, label: 'Leren' },
   wrong: { tone: 'bg-danger-soft text-danger-ink', icon: <CircleX size={18} />, label: 'Niet goed' },
-  alt: { tone: 'bg-info-soft text-info-ink', icon: <Info size={18} />, label: 'Theorie' },
   hint: { tone: 'bg-info-soft text-info-ink', icon: <Lightbulb size={18} />, label: 'Hint' },
   info: { tone: 'bg-info-soft text-info-ink', icon: <Info size={18} />, label: 'Info' },
   illegal: { tone: 'bg-accent-soft text-ink', icon: <CircleAlert size={18} />, label: 'Ongeldig' },
@@ -623,7 +612,7 @@ export function MoveList({ sans, current, onSelect, startPly = 0, marked }: { sa
   )
 }
 
-function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, actions }: { line: TrainingLine; mode: TrainMode; result: LineResult; sans: string[]; startPly: number; selected: number | null; onSelect: (ply: number) => void; actions: ReactNode }) {
+function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, actions, extra }: { line: TrainingLine; mode: TrainMode; result: LineResult; sans: string[]; startPly: number; selected: number | null; onSelect: (ply: number) => void; actions: ReactNode; extra?: ReactNode }) {
   const single = (line.endPly ?? line.uci.length) - startPly <= 1
   const perfect = result.mistakes + result.hints + result.shown === 0
   const title = mode === 'learn' ? 'Variant doorlopen' : single ? (perfect ? 'Goed onthouden' : 'Afgerond') : perfect ? 'Foutloos gespeeld' : 'Variant afgerond'
@@ -638,7 +627,10 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
         </div>
       )}
       {single && <p className="mt-2 text-sm">{perfect ? 'Het interval wordt langer: je ziet deze stelling later pas terug.' : 'Deze stelling komt over 10 minuten terug.'}</p>}
+      {/* Direct onder de titel, en op mobiel onderin vastgeplakt: nooit scrollen om verder te kunnen */}
+      <div className={`mt-4 grid grid-cols-1 gap-2 ${STICKY_ACTIONS} max-lg:-mx-5 max-lg:px-5`}>{actions}</div>
       {!single && <ResultNumbers result={result} />}
+      <BadgesEarned badges={result.badges} className="mt-3" />
       {result.misses.length > 0 && !single && (
         <div className="mt-4">
           <h3 className="text-sm font-semibold">Hier ging het mis</h3>
@@ -665,12 +657,7 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
           <div className="mt-1"><MoveList sans={sans.slice(0, line.endPly ?? line.uci.length)} current={selected ?? -1} marked={new Set(result.misses.map(m => m.ply))} onSelect={p => onSelect(p - 1)} /></div>
         </div>
       )}
-      {result.badges.length > 0 && (
-        <div className="mt-4 rounded-xl bg-accent-soft p-3 text-sm animate-pop">
-          {result.badges.map(b => <div key={b.id}>Nieuwe badge: <b>{b.title}</b>, {b.description.toLowerCase()}</div>)}
-        </div>
-      )}
-      <div className="mt-5 grid gap-2">{actions}</div>
+      {extra && <div className="mt-4 grid grid-cols-1 gap-2">{extra}</div>}
     </div>
   )
 }

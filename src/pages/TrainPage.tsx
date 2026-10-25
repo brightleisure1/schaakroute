@@ -69,6 +69,7 @@ export function TrainPage() {
         onProgressChange={p => { inProgress.current = p }}
         onComplete={r => { if (r.stars === 3 || r.badges.length) setFire(f => f + 1) }}
         renderEnd={(r, restart) => <EndActions file={file} variation={variation} result={r} mode={mode} restart={restart} />}
+        renderEndExtra={() => <EndExtras file={file} variation={variation} mode={mode} />}
       />
     </div>
   )
@@ -77,11 +78,7 @@ export function TrainPage() {
 function EndActions({ file, variation, mode, restart }: { file: FamilyFile; variation: Variation; result: LineResult; mode: TrainMode; restart: () => void }) {
   const nav = useNavigate()
   const progress = useProgressMap(file.family.id)
-  const related = relatedVariations(file, variation)
   const next = courseOrder(file).find(v => v.id !== variation.id && !progress.get(v.id)?.completions)
-  const reps = useLiveQuery(() => db.repertoires.where('side').equals(file.family.side).toArray(), [file.family.side], [])
-  const [repMsg, setRepMsg] = useState<string | null>(null)
-
   const primary = mode === 'learn'
     ? { label: 'Nu zelf oefenen, zonder pijlen', go: () => nav('?mode=practice') }
     : next
@@ -101,6 +98,25 @@ function EndActions({ file, variation, mode, restart }: { file: FamilyFile; vari
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  return (
+    <>
+      <button className="btn btn-primary min-h-12 justify-between text-left" onClick={primary.go} autoFocus>
+        <span className="min-w-0 truncate">{primary.label}</span>
+        <span className="flex shrink-0 items-center gap-1"><kbd className="hidden rounded border border-current/40 px-1 text-xs font-normal opacity-80 lg:inline">Enter</kbd><ArrowRight size={18} aria-hidden /></span>
+      </button>
+      {mode === 'learn'
+        ? <button className="btn btn-ghost min-h-11" onClick={restart}>Nog eens doorlopen</button>
+        : next && <button className="btn btn-ghost min-h-11" onClick={restart}>Dezelfde variant opnieuw</button>}
+    </>
+  )
+}
+
+/** Alles wat niet nodig is om verder te gaan: onder de terugblik */
+function EndExtras({ file, variation, mode }: { file: FamilyFile; variation: Variation; mode: TrainMode }) {
+  const related = relatedVariations(file, variation)
+  const reps = useLiveQuery(() => db.repertoires.where('side').equals(file.family.side).toArray(), [file.family.side], [])
+  const [repMsg, setRepMsg] = useState<string | null>(null)
+
   async function addToRepertoire(repId?: number) {
     let id = repId
     if (!id) id = (await db.repertoires.add({ name: `Mijn ${file.family.name}`, side: file.family.side, familyId: file.family.id, createdAt: Date.now(), updatedAt: Date.now() })) as number
@@ -112,16 +128,8 @@ function EndActions({ file, variation, mode, restart }: { file: FamilyFile; vari
 
   return (
     <>
-      <button className="btn btn-primary min-h-12 justify-between text-left" onClick={primary.go} autoFocus>
-        <span className="min-w-0 truncate">{primary.label}</span>
-        <span className="flex shrink-0 items-center gap-1"><kbd className="hidden rounded border border-current/40 px-1 text-xs font-normal opacity-80 lg:inline">Enter</kbd><ArrowRight size={18} aria-hidden /></span>
-      </button>
-      {mode === 'learn'
-        ? <button className="btn btn-ghost min-h-11" onClick={restart}>Nog eens doorlopen</button>
-        : next && <button className="btn btn-ghost min-h-11" onClick={restart}>Dezelfde variant opnieuw</button>}
       <Link className="btn btn-ghost min-h-11" to={`/opening/${file.family.id}`}>Terug naar de variantenboom</Link>
-
-      <details className="mt-2 rounded-xl border border-line p-3">
+      <details className="rounded-xl border border-line p-3">
         <summary className="cursor-pointer text-sm font-semibold">Toevoegen aan repertoire</summary>
         <div className="mt-2 flex flex-wrap gap-2">
           {reps.map(r => <button key={r.id} className="btn btn-ghost min-h-11" onClick={() => addToRepertoire(r.id)}>+ {r.name}</button>)}

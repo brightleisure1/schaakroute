@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { ChessKnight, Star } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type UserSettings } from '../lib/db'
+import type { BadgeDef } from '../lib/gamification'
 
 export function useSettings(): UserSettings | undefined {
   return useLiveQuery(async () => (await db.settings.get('me')) ?? { ...DEFAULT_SETTINGS }, [])
@@ -132,3 +133,27 @@ export function nf(v: number) {
 }
 
 export const sideLabel = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
+
+/** Op kleine schermen blijft de hoofdactie onderin beeld staan, ook als het bord de kaart naar beneden duwt */
+export const STICKY_ACTIONS = 'max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:pt-3 max-lg:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-lg:bg-surface/95 max-lg:backdrop-blur'
+
+/** Felicitatie voor nieuw verdiende badges: compact, met het badge-icoon als medaille */
+export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; className?: string }) {
+  if (!badges.length) return null
+  return (
+    <ul className={`grid gap-2 ${className}`} role="status">
+      {badges.map(b => (
+        <li key={b.id} className="flex items-center gap-3 rounded-xl bg-accent-soft px-3 py-2 text-left animate-pop">
+          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[3px] border-accent bg-surface text-accent-ink shadow-sm">
+            <b.icon size={18} strokeWidth={2.25} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs font-semibold text-accent-ink">Nieuwe badge</span>
+            <span className="block text-sm font-semibold leading-tight">{b.title}</span>
+            <span className="block text-xs text-muted">{b.description}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
