@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { Check } from 'lucide-react'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap } from '../lib/hooks'
 import { formatMoves } from '../lib/chess'
 import { CropBoard } from '../components/CropBoard'
@@ -32,11 +33,13 @@ export function Openings() {
           const p = file ? familyProgress(file, progress, cards) : null
           const mine = settings?.openings.includes(f.id)
           return (
-            <article key={f.id} className="card flex flex-col p-4">
+            <article key={f.id} className="card relative flex flex-col p-4">
+              {/* Label als sticker op de rand, in de hoek rechtsboven */}
+              {mine && <span className="absolute -top-3 right-4 inline-flex items-center gap-1 rounded-full bg-brand py-1 pl-2 pr-2.5 text-xs font-semibold text-on-brand shadow-[0_2px_8px_rgb(31_42_36/0.18)] ring-2 ring-bg"><Check size={13} strokeWidth={3} aria-hidden />Mijn opening</span>}
               <div className="flex gap-3">
                 <div className="w-28 shrink-0 self-start"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} /></div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-muted">#{f.rank} · {f.ecoRange}{mine && <span className="chip chip-on !py-0 !text-xs">mijn opening</span>}</div>
+                  <div className="text-xs font-semibold text-muted">#{f.rank} · {f.ecoRange}</div>
                   <h2 className="text-lg font-bold leading-tight">{f.name}</h2>
                   <div className="text-sm text-muted">{OPENING_INFO[f.id]?.nameNl}</div>
                   <div className="mt-1 font-mono text-xs text-muted">{formatMoves(f.rootSan)}</div>
