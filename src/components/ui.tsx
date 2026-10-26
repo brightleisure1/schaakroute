@@ -135,7 +135,7 @@ export function nf(v: number) {
 export const sideLabel = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
 
 /** Op kleine schermen blijft de hoofdactie onderin beeld staan, ook als het bord de kaart naar beneden duwt */
-export const STICKY_ACTIONS = 'max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:pt-3 max-lg:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-lg:bg-surface/95 max-lg:backdrop-blur'
+export const STICKY_ACTIONS = 'max-lg:sticky max-lg:bottom-(--bottom-nav,0px) max-lg:z-10 max-lg:pt-3 max-lg:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-lg:bg-surface/95 max-lg:backdrop-blur'
 
 /** Felicitatie voor nieuw verdiende badges: compact, met het badge-icoon als medaille */
 export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; className?: string }) {

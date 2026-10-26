@@ -57,8 +57,22 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 ]
 interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean }
 const NAV = NAV_GROUPS.flatMap(g => g.items)
-// Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven
-const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|mastery|dagelijks)/
+// Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
+// Daily en Mastery staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
+const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
+
+/**
+ * Zet --bottom-nav op de pagina: de ruimte die het zwevende menu inneemt. Vastgeplakte knoppen blijven erboven
+ * en scrollen (scroll-padding) houdt er rekening mee, zodat het menu nooit een knop afdekt.
+ */
+function BottomNavSpace({ active }: { active: boolean }) {
+  useEffect(() => {
+    const root = document.documentElement
+    if (active) root.style.setProperty('--bottom-nav', 'calc(5.25rem + env(safe-area-inset-bottom))')
+    else root.style.removeProperty('--bottom-nav')
+  }, [active])
+  return null
+}
 
 function ThemeSync() {
   const s = useSettings()
@@ -133,6 +147,7 @@ function Shell() {
   const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`
   return (
     <div className="min-h-dvh lg:flex">
+      <BottomNavSpace active={!focus && !onboarding} />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">Naar de inhoud</a>
       {!onboarding && (
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
@@ -196,11 +211,19 @@ function Shell() {
           </ErrorBoundary>
         </main>
         {!focus && !onboarding && (
-          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 backdrop-blur lg:hidden" aria-label="Hoofdmenu">
+          // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
+          <nav className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex h-16 gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) p-1.5 shadow-(--nav-shadow) backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-semibold ${isActive ? 'text-brand-strong' : 'text-muted'}`}>
-                <n.icon size={22} strokeWidth={1.75} aria-hidden />{n.short ?? n.label}
-                {n.badge && due > 0 && <span className="absolute right-[24%] top-1.5 rounded-full bg-accent px-1.5 text-xs font-bold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-3.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? 'grow-[1.6] bg-(--nav-active-bg) text-(--nav-active-ink)' : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
+                {({ isActive }) => (
+                  <>
+                    <span className="relative shrink-0">
+                      <n.icon size={22} strokeWidth={2} aria-hidden />
+                      {n.badge && due > 0 && <span className="absolute -right-3 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-(--nav-bg) bg-(--nav-badge) px-1 text-xs font-extrabold text-(--nav-badge-ink)" aria-label={`${due} herhalingen`}>{due}</span>}
+                    </span>
+                    <span className={isActive ? 'truncate' : 'sr-only'}>{n.short ?? n.label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
