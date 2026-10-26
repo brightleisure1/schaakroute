@@ -62,34 +62,24 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
 /**
- * Het bodemmenu wordt compacter (alleen iconen) zolang je naar beneden scrollt; bewust omhoog scrollen of bovenaan:
- * weer volledig. Op telefoons veert de pagina aan het eind na (rubber band) en verschuift de adresbalk; daarom telt
- * alleen beweging binnen het echte scrollbereik, en pas na een duidelijke afstand vanaf het verste punt.
+ * Het bodemmenu wordt compact (alleen iconen) zodra je een stuk naar beneden bent gescrold, en weer volledig als je
+ * terug bovenaan bent. Bewust alleen op positie, niet op scrollrichting: op telefoons veert de pagina na, loopt een
+ * swipe uit en verschuift de adresbalk, waardoor een richtingsregel het menu heen en weer liet springen.
  */
 function useCompactOnScroll() {
   const [compact, setCompact] = useState(false)
   useEffect(() => {
-    let state = false
-    let anchor = window.scrollY // verste punt in de huidige richting
     let frame = 0
-    const set = (v: boolean) => { if (v !== state) { state = v; setCompact(v) } }
     const onScroll = () => {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
-        const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
         const y = window.scrollY
-        if (y <= 24) { set(false); anchor = Math.max(0, y); return }
-        if (y >= max - 4) { anchor = Math.min(y, max); return } // naveren onderaan: niets veranderen
-        if (state) {
-          if (y > anchor) anchor = y
-          else if (anchor - y > 60) { set(false); anchor = y }
-        } else {
-          if (y < anchor) anchor = y
-          else if (y - anchor > 30) { set(true); anchor = y }
-        }
+        // hysterese: klein vanaf 80px, pas weer groot onder 40px
+        setCompact(c => (c ? y > 40 : y > 80))
       })
     }
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
   }, [])
