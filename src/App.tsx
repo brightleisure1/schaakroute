@@ -61,21 +61,33 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Daily en Mastery staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
-/** Het bodemmenu wordt compacter (alleen iconen) zolang je naar beneden scrollt; omhoog scrollen of bovenaan: weer volledig */
+/**
+ * Het bodemmenu wordt compacter (alleen iconen) zolang je naar beneden scrollt; bewust omhoog scrollen of bovenaan:
+ * weer volledig. Op telefoons veert de pagina aan het eind na (rubber band) en verschuift de adresbalk; daarom telt
+ * alleen beweging binnen het echte scrollbereik, en pas na een duidelijke afstand vanaf het verste punt.
+ */
 function useCompactOnScroll() {
   const [compact, setCompact] = useState(false)
   useEffect(() => {
-    let last = window.scrollY
+    let state = false
+    let anchor = window.scrollY // verste punt in de huidige richting
     let frame = 0
+    const set = (v: boolean) => { if (v !== state) { state = v; setCompact(v) } }
     const onScroll = () => {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
+        const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
         const y = window.scrollY
-        const d = y - last
-        if (y < 24) { setCompact(false); last = y }
-        else if (d > 8) { setCompact(true); last = y }
-        else if (d < -8) { setCompact(false); last = y }
+        if (y <= 24) { set(false); anchor = Math.max(0, y); return }
+        if (y >= max - 4) { anchor = Math.min(y, max); return } // naveren onderaan: niets veranderen
+        if (state) {
+          if (y > anchor) anchor = y
+          else if (anchor - y > 60) { set(false); anchor = y }
+        } else {
+          if (y < anchor) anchor = y
+          else if (y - anchor > 30) { set(true); anchor = y }
+        }
       })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
