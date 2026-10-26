@@ -62,31 +62,6 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
 /**
- * Het bodemmenu wordt compact (alleen iconen) zodra je een stuk naar beneden bent gescrold, en weer volledig als je
- * terug bovenaan bent. Bewust alleen op positie, niet op scrollrichting: op telefoons veert de pagina na, loopt een
- * swipe uit en verschuift de adresbalk, waardoor een richtingsregel het menu heen en weer liet springen.
- */
-function useCompactOnScroll() {
-  const [compact, setCompact] = useState(false)
-  useEffect(() => {
-    let frame = 0
-    const onScroll = () => {
-      if (frame) return
-      frame = requestAnimationFrame(() => {
-        frame = 0
-        const y = window.scrollY
-        // hysterese: klein vanaf 80px, pas weer groot onder 40px
-        setCompact(c => (c ? y > 40 : y > 80))
-      })
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
-  }, [])
-  return compact
-}
-
-/**
  * Zet --bottom-nav op de pagina: de ruimte die het zwevende menu inneemt. Vastgeplakte knoppen blijven erboven
  * en scrollen (scroll-padding) houdt er rekening mee, zodat het menu nooit een knop afdekt.
  */
@@ -165,7 +140,6 @@ function Shell() {
   const settings = useSettings()
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
   const loc = useLocation()
-  const compactNav = useCompactOnScroll()
   if (!settings) return <Spinner />
   const onboarding = loc.pathname === '/welkom' && !settings.onboarded
   if (!settings.onboarded && loc.pathname !== '/welkom' && loc.pathname !== '/bronnen') return <Navigate to="/welkom" replace />
@@ -238,16 +212,17 @@ function Shell() {
         </main>
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
-          <nav className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) shadow-(--nav-shadow) backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${compactNav ? 'inset-x-[max(1rem,calc(50%-7.5rem))] h-12 p-1' : 'inset-x-4 h-16 p-1.5'}`} aria-label="Hoofdmenu">
+          // Wordt bij scrollen compacter via een CSS scroll-animatie (.bottom-nav in index.css), zonder JavaScript
+          <nav className="bottom-nav fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex h-16 gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) p-1.5 shadow-(--nav-shadow) backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-2.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? `${compactNav ? 'grow' : 'grow-[2]'} bg-(--nav-active-bg) text-(--nav-active-ink)` : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `bottom-nav-item relative flex min-w-0 basis-0 items-center justify-center gap-2.5 rounded-full text-sm font-bold transition-colors ${isActive ? 'grow-[2] bg-(--nav-active-bg) text-(--nav-active-ink)' : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
                 {({ isActive }) => (
                   <>
                     <span className="relative shrink-0">
                       <n.icon size={22} strokeWidth={2} aria-hidden />
                       {n.badge && due > 0 && <span className="absolute -right-3 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-(--nav-bg) bg-(--nav-badge) px-1 text-xs font-extrabold text-(--nav-badge-ink)" aria-label={`${due} herhalingen`}>{due}</span>}
                     </span>
-                    <span className={isActive && !compactNav ? 'truncate' : 'sr-only'}>{n.short ?? n.label}</span>
+                    <span className={isActive ? 'bottom-nav-label truncate' : 'sr-only'}>{n.short ?? n.label}</span>
                   </>
                 )}
               </NavLink>

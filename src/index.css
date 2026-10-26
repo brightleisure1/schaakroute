@@ -247,3 +247,33 @@ button.chip { min-height: 2rem; }
 @media (max-width: 1023.98px) {
   html { scroll-padding-bottom: var(--bottom-nav, 0px); }
 }
+
+/*
+ * Bodemmenu: compacter naarmate je scrolt (0–80px), met een scroll-gestuurde animatie.
+ * Geen JavaScript en geen aan/uit-stand, dus naveren, uitlopende swipes en de adresbalk kunnen het niet laten springen.
+ * Zonder ondersteuning of met 'minder beweging' blijft het menu gewoon op volle grootte.
+ */
+@keyframes bottom-nav-compact {
+  to { height: 3rem; padding: 0.25rem; left: max(1rem, calc(50% - 7.5rem)); right: max(1rem, calc(50% - 7.5rem)); }
+}
+@keyframes bottom-nav-item-even {
+  to { flex-grow: 1; gap: 0; }
+}
+@keyframes bottom-nav-label-hide {
+  to { opacity: 0; max-width: 0; }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bottom-nav,
+    .bottom-nav-item[aria-current='page'],
+    .bottom-nav-label {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 80px;
+    }
+    .bottom-nav { animation-name: bottom-nav-compact; }
+    .bottom-nav-item[aria-current='page'] { animation-name: bottom-nav-item-even; }
+    .bottom-nav-label { animation-name: bottom-nav-label-hide; max-width: 8rem; }
+  }
+}
