@@ -7,9 +7,9 @@ import type { Side } from '../lib/types'
  * Klein bordje met alleen de 4×4 velden waar de beginzetten van een opening gebeuren.
  * Het veld van de kenmerkende zet licht goud op. Decoratief: de zetten staan ernaast als tekst.
  */
-export function CropBoard({ epd, uci, orientation, inset = 3, coordsFrom }: { epd: string; uci: string[]; orientation: Side; inset?: number; coordsFrom?: 'lg' }) {
-  // Coördinaten alleen vanaf desktopbreedte tonen als het bordje op de telefoon te klein is
-  const coordCls = coordsFrom === 'lg' ? ' max-lg:hidden' : ''
+export function CropBoard({ epd, uci, orientation, inset = 3, coordsFrom }: { epd: string; uci: string[]; orientation: Side; inset?: number; coordsFrom?: 'lg' | 'never' }) {
+  // Coördinaten weglaten op bordjes die te klein zijn (alleen op de telefoon, of helemaal)
+  const coordCls = coordsFrom === 'never' ? ' hidden' : coordsFrom === 'lg' ? ' max-lg:hidden' : ''
   const { files, ranks, highlight } = cropWindow(uci)
   const game = new Chess(fenFromEpd(epd))
   const fs = orientation === 'white' ? [...files] : [...files].reverse()
