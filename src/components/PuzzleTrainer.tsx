@@ -156,7 +156,7 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
       </div>
       <aside className="flex flex-col gap-3">
         <div className="card p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-brand-strong">Crushing · je speelt {solver === 'white' ? 'wit' : 'zwart'} · puzzelrating {puzzle.rating}</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-brand-strong">Afstraffen · je speelt {solver === 'white' ? 'wit' : 'zwart'} · puzzelrating {puzzle.rating}</div>
           {puzzle.variation && <div className="mt-1 font-semibold">{puzzle.variation}</div>}
           <div className="text-xs text-muted">Uit een echte Lichess-partij (zet {Math.ceil(puzzle.ply / 2)}), {puzzle.plays.toLocaleString('nl-NL')}× gespeeld als puzzel.</div>
         </div>

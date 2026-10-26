@@ -114,7 +114,7 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
       <div className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-semibold">Openingszetten die je vaak anders speelt dan de theorie</h3>
-          {analysis.userBookExits.length > 0 && <button className="btn btn-primary" onClick={async () => { const n = await exitsToCards(analysis.userBookExits.slice(0, 30), e => famSide.get(e.familyId) ?? 'white'); setDone(`${n} nieuwe posities toegevoegd aan je herhalingen (Mastery en dagelijkse training).`) }}>Train mijn fouten</button>}
+          {analysis.userBookExits.length > 0 && <button className="btn btn-primary" onClick={async () => { const n = await exitsToCards(analysis.userBookExits.slice(0, 30), e => famSide.get(e.familyId) ?? 'white'); setDone(`${n} nieuwe posities toegevoegd aan je herhalingen (Herhalen en dagtraining).`) }}>Train mijn fouten</button>}
         </div>
         {done && <div className="mt-2 rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong">{done}</div>}
         {analysis.userBookExits.length === 0 ? <p className="mt-2 text-sm text-muted">Geen afwijkingen gevonden in de 20 openingen.</p> : (

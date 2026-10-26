@@ -41,7 +41,7 @@ export function Dashboard() {
     <div className="space-y-6 lg:space-y-7">
       {xp > 0 && (
         <div className="mb-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted" aria-label="Jouw voortgang">
-          <TopStat icon={<Flame size={15} />} tone="text-star" label="Streak" value={plural(st.current, 'dag', 'dagen')} hint={`record ${st.best}`} />
+          <TopStat icon={<Flame size={15} />} tone="text-star" label="Reeks" value={plural(st.current, 'dag', 'dagen')} hint={`record ${st.best}`} />
           <TopStat icon={<Brain size={15} />} tone="text-brand-strong" label="Geleerde posities" value={learnedPositions} hint={`${mature} al 7+ dagen vast`} />
         </div>
       )}
@@ -53,11 +53,11 @@ export function Dashboard() {
           <DaySegments minutes={minutesToday} goal={settings.dailyMinutes} />
           <h1 className="mt-3 text-4xl font-extrabold leading-none tracking-tight lg:mt-4 lg:text-5xl">{greeting()}</h1>
           <p className="mt-2 text-base text-muted lg:mt-3 lg:text-lg">
-            {todayAct?.dailyCompleted ? 'Dagdoel gehaald. Mooi werk.' : xp === 0 ? 'De Daily Training kiest je eerste variant.' : due > 0 ? `${plural(due, 'positie', 'posities')} om te herhalen.` : 'Tijd voor nieuwe zetten.'}
+            {todayAct?.dailyCompleted ? 'Dagdoel gehaald. Mooi werk.' : xp === 0 ? 'De dagtraining kiest je eerste variant.' : due > 0 ? `${plural(due, 'positie', 'posities')} om te herhalen.` : 'Tijd voor nieuwe zetten.'}
           </p>
         </div>
         <div className="order-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 lg:order-none">
-          <Link to="/dagelijks" className="btn btn-primary min-h-13 px-6 text-base"><Sun size={20} aria-hidden />Start Daily Training</Link>
+          <Link to="/dagelijks" className="btn btn-primary min-h-13 px-6 text-base"><Sun size={20} aria-hidden />Start de dagtraining</Link>
           {settings.lastRoute && (
             <Link to={settings.lastRoute} className="btn btn-ghost min-h-13 min-w-0 justify-between gap-4 text-left sm:max-w-xs">
               <span className="min-w-0"><span className="block text-xs font-normal text-muted">Ga verder waar je was</span><span className="block truncate">{settings.lastRouteLabel && settings.lastRouteLabel !== 'SchaakRoute' ? settings.lastRouteLabel : 'Laatste training'}</span></span>
@@ -106,9 +106,9 @@ export function Dashboard() {
       <section aria-labelledby="meer-title">
         <h2 id="meer-title" className="mb-3 text-lg font-bold lg:text-xl">Meer trainen</h2>
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          <QuickLink to="/variaties" icon={<GitBranch size={20} />} title="Variations" text="Alle varianten oefenen" />
-          <QuickLink to="/crushing" icon={<Swords size={20} />} title="Crushing" text="Fouten afstraffen" />
-          <QuickLink to="/advantage" icon={<TrendingUp size={20} />} title="Advantage" text="Wat werkt op jouw niveau" />
+          <QuickLink to="/variaties" icon={<GitBranch size={20} />} title="Varianten" text="Alle varianten oefenen" />
+          <QuickLink to="/crushing" icon={<Swords size={20} />} title="Afstraffen" text="Fouten afstraffen" />
+          <QuickLink to="/advantage" icon={<TrendingUp size={20} />} title="Op jouw niveau" text="Wat scoort het best" />
           <QuickLink to="/repertoire" icon={<BookMarked size={20} />} title="Repertoire" text="Je eigen openingen" />
         </div>
       </section>

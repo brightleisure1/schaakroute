@@ -97,7 +97,7 @@ export function Advantage() {
   if (!manifest || !settings) return <Spinner />
   return (
     <div>
-      <PageHeader title="Advantage" subtitle="Wat werkt op jouw niveau." />
+      <PageHeader title="Op jouw niveau" subtitle="Wat er gespeeld wordt en wat scoort." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`)} families={manifest.families} mine={settings.openings} />
         <Tabs value={tab} onChange={setTab} options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]} />

@@ -1,17 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#358a59"/>
-      <stop offset="1" stop-color="#256a42"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
-  <path d="M11 52 C 11 38, 22 34, 18 24 S 13 18, 16 16.5" fill="none" stroke="#e9b44c" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="0.1 6"/>
-  <circle cx="17" cy="10" r="4.2" fill="#e9b44c"/>
-  <g fill="#f6efe3">
-    <circle cx="39" cy="20" r="7.5"/>
-    <rect x="31" y="28.5" width="16" height="4.5" rx="2.25"/>
-    <path d="M34 32h10c0 6 2.6 10.2 6 14.8H28c3.4-4.6 6-8.8 6-14.8z"/>
-    <rect x="25" y="46" width="28" height="7" rx="3.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#faf5ec"/>
+  <g transform="translate(296 282) scale(1 0.54) rotate(45)" fill="#b4caa8">
+    <rect x="78" y="-60" width="120" height="120" rx="5"/>
+    <rect x="-198" y="-60" width="120" height="120" rx="5"/>
+    <rect x="-60" y="78" width="120" height="120" rx="5"/>
+    <rect x="-60" y="-198" width="120" height="120" rx="5"/>
+  </g>
+  <path d="M66 462 C 68 412, 112 388, 170 382 S 246 368, 270 346" fill="none" stroke="#e2a531" stroke-width="19" stroke-linecap="round" stroke-dasharray="0 31"/>
+  <circle cx="292" cy="324" r="20" fill="#e2a531"/>
+  <g fill="#357d50" stroke="#faf5ec" stroke-width="7" paint-order="stroke" stroke-linejoin="round">
+    <path d="M241 256 v10 a59 21 0 0 0 118 0 v-10 z"/>
+    <ellipse cx="300" cy="256" rx="59" ry="21"/>
+    <path d="M279 152 C 280 189, 273 209, 250 232 a50 17 0 0 0 100 0 C 327 209, 320 189, 321 152 z"/>
+    <ellipse cx="300" cy="146" rx="40" ry="11"/>
+    <circle cx="300" cy="100" r="35"/>
   </g>
 </svg>

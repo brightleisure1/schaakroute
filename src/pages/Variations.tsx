@@ -37,7 +37,7 @@ export function Variations() {
         </header>
       ) : (
         <>
-          <PageHeader title="Variations" />
+          <PageHeader title="Varianten" />
           <div className="mb-4"><FamilyPicker value={id ?? ''} onChange={v => setSearch({ opening: v })} families={manifest.families} mine={settings.openings} /></div>
         </>
       )}

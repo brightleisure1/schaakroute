@@ -83,8 +83,8 @@ export const sideToMoveAt = (ply: number, startFen = START_FEN) => {
 const PIECE_NL: Record<string, string> = { K: 'koning', Q: 'dame', R: 'toren', B: 'loper', N: 'paard' }
 /** Korte Nederlandse omschrijving van een SAN-zet */
 export function describeSan(san: string): string {
-  if (san.startsWith('O-O-O')) return 'lange rokade'
-  if (san.startsWith('O-O')) return 'korte rokade'
+  if (san.startsWith('O-O-O')) return 'queenside castling'
+  if (san.startsWith('O-O')) return 'kingside castling'
   const piece = PIECE_NL[san[0]] ?? 'pion'
   const capture = san.includes('x')
   const target = (san.match(/[a-h][1-8]/g) ?? []).pop() ?? ''

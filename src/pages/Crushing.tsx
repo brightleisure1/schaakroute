@@ -53,7 +53,7 @@ export function Crushing() {
 
   return (
     <div>
-      <PageHeader title="Crushing" subtitle="Straf de openingsfouten van je tegenstander af." />
+      <PageHeader title="Afstraffen" subtitle="Straf de openingsfouten van je tegenstander af." />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FamilyPicker value={id ?? ''} onChange={v => nav(`/crushing/${v}`)} families={manifest.families} mine={settings.openings} />
         <select className="input sm:max-w-xs" value={range} onChange={e => setRange(Number(e.target.value))} aria-label="Moeilijkheid">

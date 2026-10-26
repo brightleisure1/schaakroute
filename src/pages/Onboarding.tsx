@@ -116,7 +116,7 @@ export function Onboarding() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 text-center">
-        <img src="./icon.svg" alt="" className="mx-auto h-14 w-14" />
+        <img src="./icon.svg" alt="" className="mx-auto h-14 w-14 rounded-[22%] ring-1 ring-line" />
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Welkom bij SchaakRoute</h1>
         <p className="mt-1 text-muted">Leer openingen door ze zelf te spelen.</p>
       </div>

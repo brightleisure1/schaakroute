@@ -12,7 +12,7 @@ import { Trainer, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, Spinner, Tabs } from '../components/ui'
 import type { FamilyFile, TrainMode, Variation } from '../lib/types'
 
-const MODE_NAME: Record<string, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Mastery' }
+const MODE_NAME: Record<string, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd' }
 
 export function TrainPage() {
   const { familyId, variationId } = useParams()
@@ -59,7 +59,7 @@ export function TrainPage() {
         <Tabs<TrainMode>
           value={mode}
           onChange={switchMode}
-          options={[{ value: 'learn', label: 'Leren' }, { value: 'practice', label: 'Oefenen' }, { value: 'mastery', label: 'Mastery' }]}
+          options={[{ value: 'learn', label: 'Leren' }, { value: 'practice', label: 'Oefenen' }, { value: 'mastery', label: 'Uit het hoofd' }]}
         />
       </div>
       {pendingMode && (

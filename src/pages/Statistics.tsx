@@ -87,7 +87,7 @@ export function Statistics() {
         <StatTile label="Geleerde posities" value={learned} hint={`${mature} met interval ≥ 7 dagen`} />
         <StatTile label="Herhalingen" value={totals.reviews} />
         <StatTile label="Trainingstijd" value={`${Math.round(totals.seconds / 60)} min`} />
-        <StatTile label="Streak" value={`${st.current} d`} hint={`record ${st.best} · ${xp.toLocaleString('nl-NL')} XP`} />
+        <StatTile label="Reeks" value={`${st.current} d`} hint={`record ${st.best} · ${xp.toLocaleString('nl-NL')} XP`} />
       </section>
 
       <section className="card p-4">
@@ -158,7 +158,7 @@ export function Statistics() {
       </section>
 
       <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Badges ({badges.length}/{BADGES.length})</h2>
+        <h2 className="mb-3 font-semibold">Prestaties ({badges.length}/{BADGES.length})</h2>
         <ul className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {BADGES.map(b => {
             const has = badges.find(x => x.id === b.id)
@@ -289,7 +289,7 @@ function Heatmap({ byDay }: { byDay: Map<string, DailyActivity> }) {
           const a = byDay.get(d)
           const n = (a?.correct ?? 0) + (a?.mistakes ?? 0)
           const level = n === 0 ? 0 : Math.ceil((n / max) * 4)
-          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · Daily Training voltooid' : ''}`} className="aspect-square rounded-[3px]" style={{ background: level ? 'var(--chart-1)' : 'var(--surface-2)', opacity: level ? 0.25 + level * 0.1875 : 1 }} />
+          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · dagtraining voltooid' : ''}`} className="aspect-square rounded-[3px]" style={{ background: level ? 'var(--chart-1)' : 'var(--surface-2)', opacity: level ? 0.25 + level * 0.1875 : 1 }} />
         })}
       </div>
       <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">minder {[0, 1, 2, 3, 4].map(l => <span key={l} className="h-2.5 w-2.5 rounded-[2px]" style={{ background: l ? 'var(--chart-1)' : 'var(--surface-2)', opacity: l ? 0.25 + l * 0.1875 : 1 }} />)} meer</div>

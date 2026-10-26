@@ -20,7 +20,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
       "Wit wil snel ontwikkelen, kort rokeren en met c3 en d4 een sterk pionnencentrum opbouwen, terwijl de loper op c4 de druk op f7 vasthoudt.",
     plans: [
       "Met c3 gevolgd door d4 het centrum innemen en zwart terugdringen.",
-      "Rustige opbouw met d3, c3 en rokade, daarna het damepaard via d2 en f1 naar g3 manoeuvreren.",
+      "Rustige opbouw met d3, c3 en castling, daarna het damepaard via d2 en f1 naar g3 manoeuvreren.",
       "De loper bij aanvallen terugtrekken naar b3 of a2, zodat de diagonaal naar f7 open blijft.",
       "Ruimte winnen op de damevleugel met a4 en b4.",
       "In open stellingen de lijnen gebruiken voor een aanval op de zwarte koning.",
@@ -29,7 +29,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
       "Natuurlijke, logische ontwikkeling die makkelijk te leren is.",
       "Directe druk op f7, het zwakste punt in de zwarte stelling.",
       "Flexibel: wit kan kiezen tussen scherp spel en een rustige opbouw.",
-      "Snelle rokade zorgt voor een veilige koning.",
+      "Snelle castling zorgt voor een veilige koning.",
     ],
     weaknesses: [
       "Zwart krijgt met ...Bc5 of ...Nf6 snel volwaardig tegenspel.",
@@ -134,7 +134,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
       "Wit lost de spanning in het centrum meteen op en wil met de pion op e4 en een centraal paard ruimte en een snelle ontwikkeling bereiken.",
     plans: [
       "Het paard centraal op d4 houden, gesteund door Be3 en c3.",
-      "Ontwikkelen met Nc3, Be3 en Qd2, eventueel gevolgd door een lange rokade en een aanval.",
+      "Ontwikkelen met Nc3, Be3 en Qd2, eventueel gevolgd door een queenside castling en een aanval.",
       "Met e5 het paard op f6 verjagen en ruimte winnen.",
       "Na een ruil op c6 de zwakkere zwarte pionnenstructuur onder druk zetten.",
     ],
@@ -160,7 +160,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
     idea:
       "Wit ontwikkelt de loper vroeg en laat het paard op g1 nog even staan, zodat f4 mogelijk blijft of later alsnog Nf3 volgt.",
     plans: [
-      "Rustige opbouw met d3, Nf3, c3 en rokade, gevolgd door d4.",
+      "Rustige opbouw met d3, Nf3, c3 en castling, gevolgd door d4.",
       "Op een geschikt moment f4 spelen voor een aanval over de f-lijn.",
       "Met Nc3 overgaan naar Weense structuren.",
       "De loper op de diagonaal naar f7 houden en de druk op de zwarte koningsvleugel opvoeren.",
@@ -219,7 +219,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
     plans: [
       "Na 2...exf4 snel Nf3 spelen om ...Qh4+ te voorkomen.",
       "Met d4 het centrum innemen en de pion op f4 later terugwinnen, bijvoorbeeld met Bxf4.",
-      "Met Bc4 en een korte rokade de f-lijn en het punt f7 onder vuur nemen.",
+      "Met Bc4 en een kingside castling de f-lijn en het punt f7 onder vuur nemen.",
       "Tegen het afgewezen gambiet snel ontwikkelen met Nf3, Nc3 en Bc4 en de f-lijn later openen.",
     ],
     strengths: [
@@ -272,14 +272,14 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
     idea:
       "Wit zet de loper op g2 voor druk op de lange diagonaal en het centrum, en kiest pas later welke pionnenopbouw het beste past.",
     plans: [
-      "Opbouw met Bg2, Nf3, korte rokade, d3 en e4 voor een Koningsindische opstelling.",
+      "Opbouw met Bg2, Nf3, kingside castling, d3 en e4 voor een Koningsindische opstelling.",
       "Met c4 overgaan naar Engelse structuren.",
       "De loper op g2 gebruiken voor druk op b7 en het centrum.",
       "Ruimte winnen op de damevleugel met c4, b4 en Rb1.",
     ],
     strengths: [
       "Zeer flexibel en moeilijk voor te bereiden.",
-      "Veilige koning na een snelle korte rokade.",
+      "Veilige koning na een snelle kingside castling.",
       "Weinig theorie die je uit je hoofd moet kennen.",
     ],
     weaknesses: [
@@ -289,7 +289,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
     ],
     keyMoves: "1.g3",
     tip:
-      "Kies een vaste opbouw, bijvoorbeeld Bg2, Nf3, korte rokade, d3 en e4, zodat je niet elke partij opnieuw hoeft te bedenken.",
+      "Kies een vaste opbouw, bijvoorbeeld Bg2, Nf3, kingside castling, d3 en e4, zodat je niet elke partij opnieuw hoeft te bedenken.",
   },
 
   // ===================== ZWART =====================

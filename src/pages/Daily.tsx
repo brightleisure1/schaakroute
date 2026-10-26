@@ -60,10 +60,10 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
     <div className="space-y-5 lg:space-y-7">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-sm font-semibold text-accent-ink">Daily Training · {resuming ? `${done} van ${plural(plan.length, 'onderdeel', 'onderdelen')} gedaan` : date}</div>
+          <div className="text-sm font-semibold text-accent-ink">Dagtraining · {resuming ? `${done} van ${plural(plan.length, 'onderdeel', 'onderdelen')} gedaan` : date}</div>
           <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{completed ? 'Klaar voor vandaag' : resuming ? `Nog ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}` : `${minutes} minuten, ${plural(steps.length, 'stap', 'stappen')}`}</h1>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? `Streak van ${plural(streakDays, 'dag', 'dagen')}` : 'Begin vandaag een streak'}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? `${plural(streakDays, 'dag', 'dagen')} op rij` : 'Begin vandaag een reeks'}</span>
       </header>
 
       {completed && (
@@ -213,7 +213,7 @@ export function Daily() {
     startXp.current = ((await db.meta.get('xp'))?.value as number) ?? 0
     setSessionId(await startSession('daily'))
     persist(0)
-    saveSettings({ lastRoute: '/dagelijks', lastRouteLabel: 'Daily Training' }).catch(() => {})
+    saveSettings({ lastRoute: '/dagelijks', lastRouteLabel: 'Dagtraining' }).catch(() => {})
   }
 
   async function resume() {
@@ -276,7 +276,7 @@ export function Daily() {
     return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} />
   }
 
-  if (!settings || !plan) return <Spinner label="Daily Training samenstellen…" />
+  if (!settings || !plan) return <Spinner label="Dagtraining samenstellen…" />
 
   if (summary) {
     return (
@@ -288,7 +288,7 @@ export function Daily() {
   }
 
   if (!plan.length) {
-    return <Empty title="Niets te doen vandaag" action={<Link to="/openingen" className="btn btn-primary">Kies openingen</Link>}>Alle varianten van je gekozen openingen zijn geleerd en er zijn geen herhalingen. Kies extra openingen of oefen in Mastery.</Empty>
+    return <Empty title="Niets te doen vandaag" action={<Link to="/openingen" className="btn btn-primary">Kies openingen</Link>}>Alle varianten van je gekozen openingen zijn geleerd en er zijn geen herhalingen. Kies extra openingen of herhaal wat je al kent bij Herhalen.</Empty>
   }
 
   if (!started) {

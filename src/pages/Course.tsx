@@ -45,7 +45,7 @@ export function Course() {
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten`}
+      <PageHeader back={`/opening/${file.family.id}`} title={`Cursus · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={inCourse ? doneInCourse / inCourse : 0} />
@@ -84,7 +84,7 @@ export function Course() {
           )
         })}
         <li>
-          <h2 className="text-lg font-bold">Mastery</h2>
+          <h2 className="text-lg font-bold">Herhalen</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <Link to={`/mastery?family=${file.family.id}&type=lines`} className="card p-4 hover:border-brand"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
             <Link to={`/mastery?family=${file.family.id}&type=positions`} className="card p-4 hover:border-brand"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>

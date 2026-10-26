@@ -19,7 +19,7 @@ export function Sources() {
           <li>Populariteit en praktijkstatistieken: <a className="underline" href="https://database.lichess.org" target="_blank" rel="noreferrer">Lichess-partijendatabase</a> ({g.license}), maand {g.month}. {g.method}. {nf(g.sampledGames)} partijen verzameld, waarvan {nf(g.usedGames)} rated blitz/rapid/classical gebruikt.</li>
           <li>Ratingverdeling in de steekproef (gemiddelde van beide spelers): {Object.entries(g.ratingBands).map(([k, v]) => `${k}: ${pct(v / g.usedGames)}`).join(' · ')}.</li>
           <li>Snelheden: {Object.entries(g.speeds).map(([k, v]) => `${k} ${nf(v)}`).join(' · ')}.</li>
-          {m.source.puzzles && <li>Crushing-puzzels: <a className="underline" href="https://database.lichess.org/#puzzles" target="_blank" rel="noreferrer">Lichess-puzzeldatabase</a> ({m.source.puzzles.license}), {nf(m.source.puzzles.scanned)} puzzels gescand; alleen thema “opening” en waarin jouw kant een fout afstraft.</li>}
+          {m.source.puzzles && <li>Puzzels bij Afstraffen: <a className="underline" href="https://database.lichess.org/#puzzles" target="_blank" rel="noreferrer">Lichess-puzzeldatabase</a> ({m.source.puzzles.license}), {nf(m.source.puzzles.scanned)} puzzels gescand; alleen thema “opening” en waarin jouw kant een fout afstraft.</li>}
           <li>In totaal {nf(totalVariations)} benoemde varianten in de 20 openingen, zonder limiet per opening.</li>
         </ul>
       </section>

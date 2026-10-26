@@ -26,23 +26,23 @@ const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ defaul
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
 
-// Navigatie in drie groepen. De trainingsmodi houden bewust hun Engelse namen (Course, Variations, …).
+// Navigatie in drie groepen.
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Trainen',
     items: [
       { to: '/', label: 'Start', icon: House, mobile: true },
-      { to: '/dagelijks', label: 'Daily Training', short: 'Daily', icon: Sun, mobile: true },
-      { to: '/mastery', label: 'Mastery', icon: Repeat, mobile: true, badge: true },
+      { to: '/dagelijks', label: 'Dagtraining', short: 'Vandaag', icon: Sun, mobile: true },
+      { to: '/mastery', label: 'Herhalen', icon: Repeat, mobile: true, badge: true },
       { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true },
-      { to: '/variaties', label: 'Variations', icon: GitBranch, desc: 'Alle varianten van een opening oefenen' },
+      { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alle varianten van een opening oefenen' },
     ],
   },
   {
     title: 'Verdiepen',
     items: [
-      { to: '/crushing', label: 'Crushing', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
-      { to: '/advantage', label: 'Advantage', icon: TrendingUp, desc: 'Wat werkt in de praktijk op jouw niveau' },
+      { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
+      { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat er gespeeld wordt en wat scoort' },
       { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen samenstellen' },
       { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Je partijen van Lichess of Chess.com' },
     ],
@@ -58,7 +58,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string }
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
-// Daily en Mastery staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
+// Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
 /**
@@ -154,7 +154,7 @@ function Shell() {
       {!onboarding && (
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
           <NavLink to="/" className="mb-5 flex items-center gap-2 px-2 text-xl font-extrabold tracking-tight">
-            <img src="./icon.svg" alt="" className="h-9 w-9" /><span>Schaak<span className="text-brand-strong">Route</span></span>
+            <img src="./icon.svg" alt="" className="h-9 w-9 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span>
           </NavLink>
           <nav aria-label="Hoofdmenu" className="flex flex-col gap-4">
             {NAV_GROUPS.map(g => (
@@ -180,7 +180,7 @@ function Shell() {
       <div className="min-w-0 flex-1">
         {/* De kopbalk scrolt gewoon mee weg; alleen de menuknop blijft vast rechtsboven staan (geen scroll-JavaScript) */}
         <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
-          <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
+          <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
         </header>
         <main id="main" className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:pb-10 lg:pt-8 ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
           <ErrorBoundary resetKey={loc.pathname}>

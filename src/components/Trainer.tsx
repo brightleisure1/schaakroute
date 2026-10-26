@@ -67,7 +67,7 @@ export interface TrainerProps {
   onProgressChange?: (inProgress: boolean) => void
 }
 
-const MODE_LABEL: Record<TrainMode, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Mastery', review: 'Herhaling' }
+const MODE_LABEL: Record<TrainMode, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd', review: 'Herhaling' }
 const sideNl = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null

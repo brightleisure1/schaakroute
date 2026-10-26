@@ -25,7 +25,7 @@ export function Mastery() {
       {!session && (
         <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mastery</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Herhalen</h1>
             <p className="mt-1 text-muted">Herhaal wat je bijna vergeet.</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
@@ -107,7 +107,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
     const left = Math.max(0, queue.length - index)
     const { mine, stages, forecast, weakest } = overview
     if (!mine.length) {
-      return <Empty title="Nog geen geleerde posities" action={<Link to="/dagelijks" className="btn btn-primary">Start Daily Training</Link>}>Posities komen hier terug zodra je ze geleerd hebt in Daily Training of de Course.</Empty>
+      return <Empty title="Nog geen geleerde posities" action={<Link to="/dagelijks" className="btn btn-primary">Start de dagtraining</Link>}>Posities komen hier terug zodra je ze geleerd hebt in de dagtraining of de cursus.</Empty>
     }
     const max = Math.max(1, ...forecast.map(f => f.n))
     const stageRows = [
@@ -197,7 +197,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
       </div>
     ) : (
       <Empty title="Geen openstaande herhalingen" action={<button className="btn btn-primary" onClick={() => { void build(true); setStarted(true) }}>Oefen toch je zwakste posities</button>}>
-        Posities komen hier terug zodra hun herhaaldatum is bereikt. Leer eerst varianten in de Course of via Variations.
+        Posities komen hier terug zodra hun herhaaldatum is bereikt. Leer eerst varianten in de cursus of bij Varianten.
       </Empty>
     )
   }
@@ -283,7 +283,7 @@ function LineReview({ family, onSession }: { family: string; onSession: (on: boo
       </div>
     )
   }
-  if (!learned.length) return <Empty title="Nog geen geleerde varianten" action={<Link to="/openingen" className="btn btn-primary">Begin met leren</Link>}>Speel een variant eerst één keer helemaal uit in de Course of via Variations. Daarna kun je hem hier uit je hoofd spelen.</Empty>
+  if (!learned.length) return <Empty title="Nog geen geleerde varianten" action={<Link to="/openingen" className="btn btn-primary">Begin met leren</Link>}>Speel een variant eerst één keer helemaal uit in de cursus of bij Varianten. Daarna kun je hem hier uit je hoofd spelen.</Empty>
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">

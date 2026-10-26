@@ -27,7 +27,7 @@ export function OpeningDetail() {
   const lessons = learnLessons(file)
   const levels = [...new Set(lessons.map(l => l.level))].sort((a, b) => a - b)
   const nextLesson = lessons.find(l => l.variationIds.some(vid => !progress.get(vid)?.completions))
-  const courseLabel = p.learned === 0 ? 'Start de Course' : nextLesson ? `Verder met de Course · niveau ${levels.indexOf(nextLesson.level) + 1}` : 'Course herhalen'
+  const courseLabel = p.learned === 0 ? 'Start de cursus' : nextLesson ? `Verder met de cursus · niveau ${levels.indexOf(nextLesson.level) + 1}` : 'Cursus herhalen'
   const courseTo = nextLesson ? `/les/${f.id}/${nextLesson.id}` : `/cursus/${f.id}`
 
   // De vijf meest gespeelde varianten om mee te beginnen (geen basislijnen, wel lang genoeg om te leren)
@@ -82,8 +82,8 @@ export function OpeningDetail() {
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:mt-6 lg:gap-2.5">
             <Link to={courseTo} className="btn btn-primary min-h-13 px-5 text-base"><Play size={20} aria-hidden />{courseLabel}</Link>
             <div className="grid grid-cols-2 gap-2 sm:flex">
-              <Link to={`/crushing/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><Swords size={16} aria-hidden />Crushing</Link>
-              <Link to={`/advantage/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><TrendingUp size={16} aria-hidden />Advantage</Link>
+              <Link to={`/crushing/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><Swords size={16} aria-hidden />Afstraffen</Link>
+              <Link to={`/advantage/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><TrendingUp size={16} aria-hidden />Op jouw niveau</Link>
             </div>
           </div>
         </div>
