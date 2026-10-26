@@ -17,9 +17,9 @@ import type { BadgeDef } from '../lib/gamification'
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
 
 /** De dagroute (ontwerp 6e): startscherm, of met `done` het scherm om verder te gaan waar je was */
-function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onMinutes, onStart, secondary }: {
+function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onMinutes, onStart }: {
   plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number; minutesGoal?: number
-  onMinutes?: (m: 5 | 10 | 15 | 20) => void; onStart: () => void; secondary?: { label: string; onClick: () => void }
+  onMinutes?: (m: 5 | 10 | 15 | 20) => void; onStart: () => void
 }) {
   const steps = routeSteps(plan, planBreakdown(plan))
   const resuming = resume
@@ -43,7 +43,6 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
   const buttons = (cls: string) => (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
       <button className="btn btn-primary min-h-13 px-7 text-base" onClick={onStart} autoFocus={resuming}><Sun size={20} aria-hidden />{label}</button>
-      {secondary && <button className="btn btn-ghost min-h-12" onClick={secondary.onClick}>{secondary.label}</button>}
     </div>
   )
   return (
@@ -229,7 +228,7 @@ export function Daily() {
   }
 
   if (saved && !started && !summary) {
-    return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} secondary={{ label: 'Nieuwe training samenstellen', onClick: async () => { await db.meta.delete(DAILY_KEY); setSaved(null) } }} />
+    return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} />
   }
 
   if (!settings || !plan) return <Spinner label="Daily Training samenstellen…" />
