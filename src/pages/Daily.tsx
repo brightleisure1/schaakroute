@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Flame, Sun } from 'lucide-react'
+import { Check, Flame, Sun } from 'lucide-react'
 import { buildDailyPlan, estimateMinutes, planBreakdown, type DailyItem } from '../lib/daily'
 import { loadFamily } from '../lib/data'
 import { db, saveSettings, today } from '../lib/db'
@@ -10,11 +10,93 @@ import { Trainer, type LineResult } from '../components/Trainer'
 import { PuzzleTrainer } from '../components/PuzzleTrainer'
 import { CropBoard } from '../components/CropBoard'
 import { epdOf } from '../lib/chess'
-import { BadgesEarned, Confetti, Empty, FocusBar, ProgressBar, Spinner, plural, useSettings, useTrainingFocus } from '../components/ui'
+import { BadgesEarned, Confetti, Empty, FocusBar, Spinner, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile } from '../lib/types'
 import type { BadgeDef } from '../lib/gamification'
 
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
+
+/** De dagroute (ontwerp 6e): startscherm, of met `done` het scherm om verder te gaan waar je was */
+function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onMinutes, onStart, secondary }: {
+  plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number; minutesGoal?: number
+  onMinutes?: (m: 5 | 10 | 15 | 20) => void; onStart: () => void; secondary?: { label: string; onClick: () => void }
+}) {
+  const steps = routeSteps(plan, planBreakdown(plan))
+  const resuming = resume
+  const minutes = estimateMinutes(plan.slice(done))
+  const date = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
+  // Per halte: afgerond, bezig of nog te doen (het plan staat op volgorde van soort)
+  const stateOf = (kind: DailyItem['kind']) => {
+    const first = plan.findIndex(i => i.kind === kind)
+    const last = plan.length - 1 - [...plan].reverse().findIndex(i => i.kind === kind)
+    return last < done ? 'done' : resuming && first <= done ? 'current' : 'todo'
+  }
+  const minutePicker = onMinutes && (
+    <div className="flex rounded-xl border border-line bg-surface-2 p-1" role="group" aria-label="Minuten vandaag">
+      {([5, 10, 15, 20] as const).map(m => {
+        const on = minutesGoal === m
+        return <button key={m} aria-pressed={on} className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold transition ${on ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`} onClick={() => onMinutes(m)}>{m} min</button>
+      })}
+    </div>
+  )
+  const label = resuming ? 'Ga verder' : 'Start de route'
+  const buttons = (cls: string) => (
+    <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
+      <button className="btn btn-primary min-h-13 px-7 text-base" onClick={onStart} autoFocus={resuming}><Sun size={20} aria-hidden />{label}</button>
+      {secondary && <button className="btn btn-ghost min-h-12" onClick={secondary.onClick}>{secondary.label}</button>}
+    </div>
+  )
+  return (
+    <div className="space-y-5 lg:space-y-7">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold text-accent-ink">Daily Training · {resuming ? `${done} van ${plural(plan.length, 'onderdeel', 'onderdelen')} gedaan` : date}</div>
+          <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{resuming ? `Nog ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}` : `${minutes} minuten, ${plural(steps.length, 'stap', 'stappen')}`}</h1>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? `Streak van ${plural(streakDays, 'dag', 'dagen')}` : 'Begin vandaag een streak'}</span>
+      </header>
+
+      <ol className="grid grid-cols-1 lg:grid-cols-4 lg:gap-5">
+        {steps.map((s, i) => {
+          const last = i === steps.length - 1
+          const state = stateOf(s.kind)
+          return (
+            <li key={s.kind} className={`grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5 ${state === 'done' ? 'opacity-60' : ''}`} aria-current={state === 'current' ? 'step' : undefined}>
+              <div className="flex flex-col items-center lg:flex-row">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold lg:h-9 lg:w-9 ${s.soft} ${state === 'current' ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg' : ''}`}>
+                  {state === 'done' ? <><Check size={16} strokeWidth={3} aria-hidden /><span className="sr-only">Afgerond</span></> : <span aria-hidden>{i + 1}</span>}
+                </span>
+                {!last && <span className="my-1 flex-1 border-l-[3px] border-dotted border-accent lg:my-0 lg:-mr-5 lg:ml-2.5 lg:border-l-0 lg:border-t-[3px]" aria-hidden />}
+              </div>
+              <div className={`card mb-3 flex items-center gap-3 p-2.5 lg:mb-0 lg:flex-col lg:items-stretch lg:p-3 ${state === 'current' ? 'border-accent' : ''}`}>
+                <div className="w-21 shrink-0 lg:w-full">{s.board}</div>
+                <div className="min-w-0 lg:px-0.5">
+                  <div className="flex items-baseline gap-2 lg:justify-between"><span className={`text-xs font-bold uppercase tracking-wide ${s.color}`}>{s.label}</span><span className="text-xs text-muted">{state === 'done' ? 'klaar' : state === 'current' ? 'hier ben je' : `≈ ${s.min} min`}</span></div>
+                  <div className="mt-0.5 line-clamp-2 font-bold leading-snug lg:mt-1 lg:text-base">{s.title}</div>
+                  <div className="text-sm text-muted">{s.detail}</div>
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+
+      {/* Desktop: keuze en start in één balk */}
+      <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
+        <div className="flex flex-wrap items-center gap-4">
+          {minutePicker ? <><span className="font-bold">Hoe lang vandaag?</span>{minutePicker}</> : <span className="font-bold">Je gaat verder waar je was.</span>}
+          <span className="text-sm text-muted">Stoppen kan altijd, je gaat later verder.</span>
+        </div>
+        {buttons('')}
+      </section>
+      {/* Telefoon: keuze en start blijven onderin, boven de tabbalk */}
+      <div className="sticky bottom-(--bottom-nav,0px) z-10 -mx-4 space-y-2.5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
+        {minutePicker}
+        {buttons('[&>button]:w-full')}
+      </div>
+    </div>
+  )
+}
 
 // Startscherm (ontwerp 6e): per soort onderdeel een halte met eigen kleur
 const STEP_STYLE: Record<DailyItem['kind'], { label: string; color: string; soft: string }> = {
@@ -147,17 +229,7 @@ export function Daily() {
   }
 
   if (saved && !started && !summary) {
-    return (
-      <div className="mx-auto max-w-lg">
-        <div className="card p-6">
-          <h1 className="text-2xl font-extrabold">Daily Training</h1>
-          <p className="mt-1 text-muted">Je was vandaag al bezig: {saved.index} van {plural(saved.plan.length, 'onderdeel', 'onderdelen')} gedaan.</p>
-          <ProgressBar className="mt-3" value={saved.index / saved.plan.length} />
-          <button className="btn btn-primary mt-5 min-h-12 w-full text-base" onClick={resume} autoFocus>Ga verder</button>
-          <button className="btn btn-ghost mt-2 min-h-11 w-full" onClick={async () => { await db.meta.delete(DAILY_KEY); setSaved(null) }}>Nieuwe training samenstellen</button>
-        </div>
-      </div>
-    )
+    return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} secondary={{ label: 'Nieuwe training samenstellen', onClick: async () => { await db.meta.delete(DAILY_KEY); setSaved(null) } }} />
   }
 
   if (!settings || !plan) return <Spinner label="Daily Training samenstellen…" />
@@ -194,68 +266,7 @@ export function Daily() {
   }
 
   if (!started) {
-    const parts = planBreakdown(plan)
-    const steps = routeSteps(plan, parts)
-    const minutes = estimateMinutes(plan)
-    const date = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
-    const minutePicker = (
-      <div className="flex rounded-xl border border-line bg-surface-2 p-1" role="group" aria-label="Minuten vandaag">
-        {([5, 10, 15, 20] as const).map(m => {
-          const on = settings.dailyMinutes === m
-          return <button key={m} aria-pressed={on} className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold transition ${on ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`} onClick={async () => { await saveSettings({ dailyMinutes: m }); setPlan(null) }}>{m} min</button>
-        })}
-      </div>
-    )
-    const startBtn = (cls: string) => <button className={`btn btn-primary min-h-13 px-7 text-base ${cls}`} onClick={start}><Sun size={20} aria-hidden />Start de route</button>
-    return (
-      <div className="space-y-5 lg:space-y-7">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-sm font-semibold text-accent-ink">Daily Training · {date}</div>
-            <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{minutes} minuten, {plural(steps.length, 'stap', 'stappen')}</h1>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{st.current ? `Streak van ${plural(st.current, 'dag', 'dagen')}` : 'Begin vandaag een streak'}</span>
-        </header>
-
-        {/* De route: één halte per soort onderdeel, met een bordje van de stelling die je gaat spelen (ontwerp 6e) */}
-        <ol className="grid grid-cols-1 lg:grid-cols-4 lg:gap-5">
-          {steps.map((s, i) => {
-            const last = i === steps.length - 1
-            return (
-              <li key={s.kind} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5">
-                <div className="flex flex-col items-center lg:flex-row">
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold lg:h-9 lg:w-9 ${s.soft}`} aria-hidden>{i + 1}</span>
-                  {!last && <span className="my-1 flex-1 border-l-[3px] border-dotted border-accent lg:my-0 lg:-mr-5 lg:ml-2.5 lg:border-l-0 lg:border-t-[3px]" aria-hidden />}
-                </div>
-                <div className="card mb-3 flex items-center gap-3 p-2.5 lg:mb-0 lg:flex-col lg:items-stretch lg:p-3">
-                  <div className="w-21 shrink-0 lg:w-full">{s.board}</div>
-                  <div className="min-w-0 lg:px-0.5">
-                    <div className="flex items-baseline gap-2 lg:justify-between"><span className={`text-xs font-bold uppercase tracking-wide ${s.color}`}>{s.label}</span><span className="text-xs text-muted">≈ {s.min} min</span></div>
-                    <div className="mt-0.5 line-clamp-2 font-bold leading-snug lg:mt-1 lg:text-base">{s.title}</div>
-                    <div className="text-sm text-muted">{s.detail}</div>
-                  </div>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-
-        {/* Desktop: keuze en start in één balk */}
-        <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="font-bold">Hoe lang vandaag?</span>
-            {minutePicker}
-            <span className="text-sm text-muted">Stoppen kan altijd, je gaat later verder.</span>
-          </div>
-          {startBtn('')}
-        </section>
-        {/* Telefoon: keuze en start blijven onderin, boven de tabbalk */}
-        <div className="sticky bottom-(--bottom-nav,0px) z-10 -mx-4 space-y-2.5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
-          {minutePicker}
-          {startBtn('w-full')}
-        </div>
-      </div>
-    )
+    return <DailyRoute plan={plan} streakDays={st.current} minutesGoal={settings.dailyMinutes} onMinutes={async m => { await saveSettings({ dailyMinutes: m }); setPlan(null) }} onStart={start} />
   }
 
   const item = plan[Math.min(index, plan.length - 1)]
