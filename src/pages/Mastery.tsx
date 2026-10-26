@@ -8,7 +8,7 @@ import { useAsync, useCardMap, useManifest, useProgressMap, variationMastery } f
 import { masteryScore } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
 import { Trainer } from '../components/Trainer'
-import { Empty, PageHeader, ProgressBar, Spinner, Tabs, useSettings } from '../components/ui'
+import { Empty, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
 
 export function Mastery() {
@@ -16,9 +16,12 @@ export function Mastery() {
   const type = (search.get('type') as 'positions' | 'lines') ?? 'positions'
   const family = search.get('family') ?? ''
   const { data: manifest } = useManifest()
+  const [session, setSession] = useState(false)
+  useTrainingFocus(session)
   return (
     <div>
-      <PageHeader title="Mastery" subtitle="Spaced repetition (SM-2): wat je fout doet komt snel terug, wat je goed kent steeds later." />
+      {!session && <>
+      <PageHeader title="Mastery" subtitle="Herhaal wat je bijna vergeet. Fouten komen snel terug, wat je goed kent steeds later." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Tabs value={type} onChange={t => setSearch({ type: t, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: 'Losse posities' }, { value: 'lines', label: 'Complete varianten' }]} />
         {manifest && (
@@ -28,13 +31,15 @@ export function Mastery() {
           </select>
         )}
       </div>
-      {type === 'positions' ? <PositionReview key={family} family={family} /> : <LineReview key={family} family={family} />}
+      </>}
+      {type === 'positions' ? <PositionReview key={family} family={family} onSession={setSession} /> : <LineReview key={family} family={family} onSession={setSession} />}
     </div>
   )
 }
 
-function PositionReview({ family }: { family: string }) {
+function PositionReview({ family, onSession }: { family: string; onSession: (on: boolean) => void }) {
   const [queue, setQueue] = useState<TrainingCard[] | null>(null)
+  const [started, setStarted] = useState(false)
   const [extra, setExtra] = useState(false)
   const [index, setIndex] = useState(0)
   const [stats, setStats] = useState({ good: 0, bad: 0 })
@@ -63,20 +68,34 @@ function PositionReview({ family }: { family: string }) {
     return () => { if (sid) endSession(sid, {}) }
   }, [])
 
+  const inSession = started && !!queue && index < queue.length
+  useEffect(() => { onSession(inSession) }, [inSession, onSession])
+
   if (!queue) return <Spinner />
+  // Startscherm: de tabbalk blijft zichtbaar tot je echt begint
+  if (!started && index < queue.length) {
+    const left = queue.length - index
+    return (
+      <div className="card mx-auto max-w-lg p-6">
+        <h2 className="text-xl font-bold">{extra ? `${plural(left, 'zwakke positie', 'zwakke posities')} oefenen` : `${plural(left, 'positie', 'posities')} om te herhalen`}</h2>
+        <p className="mt-1 text-muted">{index > 0 ? 'Je gaat verder waar je was.' : 'Vind telkens de zet die je eerder leerde.'}</p>
+        <button className="btn btn-primary mt-5 min-h-12 w-full text-base" onClick={() => setStarted(true)} autoFocus>{index > 0 ? 'Ga verder' : 'Start'}</button>
+      </div>
+    )
+  }
   if (index >= queue.length) {
     return queue.length ? (
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
         <h2 className="mt-2 text-xl font-bold">{extra ? 'Extra oefening klaar' : 'Alle herhalingen gedaan!'}</h2>
         <p className="mt-1 text-muted">{stats.good} direct goed · {stats.bad} met fouten</p>
         <div className="mt-4 grid gap-2">
-          {dueCount > 0 && <button className="btn btn-primary" onClick={() => build(false)}>Nog {dueCount} openstaand</button>}
-          <button className="btn btn-ghost" onClick={() => build(true)}>Oefen je 20 zwakste posities</button>
+          {dueCount > 0 && <button className="btn btn-primary" onClick={() => { void build(false); setStarted(true) }}>Nog {dueCount} openstaand</button>}
+          <button className="btn btn-ghost" onClick={() => { void build(true); setStarted(true) }}>Oefen je 20 zwakste posities</button>
           <Link to="/" className="btn btn-ghost">Naar het dashboard</Link>
         </div>
       </div>
     ) : (
-      <Empty title="Geen openstaande herhalingen" action={<button className="btn btn-primary" onClick={() => build(true)}>Oefen toch je zwakste posities</button>}>
+      <Empty title="Geen openstaande herhalingen" action={<button className="btn btn-primary" onClick={() => { void build(true); setStarted(true) }}>Oefen toch je zwakste posities</button>}>
         Posities komen hier terug zodra hun herhaaldatum is bereikt. Leer eerst varianten in de Course of via Variations.
       </Empty>
     )
@@ -86,6 +105,8 @@ function PositionReview({ family }: { family: string }) {
   const v = file?.variations.find(x => x.id === card.variationIds[0])
   const line = { ...cardLine(card, v ? `Vind de zet — ${v.path.join(', ') || file!.family.name}` : 'Vind de zet'), subtitle: file?.family.name }
   return (
+    <div>
+    <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? 'Zwakste posities' : 'Herhalen'} onClose={() => setStarted(false)} closeLabel="Stoppen, je gaat later verder" />
     <Trainer
       key={card.id + index}
       line={line}
@@ -93,16 +114,16 @@ function PositionReview({ family }: { family: string }) {
       family={file}
       sessionId={sessionId}
       autoIntro={false}
-      header={<div className="mb-2"><ProgressBar value={index / queue.length} /><div className="mt-1 text-xs text-muted">Positie {index + 1} van {queue.length}{extra ? ' (extra)' : ''}</div></div>}
       onComplete={r => setStats(s => ({ good: s.good + (r.mistakes + r.hints + r.shown === 0 ? 1 : 0), bad: s.bad + (r.mistakes + r.hints + r.shown > 0 ? 1 : 0) }))}
       renderEnd={() => (
         <button className="btn btn-primary min-h-12" autoFocus onClick={() => setIndex(i => i + 1)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
       )}
     />
+    </div>
   )
 }
 
-function LineReview({ family }: { family: string }) {
+function LineReview({ family, onSession }: { family: string; onSession: (on: boolean) => void }) {
   const settings = useSettings()
   const { data: manifest } = useManifest()
   const ids = family ? [family] : settings?.openings.length ? settings.openings : manifest?.families.map(f => f.id) ?? []
@@ -134,13 +155,15 @@ function LineReview({ family }: { family: string }) {
     return out.sort((a, b) => Number(b.due) - Number(a.due) || a.score - b.score)
   }, [files.data, progress, cards])
 
+  useEffect(() => { onSession(!!current) }, [current, onSession])
+
   if (files.loading || !settings) return <Spinner />
   if (current) {
     const idx = learned.findIndex(x => x.v.id === current.v.id)
     const next = learned[(idx + 1) % Math.max(1, learned.length)]
     return (
       <div>
-        <button className="mb-3 text-sm text-muted hover:text-ink" onClick={() => setCurrent(null)}>← Terug naar het overzicht</button>
+        <FocusBar value={Math.max(0, idx) / Math.max(1, learned.length)} count={`${Math.max(0, idx) + 1} / ${learned.length}`} sub="Complete varianten" onClose={() => setCurrent(null)} closeLabel="Terug naar het overzicht" />
         <Trainer
           key={current.v.id + sessionId}
           line={variationLine(current.file, current.v)}

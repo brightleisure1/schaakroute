@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChessKnight, Star } from 'lucide-react'
+import { ChessKnight, Star, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type UserSettings } from '../lib/db'
 import type { BadgeDef } from '../lib/gamification'
@@ -155,5 +155,31 @@ export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; c
         </li>
       ))}
     </ul>
+  )
+}
+
+/** Zet de trainingsfocus aan of uit (App luistert): tijdens het trainen geen tabbalk en geen kopbalk op de telefoon */
+export const FocusContext = createContext<(on: boolean) => void>(() => {})
+
+/** Trainingsfocus zolang `active` waar is, bijvoorbeeld zolang er een bord gespeeld wordt */
+export function useTrainingFocus(active: boolean) {
+  const setFocus = useContext(FocusContext)
+  useEffect(() => {
+    setFocus(active)
+    return () => setFocus(false)
+  }, [active, setFocus])
+}
+
+/** Bovenbalk tijdens het trainen: stoppen, voortgang en teller (zoals in Duolingo) */
+export function FocusBar({ value, count, onClose, closeLabel, sub }: { value: number; count: string; onClose: () => void; closeLabel: string; sub?: string }) {
+  return (
+    <div className="sticky top-0 z-20 -mx-4 mb-3 flex items-center gap-3 bg-bg/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+      <button className="btn btn-quiet -ml-2 h-11 w-11 shrink-0 p-0" onClick={onClose} aria-label={closeLabel} title={closeLabel}><X size={22} aria-hidden /></button>
+      <div className="min-w-0 flex-1">
+        <ProgressBar value={value} label="Voortgang" />
+        {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
+      </div>
+      <span className="shrink-0 text-sm font-semibold tabular-nums text-muted">{count}</span>
+    </div>
   )
 }

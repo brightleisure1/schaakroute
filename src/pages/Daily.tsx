@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Brain, Pause, Repeat, Sparkles, Sun, Swords } from 'lucide-react'
+import { Brain, Repeat, Sparkles, Sun, Swords } from 'lucide-react'
 import { buildDailyPlan, estimateMinutes, type DailyItem } from '../lib/daily'
 import { loadFamily } from '../lib/data'
 import { db, saveSettings, today } from '../lib/db'
 import { endSession, markDailyComplete, startSession, checkBadges } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
 import { PuzzleTrainer } from '../components/PuzzleTrainer'
-import { BadgesEarned, Confetti, Empty, ProgressBar, Spinner, plural, useSettings } from '../components/ui'
+import { BadgesEarned, Confetti, Empty, FocusBar, ProgressBar, Spinner, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile } from '../lib/types'
 import type { BadgeDef } from '../lib/gamification'
 
@@ -28,6 +28,8 @@ export function Daily() {
   const [sessionId, setSessionId] = useState<number>()
   const totals = useRef({ correct: 0, mistakes: 0, newPositions: 0, reviews: 0, xp: 0, puzzles: 0 })
   const [summary, setSummary] = useState<null | (Totals & { badges: BadgeDef[]; dueTomorrow: number })>(null)
+  // Tijdens de sessie: geen tabbalk en kopbalk, wel de bovenbalk met stoppen en voortgang
+  useTrainingFocus(started && !summary)
   const startXp = useRef(0)
 
   // Een onderbroken sessie van vandaag kan worden hervat
@@ -178,13 +180,13 @@ export function Daily() {
 
   const item = plan[Math.min(index, plan.length - 1)]
   const header = (
-    <div className="mb-2 flex items-center gap-3">
-      <div className="min-w-0 flex-1">
-        <ProgressBar value={index / plan.length} label="Voortgang Daily Training" />
-        <div className="mt-1 flex justify-between text-xs text-muted"><span>{KIND_LABEL[item.kind]}{item.kind === 'new' ? (item.mode === 'learn' ? ' · leren' : ' · zelf spelen') : ''}</span><span>{index + 1} / {plan.length}</span></div>
-      </div>
-      <button className="btn btn-quiet min-h-11 shrink-0 px-2 text-sm" onClick={pause} title="Pauzeren: je gaat later verder waar je was"><Pause size={16} aria-hidden />Pauze</button>
-    </div>
+    <FocusBar
+      value={index / plan.length}
+      count={`${index + 1} / ${plan.length}`}
+      sub={`${KIND_LABEL[item.kind]}${item.kind === 'new' ? (item.mode === 'learn' ? ' · leren' : ' · zelf spelen') : ''}`}
+      onClose={pause}
+      closeLabel="Pauzeren, je gaat later verder waar je was"
+    />
   )
   if (index >= plan.length) return <Spinner label="Afronden…" />
 
@@ -200,18 +202,20 @@ export function Daily() {
   const line = item.kind === 'review' ? { ...item.line, title: 'Vind de zet', subtitle: file?.family.name } : item.line
   const mode = item.kind === 'review' ? 'review' : item.mode
   return (
+    <div>
+    {header}
     <Trainer
       key={line.key + mode + index}
       line={line}
       mode={mode}
       family={file}
       sessionId={sessionId}
-      header={header}
       autoIntro={mode === 'learn'}
       renderEnd={r => (
         <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(r, item)}>{mode === 'learn' ? 'Nu zelf spelen' : index + 1 < plan.length ? 'Verder' : 'Training afronden'}</button>
       )}
     />
+    </div>
   )
 }
 

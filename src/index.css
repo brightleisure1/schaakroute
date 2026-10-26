@@ -35,16 +35,6 @@
   --chart-1: #2f7d4f;
   --chart-2: #d99a2b;
   --chart-grid: #ece6db;
-  /* zwevend bodemmenu (telefoon): lichte, licht doorschijnende balk met groene pil voor het actieve item */
-  --nav-bg: rgb(255 255 255 / 0.92);
-  --nav-border: #e6dfd2;
-  --nav-ink: #5c615a;
-  --nav-hover: #1f2a24;
-  --nav-active-bg: #2f7d4f;
-  --nav-active-ink: #ffffff;
-  --nav-badge: #e9b44c;
-  --nav-badge-ink: #1f2a24;
-  --nav-shadow: 0 8px 28px rgb(31 42 36 / 0.14);
   color-scheme: light;
 }
 
@@ -79,15 +69,6 @@
   --chart-1: #4aa86f;
   --chart-2: #c4862a;
   --chart-grid: #2a312c;
-  --nav-bg: #232a25;
-  --nav-border: #343c36;
-  --nav-ink: #a1a99f;
-  --nav-hover: #ecefe9;
-  --nav-active-bg: #1d3326;
-  --nav-active-ink: #6cc48f;
-  --nav-badge: #e8b04a;
-  --nav-badge-ink: #121614;
-  --nav-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
@@ -243,37 +224,7 @@ button.chip { min-height: 2rem; }
 .scrollbar-thin { scrollbar-width: thin; }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
-/* Het zwevende bodemmenu op de telefoon mag geen gefocuste of vastgeplakte knop afdekken */
+/* De tabbalk op de telefoon mag geen gefocuste of vastgeplakte knop afdekken */
 @media (max-width: 1023.98px) {
   html { scroll-padding-bottom: var(--bottom-nav, 0px); }
-}
-
-/*
- * Bodemmenu: compacter naarmate je scrolt (0–80px), met een scroll-gestuurde animatie.
- * Geen JavaScript en geen aan/uit-stand, dus naveren, uitlopende swipes en de adresbalk kunnen het niet laten springen.
- * Zonder ondersteuning of met 'minder beweging' blijft het menu gewoon op volle grootte.
- */
-@keyframes bottom-nav-compact {
-  to { height: 3rem; padding: 0.25rem; left: max(1rem, calc(50% - 7.5rem)); right: max(1rem, calc(50% - 7.5rem)); }
-}
-@keyframes bottom-nav-item-even {
-  to { flex-grow: 1; gap: 0; }
-}
-@keyframes bottom-nav-label-hide {
-  to { opacity: 0; max-width: 0; }
-}
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .bottom-nav,
-    .bottom-nav-item[aria-current='page'],
-    .bottom-nav-label {
-      animation-timing-function: linear;
-      animation-fill-mode: both;
-      animation-timeline: scroll(root block);
-      animation-range: 0 80px;
-    }
-    .bottom-nav { animation-name: bottom-nav-compact; }
-    .bottom-nav-item[aria-current='page'] { animation-name: bottom-nav-item-even; }
-    .bottom-nav-label { animation-name: bottom-nav-label-hide; max-width: 8rem; }
-  }
 }

@@ -3,7 +3,7 @@ import { BookMarked, ChartColumn, ChessKnight, Download, GitBranch, House, Menu,
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
-import { Spinner, useSettings } from './components/ui'
+import { FocusContext, Spinner, useSettings } from './components/ui'
 import { Dashboard } from './pages/Dashboard'
 import { Onboarding } from './pages/Onboarding'
 import { Openings } from './pages/Openings'
@@ -62,13 +62,13 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
 /**
- * Zet --bottom-nav op de pagina: de ruimte die het zwevende menu inneemt. Vastgeplakte knoppen blijven erboven
+ * Zet --bottom-nav op de pagina: de ruimte die de tabbalk inneemt. Vastgeplakte knoppen blijven erboven
  * en scrollen (scroll-padding) houdt er rekening mee, zodat het menu nooit een knop afdekt.
  */
 function BottomNavSpace({ active }: { active: boolean }) {
   useEffect(() => {
     const root = document.documentElement
-    if (active) root.style.setProperty('--bottom-nav', 'calc(5.25rem + env(safe-area-inset-bottom))')
+    if (active) root.style.setProperty('--bottom-nav', 'calc(3.75rem + 1px + env(safe-area-inset-bottom))')
     else root.style.removeProperty('--bottom-nav')
   }, [active])
   return null
@@ -140,12 +140,14 @@ function Shell() {
   const settings = useSettings()
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
   const loc = useLocation()
+  const [sessionFocus, setSessionFocus] = useState(false)
   if (!settings) return <Spinner />
   const onboarding = loc.pathname === '/welkom' && !settings.onboarded
   if (!settings.onboarded && loc.pathname !== '/welkom' && loc.pathname !== '/bronnen') return <Navigate to="/welkom" replace />
-  const focus = FOCUS_ROUTES.test(loc.pathname)
+  const focus = FOCUS_ROUTES.test(loc.pathname) || sessionFocus
   const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`
   return (
+    <FocusContext.Provider value={setSessionFocus}>
     <div className="min-h-dvh lg:flex">
       <BottomNavSpace active={!focus && !onboarding} />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">Naar de inhoud</a>
@@ -176,11 +178,11 @@ function Shell() {
       )}
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-bg/90 px-4 py-2 backdrop-blur lg:hidden">
+        <header className={`sticky top-0 z-20 items-center justify-between border-b border-line bg-bg/90 px-4 py-2 backdrop-blur lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           {!onboarding && <MoreMenu due={due} />}
         </header>
-        <main id="main" className={`mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:pb-10 lg:pt-8 ${focus || onboarding ? 'pb-8' : 'pb-28'}`}>
+        <main id="main" className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:pb-10 lg:pt-8 ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
           <Suspense fallback={<Spinner />}>
             <Routes>
@@ -212,17 +214,17 @@ function Shell() {
         </main>
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
-          // Wordt bij scrollen compacter via een CSS scroll-animatie (.bottom-nav in index.css), zonder JavaScript
-          <nav className="bottom-nav fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex h-16 gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) p-1.5 shadow-(--nav-shadow) backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
+          // Vaste tabbalk: de pagina eindigt erboven, dus hij dekt nooit iets af en verspringt niet
+          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `bottom-nav-item relative flex min-w-0 basis-0 items-center justify-center gap-2.5 rounded-full text-sm font-bold transition-colors ${isActive ? 'grow-[2] bg-(--nav-active-bg) text-(--nav-active-ink)' : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex min-h-15 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${isActive ? 'text-brand-strong' : 'text-muted hover:text-ink'}`}>
                 {({ isActive }) => (
                   <>
-                    <span className="relative shrink-0">
-                      <n.icon size={22} strokeWidth={2} aria-hidden />
-                      {n.badge && due > 0 && <span className="absolute -right-3 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-(--nav-bg) bg-(--nav-badge) px-1 text-xs font-extrabold text-(--nav-badge-ink)" aria-label={`${due} herhalingen`}>{due}</span>}
+                    <span className={`relative flex h-7 w-14 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
+                      <n.icon size={22} strokeWidth={isActive ? 2.25 : 1.75} aria-hidden />
+                      {n.badge && due > 0 && <span className="absolute -top-1.5 right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-accent px-1 text-xs font-extrabold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
                     </span>
-                    <span className={isActive ? 'bottom-nav-label truncate' : 'sr-only'}>{n.short ?? n.label}</span>
+                    {n.short ?? n.label}
                   </>
                 )}
               </NavLink>
@@ -231,6 +233,7 @@ function Shell() {
         )}
       </div>
     </div>
+    </FocusContext.Provider>
   )
 }
 
