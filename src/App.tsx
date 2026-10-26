@@ -61,7 +61,7 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Daily en Mastery staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
-/** Het bodemmenu wordt compacter zolang je naar beneden scrollt; omhoog scrollen of bovenaan: weer volledig */
+/** Het bodemmenu wordt compacter (alleen iconen) zolang je naar beneden scrollt; omhoog scrollen of bovenaan: weer volledig */
 function useCompactOnScroll() {
   const [compact, setCompact] = useState(false)
   useEffect(() => {
@@ -236,16 +236,16 @@ function Shell() {
         </main>
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
-          <nav className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) shadow-(--nav-shadow) backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${compactNav ? 'inset-x-10 h-13 p-1' : 'inset-x-4 h-16 p-1.5'}`} aria-label="Hoofdmenu">
+          <nav className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) shadow-(--nav-shadow) backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${compactNav ? 'inset-x-[max(1rem,calc(50%-7.5rem))] h-12 p-1' : 'inset-x-4 h-16 p-1.5'}`} aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-3.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? 'grow-[1.6] bg-(--nav-active-bg) text-(--nav-active-ink)' : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-3.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? `${compactNav ? 'grow' : 'grow-[1.6]'} bg-(--nav-active-bg) text-(--nav-active-ink)` : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
                 {({ isActive }) => (
                   <>
                     <span className="relative shrink-0">
                       <n.icon size={22} strokeWidth={2} aria-hidden />
                       {n.badge && due > 0 && <span className="absolute -right-3 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-(--nav-bg) bg-(--nav-badge) px-1 text-xs font-extrabold text-(--nav-badge-ink)" aria-label={`${due} herhalingen`}>{due}</span>}
                     </span>
-                    <span className={isActive ? 'truncate' : 'sr-only'}>{n.short ?? n.label}</span>
+                    <span className={isActive && !compactNav ? 'truncate' : 'sr-only'}>{n.short ?? n.label}</span>
                   </>
                 )}
               </NavLink>
