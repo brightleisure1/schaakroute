@@ -17,9 +17,9 @@ import type { BadgeDef } from '../lib/gamification'
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
 
 /** De dagroute (ontwerp 6e): startscherm, of met `done` het scherm om verder te gaan waar je was */
-function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onMinutes, onStart }: {
+function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onStart }: {
   plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number; minutesGoal?: number
-  onMinutes?: (m: 5 | 10 | 15 | 20) => void; onStart: () => void
+  onStart: () => void
 }) {
   const steps = routeSteps(plan, planBreakdown(plan))
   const resuming = resume
@@ -31,14 +31,8 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
     const last = plan.length - 1 - [...plan].reverse().findIndex(i => i.kind === kind)
     return last < done ? 'done' : resuming && first <= done ? 'current' : 'todo'
   }
-  const minutePicker = onMinutes && (
-    <div className="flex rounded-xl border border-line bg-surface-2 p-1" role="group" aria-label="Minuten vandaag">
-      {([5, 10, 15, 20] as const).map(m => {
-        const on = minutesGoal === m
-        return <button key={m} aria-pressed={on} className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold transition ${on ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`} onClick={() => onMinutes(m)}>{m} min</button>
-      })}
-    </div>
-  )
+  // Het dagdoel stel je in bij Instellingen; hier alleen een verwijzing, zodat starten één tik is
+  const goalNote = minutesGoal && !resuming && <span className="text-sm text-muted">Dagdoel: {minutesGoal} min · <Link to="/instellingen" className="inline-flex min-h-11 items-center underline">Aanpassen</Link></span>
   const label = resuming ? 'Ga verder' : 'Start de route'
   const buttons = (cls: string) => (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
@@ -85,15 +79,15 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
       {/* Desktop: keuze en start in één balk */}
       <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
         <div className="flex flex-wrap items-center gap-4">
-          {minutePicker ? <><span className="font-bold">Hoe lang vandaag?</span>{minutePicker}</> : <span className="font-bold">Je gaat verder waar je was.</span>}
-          <span className="text-sm text-muted">Stoppen kan altijd, je gaat later verder.</span>
+          <span className="font-bold">{resuming ? 'Je gaat verder waar je was.' : 'Stoppen kan altijd, je gaat later verder.'}</span>
+          {goalNote}
         </div>
         {buttons('')}
       </section>
       {/* Telefoon: keuze en start blijven onderin, boven de tabbalk */}
-      <div className="sticky bottom-(--bottom-nav,0px) z-10 -mx-4 space-y-2.5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
-        {minutePicker}
+      <div className="sticky bottom-(--bottom-nav,0px) z-10 -mx-4 space-y-1.5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
         {buttons('[&>button]:w-full')}
+        {goalNote && <div className="text-center">{goalNote}</div>}
       </div>
     </div>
   )
@@ -267,7 +261,7 @@ export function Daily() {
   }
 
   if (!started) {
-    return <DailyRoute plan={plan} streakDays={st.current} minutesGoal={settings.dailyMinutes} onMinutes={async m => { await saveSettings({ dailyMinutes: m }); setPlan(null) }} onStart={start} />
+    return <DailyRoute plan={plan} streakDays={st.current} minutesGoal={settings.dailyMinutes} onStart={start} />
   }
 
   const item = plan[Math.min(index, plan.length - 1)]
