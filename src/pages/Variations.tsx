@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useCardMap, useFamily, useManifest, useProgressMap } from '../lib/hooks'
 import { VariationBrowser } from '../components/VariationBrowser'
 import { ErrorBox, PageHeader, Spinner, useSettings } from '../components/ui'
@@ -24,10 +24,23 @@ export function Variations() {
   const cards = useCardMap(id)
   if (error) return <ErrorBox error={error} />
   if (!manifest || !settings) return <Spinner />
+  // Vanaf een openingspagina ("Alle varianten"): kop met terug naar die opening, zonder openingskeuze
+  const fromOpening = !!search.get('opening')
+  const fam = manifest.families.find(f => f.id === id)
   return (
     <div>
-      <PageHeader title="Variations" subtitle="Oefen elke variant van een opening, vanaf de eerste zet." />
-      <div className="mb-4"><FamilyPicker value={id ?? ''} onChange={v => setSearch({ opening: v })} families={manifest.families} mine={settings.openings} /></div>
+      {fromOpening ? (
+        <header className="mb-5">
+          <Link to={`/opening/${id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← {fam?.name ?? 'Opening'}</Link>
+          <h1 className="text-3xl font-extrabold leading-none tracking-tight lg:text-[2.5rem]">Alle varianten</h1>
+          <p className="mt-2 text-muted">{fam?.name} · {fam?.variationCount} varianten. Zoek, filter of kies er een om te leren.</p>
+        </header>
+      ) : (
+        <>
+          <PageHeader title="Variations" subtitle="Oefen elke variant van een opening, vanaf de eerste zet." />
+          <div className="mb-4"><FamilyPicker value={id ?? ''} onChange={v => setSearch({ opening: v })} families={manifest.families} mine={settings.openings} /></div>
+        </>
+      )}
       {!file ? <Spinner /> : <VariationBrowser key={file.family.id} file={file} progress={progress} cards={cards} initialFilter="popular" />}
     </div>
   )
