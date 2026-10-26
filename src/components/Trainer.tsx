@@ -161,8 +161,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const userTurn = !done && isUserPly(ply, line.side)
 
   useEffect(() => {
-    onProgressChange?.(ply > startPly && !result)
-  }, [ply, result, startPly]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Pas "halverwege" als je zelf een zet hebt gedaan; de openingszet van de computer telt niet
+    onProgressChange?.(!result && userPlies.some(p => p < ply))
+  }, [ply, result, userPlies]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tegenstander speelt automatisch de boekzet, en dat wordt ook in tekst gemeld
   useEffect(() => {

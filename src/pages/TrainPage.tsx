@@ -22,6 +22,7 @@ export function TrainPage() {
   const [sessionId, setSessionId] = useState<number>()
   const [fire, setFire] = useState(0)
   const inProgress = useRef(false)
+  const [pendingMode, setPendingMode] = useState<TrainMode | null>(null)
   const variation = file?.variations.find(v => v.id === variationId)
   const line = useMemo(() => (file && variation ? variationLine(file, variation) : null), [file, variation])
 
@@ -44,8 +45,10 @@ export function TrainPage() {
   if (!variation) return <ErrorBox error="Variant niet gevonden" />
 
   function switchMode(m: TrainMode) {
-    // per ongeluk wisselen midden in een lijn zou je voortgang in die lijn wissen
-    if (inProgress.current && m !== mode && !window.confirm(`Je bent halverwege deze variant. Overschakelen naar "${MODE_NAME[m]}" begint de lijn opnieuw. Doorgaan?`)) return
+    if (m === mode) return
+    // Midden in een lijn eerst vragen (in de app zelf; browservensters worden soms geblokkeerd)
+    if (inProgress.current) { setPendingMode(m); return }
+    setPendingMode(null)
     setSearch({ mode: m })
   }
 
@@ -59,6 +62,15 @@ export function TrainPage() {
           options={[{ value: 'learn', label: 'Leren' }, { value: 'practice', label: 'Oefenen' }, { value: 'mastery', label: 'Mastery' }]}
         />
       </div>
+      {pendingMode && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-info-soft px-4 py-3 text-sm text-info-ink" role="alertdialog" aria-live="assertive">
+          <span>Je bent halverwege deze variant. Naar <b>{MODE_NAME[pendingMode]}</b> gaan begint de lijn opnieuw.</span>
+          <span className="flex gap-2">
+            <button className="btn btn-primary min-h-11" onClick={() => { const m = pendingMode; setPendingMode(null); setSearch({ mode: m }) }} autoFocus>Toch overschakelen</button>
+            <button className="btn btn-ghost min-h-11" onClick={() => setPendingMode(null)}>Blijven</button>
+          </span>
+        </div>
+      )}
       <Confetti fire={fire} />
       <Trainer
         key={line.key + mode}
