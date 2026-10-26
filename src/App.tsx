@@ -61,6 +61,29 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Daily en Mastery staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
 
+/** Het bodemmenu wordt compacter zolang je naar beneden scrollt; omhoog scrollen of bovenaan: weer volledig */
+function useCompactOnScroll() {
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    let last = window.scrollY
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        const y = window.scrollY
+        const d = y - last
+        if (y < 24) { setCompact(false); last = y }
+        else if (d > 8) { setCompact(true); last = y }
+        else if (d < -8) { setCompact(false); last = y }
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
+  }, [])
+  return compact
+}
+
 /**
  * Zet --bottom-nav op de pagina: de ruimte die het zwevende menu inneemt. Vastgeplakte knoppen blijven erboven
  * en scrollen (scroll-padding) houdt er rekening mee, zodat het menu nooit een knop afdekt.
@@ -140,6 +163,7 @@ function Shell() {
   const settings = useSettings()
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
   const loc = useLocation()
+  const compactNav = useCompactOnScroll()
   if (!settings) return <Spinner />
   const onboarding = loc.pathname === '/welkom' && !settings.onboarded
   if (!settings.onboarded && loc.pathname !== '/welkom' && loc.pathname !== '/bronnen') return <Navigate to="/welkom" replace />
@@ -212,7 +236,7 @@ function Shell() {
         </main>
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
-          <nav className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex h-16 gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) p-1.5 shadow-(--nav-shadow) backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
+          <nav className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) shadow-(--nav-shadow) backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${compactNav ? 'inset-x-10 h-13 p-1' : 'inset-x-4 h-16 p-1.5'}`} aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
               <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-3.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? 'grow-[1.6] bg-(--nav-active-bg) text-(--nav-active-ink)' : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
                 {({ isActive }) => (
