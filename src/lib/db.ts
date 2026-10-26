@@ -20,6 +20,8 @@ export interface UserSettings {
   chesscomUser?: string
   lastRoute?: string
   lastRouteLabel?: string
+  /** Wanneer de laatste back-up is bewaard (om eraan te herinneren) */
+  lastBackupAt?: number
   createdAt: number
 }
 

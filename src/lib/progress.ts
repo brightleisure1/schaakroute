@@ -183,18 +183,34 @@ export async function dueCards(limit = 200, database: SchaakDB = db) {
     .slice(0, limit)
 }
 
+const BACKUP_TABLES = ['settings', 'cards', 'progress', 'sessions', 'attempts', 'daily', 'repertoires', 'repMoves', 'puzzles', 'games', 'badges', 'meta'] as const
+
+export interface Backup { app: string; version: number; exportedAt: string; data: Record<string, unknown[]> }
+
 /** Volledige back-up van alle gebruikersgegevens (JSON) */
-export async function exportBackup(database: SchaakDB = db) {
-  const tables = ['settings', 'cards', 'progress', 'sessions', 'attempts', 'daily', 'repertoires', 'repMoves', 'puzzles', 'games', 'badges', 'meta'] as const
+export async function exportBackup(database: SchaakDB = db): Promise<Backup> {
   const out: Record<string, unknown[]> = {}
-  for (const t of tables) out[t] = await database.table(t).toArray()
+  for (const t of BACKUP_TABLES) out[t] = await database.table(t).toArray()
   return { app: 'SchaakRoute', version: 1, exportedAt: new Date().toISOString(), data: out }
 }
 
-export async function importBackup(backup: { app: string; data: Record<string, unknown[]> }, database: SchaakDB = db) {
-  if (backup.app !== 'SchaakRoute') throw new Error('Dit is geen SchaakRoute-back-up')
-  await database.transaction('rw', database.tables.filter(t => t.name !== 'datasets'), async () => {
+/** Controleert een back-up en vat hem samen, zodat de gebruiker weet wat er teruggezet wordt */
+export function summarizeBackup(backup: unknown): { exportedAt: Date | null; positions: number; variations: number } {
+  const b = backup as Partial<Backup> | null
+  if (!b || b.app !== 'SchaakRoute' || typeof b.data !== 'object' || !b.data) throw new Error('Dit bestand is geen SchaakRoute-back-up.')
+  const cards = Array.isArray(b.data.cards) ? (b.data.cards as { correct?: number }[]) : []
+  const progress = Array.isArray(b.data.progress) ? (b.data.progress as { completions?: number }[]) : []
+  const at = b.exportedAt ? new Date(b.exportedAt) : null
+  return { exportedAt: at && !isNaN(at.getTime()) ? at : null, positions: cards.filter(c => (c.correct ?? 0) > 0).length, variations: progress.filter(p => (p.completions ?? 0) > 0).length }
+}
+
+/** Zet een back-up terug; vervangt alle voortgang. Alleen bekende tabellen, de dataset-cache blijft staan. */
+export async function importBackup(backup: Backup, database: SchaakDB = db) {
+  summarizeBackup(backup)
+  const known = new Set<string>(BACKUP_TABLES)
+  await database.transaction('rw', BACKUP_TABLES.map(t => database.table(t)), async () => {
     for (const [name, rows] of Object.entries(backup.data)) {
+      if (!known.has(name) || !Array.isArray(rows)) continue
       const t = database.table(name)
       await t.clear()
       await t.bulkPut(rows)

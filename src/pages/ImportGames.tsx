@@ -33,19 +33,17 @@ export function ImportGames() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Mijn partijen" subtitle="Optioneel: importeer je eigen partijen via de gratis officiële API's van Lichess en Chess.com (geen sleutel nodig) of upload een PGN-bestand. Alles blijft op dit apparaat." />
+      <PageHeader title="Mijn partijen" subtitle="Haal je eigen partijen op van Lichess of Chess.com, of kies een PGN-bestand. Alles blijft op dit apparaat." />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card space-y-2 p-4">
           <h2 className="font-semibold">Lichess</h2>
           <input className="input" placeholder="Gebruikersnaam" defaultValue={settings?.lichessUser} onChange={e => setLichess(e.target.value)} />
           <button className="btn btn-primary w-full" disabled={!!busy || !(lichess || settings?.lichessUser)} onClick={() => { const u = lichess || settings!.lichessUser!; saveSettings({ lichessUser: u }); run('lichess', () => fetchLichessGames(u, 300, n => setBusy(`Lichess: ${n} partijen…`))) }}>Laatste 300 partijen ophalen</button>
-          <p className="text-xs text-muted">lichess.org/api/games/user — één verzoek tegelijk; bij een rate limit wacht de app een minuut.</p>
         </div>
         <div className="card space-y-2 p-4">
           <h2 className="font-semibold">Chess.com</h2>
           <input className="input" placeholder="Gebruikersnaam" defaultValue={settings?.chesscomUser} onChange={e => setChesscom(e.target.value)} />
           <button className="btn btn-primary w-full" disabled={!!busy || !(chesscom || settings?.chesscomUser)} onClick={() => { const u = chesscom || settings!.chesscomUser!; saveSettings({ chesscomUser: u }); run('chesscom', () => fetchChesscomGames(u, 3, n => setBusy(`Chess.com: ${n} partijen…`))) }}>Laatste 3 maanden ophalen</button>
-          <p className="text-xs text-muted">api.chess.com Published-Data API — maandarchieven worden na elkaar opgehaald.</p>
         </div>
         <div className="card space-y-2 p-4">
           <h2 className="font-semibold">PGN-bestand</h2>

@@ -80,7 +80,7 @@ export function Statistics() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Statistieken" subtitle="Je echte trainingsgegevens, lokaal bewaard op dit apparaat." />
+      <PageHeader title="Statistieken" subtitle={<>Je trainingsgegevens staan alleen op dit apparaat. <Link to="/instellingen" className="underline">Back-up maken</Link></>} />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Goede zetten" value={totals.correct.toLocaleString('nl-NL')} />
         <StatTile label="Fouten" value={totals.mistakes.toLocaleString('nl-NL')} hint={totals.correct + totals.mistakes ? `${pct(totals.correct / (totals.correct + totals.mistakes))} nauwkeurig` : undefined} />

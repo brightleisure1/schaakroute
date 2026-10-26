@@ -39,7 +39,7 @@ export function RepertoireList() {
 
   return (
     <div>
-      <PageHeader title="Mijn repertoire" subtitle="Stel je eigen openingen samen, los van de standaardtrainingen. Voortgang wordt gedeeld per stelling, dus wat je al kent blijft behouden." />
+      <PageHeader title="Mijn repertoire" subtitle="Stel je eigen openingen samen. Wat je al kent, blijft behouden." />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-3">
           {reps.length === 0 ? <Empty title="Nog geen repertoire">Maak hiernaast je eerste repertoire, of voeg een variant toe vanuit het eindscherm van een training.</Empty> : reps.map(r => (

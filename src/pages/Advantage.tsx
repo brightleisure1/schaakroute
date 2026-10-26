@@ -68,7 +68,7 @@ export function Advantage() {
   if (!manifest || !settings) return <Spinner />
   return (
     <div>
-      <PageHeader title="Advantage" subtitle="De beste praktische zetten: wat spelers van jouw niveau echt spelen, en wat daarna het best scoort. Gebaseerd op echte Lichess-partijen — geen engine-theorie." />
+      <PageHeader title="Advantage" subtitle="Wat spelers van jouw niveau echt spelen, en welke zet daarna het best scoort." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`)} families={manifest.families} mine={settings.openings} />
         <Tabs value={tab} onChange={setTab} options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]} />

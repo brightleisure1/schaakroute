@@ -3,7 +3,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Chess } from 'chess.js'
 import { SchaakDB } from '../src/lib/db'
-import { completeVariation, dueCards, recordMove, exportBackup, importBackup } from '../src/lib/progress'
+import { completeVariation, dueCards, recordMove, exportBackup, importBackup, summarizeBackup } from '../src/lib/progress'
 import { addLine, deleteMove, repertoireLines, setMain } from '../src/lib/repertoire'
 import { epdOf } from '../src/lib/chess'
 
@@ -56,6 +56,29 @@ describe('voortgang opslaan', () => {
     await database.progress.clear()
     await importBackup(backup, database)
     expect((await database.progress.get('vb'))?.bestStars).toBe(2)
+  })
+})
+
+describe('back-up overzetten', () => {
+  it('vat een back-up samen voordat hij wordt teruggezet', async () => {
+    const base = { epd: startEpd, uci: 'e2e4', san: 'e4', side: 'white' as const, familyId: 'italian-game', variationId: 'v1', lineUci: [], mode: 'practice' as const, result: 'correct' as const, quality: 5 as const }
+    await recordMove(base, database)
+    await completeVariation({ variationId: 'v1', familyId: 'italian-game', stars: 3, mistakes: 0, hints: 0, correct: 1, mode: 'practice' }, database)
+    const sum = summarizeBackup(await exportBackup(database))
+    expect(sum.positions).toBe(1)
+    expect(sum.variations).toBe(1)
+    expect(sum.exportedAt).toBeInstanceOf(Date)
+  })
+
+  it('weigert bestanden die geen SchaakRoute-back-up zijn', () => {
+    expect(() => summarizeBackup({ foo: 1 })).toThrow('geen SchaakRoute-back-up')
+    expect(() => summarizeBackup(null)).toThrow()
+  })
+
+  it('negeert onbekende tabellen in een back-up en laat de dataset-cache staan', async () => {
+    const backup = await exportBackup(database)
+    await importBackup({ ...backup, data: { ...backup.data, onbekend: [{ id: 1 }], datasets: [] } }, database)
+    expect(database.tables.some(t => t.name === 'onbekend')).toBe(false)
   })
 })
 

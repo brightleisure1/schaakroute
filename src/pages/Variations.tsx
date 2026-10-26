@@ -24,10 +24,9 @@ export function Variations() {
   const cards = useCardMap(id)
   if (error) return <ErrorBox error={error} />
   if (!manifest || !settings) return <Spinner />
-  const total = manifest.families.reduce((a, f) => a + f.variationCount, 0)
   return (
     <div>
-      <PageHeader title="Variations" subtitle={`Alle ${total.toLocaleString('nl-NL')} geïmporteerde varianten van de 20 openingen. Kies een opening, filter en oefen iedere variant vanaf de eerste zet.`} />
+      <PageHeader title="Variations" subtitle="Oefen elke variant van een opening, vanaf de eerste zet." />
       <div className="mb-4"><FamilyPicker value={id ?? ''} onChange={v => setSearch({ opening: v })} families={manifest.families} mine={settings.openings} /></div>
       {!file ? <Spinner /> : <VariationBrowser key={file.family.id} file={file} progress={progress} cards={cards} initialFilter="popular" />}
     </div>
