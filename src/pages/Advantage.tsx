@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { Star } from 'lucide-react'
 import { Chess } from 'chess.js'
 import { loadNames, loadStats } from '../lib/data'
 import { useAsync, useFamily, useManifest } from '../lib/hooks'
@@ -17,39 +18,67 @@ import type { Side, StatMove, StatsFile } from '../lib/types'
 const BAND_LABEL = ['< 1200', '1200–1599', '1600–1999', '2000+']
 const bandFor = (elo: number) => (elo < 1200 ? 0 : elo < 1600 ? 1 : elo < 2000 ? 2 : 3)
 
-function ResultBar({ w, d, l }: { w: number; d: number; l: number }) {
+function ResultBar({ w, d, l, className = '' }: { w: number; d: number; l: number; className?: string }) {
   return (
-    <div className="flex h-3 w-full overflow-hidden rounded-full text-[0px]" title={`winst ${pct(w)} · remise ${pct(d)} · verlies ${pct(l)}`}>
-      <div className="bg-brand" style={{ width: pct(w) }} />
-      <div className="bg-line" style={{ width: pct(d) }} />
-      <div className="bg-danger" style={{ width: pct(l) }} />
+    <div className={`flex h-1.5 w-full gap-px overflow-hidden rounded-full ${className}`} title={`winst ${pct(w)} · remise ${pct(d)} · verlies ${pct(l)}`} aria-label={`winst ${pct(w)}, remise ${pct(d)}, verlies ${pct(l)}`}>
+      <div className="bg-brand" style={{ width: `${w * 100}%` }} />
+      <div className="bg-line" style={{ width: `${d * 100}%` }} />
+      <div className="bg-danger" style={{ width: `${l * 100}%` }} />
     </div>
   )
 }
 
+/** Score als label: groen als de zet goed scoort, rood als hij slecht scoort */
+const scoreTone = (s: number) => (s >= 0.55 ? 'bg-brand-soft text-brand-strong' : s <= 0.45 ? 'bg-danger-soft text-danger-ink' : 'bg-surface-2 text-ink')
+
+/** Wat er in deze stelling gespeeld wordt: hoe vaak op jouw niveau, en hoe het afloopt voor jouw kleur */
 function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: StatMove[]; total: number; side: Side; band: number; onPick?: (uci: string) => void; highlight?: string }) {
   const bandTotal = moves.reduce((a, m) => a + bandCount(m, band), 0)
+  const rows = moves.map(m => {
+    const mine = moveScore(m, side, band)
+    const all = moveScore(m, side)
+    const s = mine.n >= 10 ? mine : all
+    return { m, mine, s, freq: bandTotal ? mine.n / bandTotal : m[2] / total, allFreq: m[2] / total }
+  }).sort((a, b) => b.freq - a.freq)
+  const maxFreq = Math.max(0.01, ...rows.map(r => r.freq))
+  // Best scorende zet met genoeg partijen om iets te zeggen
+  const best = rows.filter(r => r.s.n >= 30).sort((a, b) => b.s.score - a.s.score)[0]?.m[0]
+  const colorNl = side === 'white' ? 'wit' : 'zwart'
   return (
-    <table className="w-full text-sm tabular-nums">
-      <thead className="text-xs text-muted">
-        <tr><th className="py-1 text-left">Zet</th><th className="text-right">Gespeeld</th><th className="text-right" title={`Rating ${BAND_LABEL[band]}`}>Jouw niveau</th><th className="w-[38%] pl-3 text-left">Resultaat voor {side === 'white' ? 'wit' : 'zwart'} (jouw niveau)</th></tr>
-      </thead>
-      <tbody>
-        {moves.map(m => {
-          const mine = moveScore(m, side, band)
-          const all = moveScore(m, side)
-          const s = mine.n >= 10 ? mine : all
+    <div>
+      <div className="mb-1 grid grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] gap-3 px-2 text-xs font-semibold text-muted">
+        <span>Zet</span><span title={`Rating ${BAND_LABEL[band]}`}>Op jouw niveau</span><span className="text-right">Score {colorNl}</span>
+      </div>
+      <ul className="space-y-0.5">
+        {rows.map(({ m, mine, s, freq, allFreq }) => {
+          const Row = onPick ? 'button' : 'div'
           return (
-            <tr key={m[0]} className={`border-t border-line ${highlight === m[0] ? 'bg-brand-soft' : ''} ${onPick ? 'cursor-pointer hover:bg-surface-2' : ''}`} onClick={() => onPick?.(m[0])}>
-              <td className="py-1.5 font-mono font-semibold">{m[1]}</td>
-              <td className="text-right">{pct(m[2] / total)}<div className="text-xs text-muted">{nf(m[2])}</div></td>
-              <td className="text-right">{bandTotal ? pct(mine.n / bandTotal) : '–'}<div className="text-xs text-muted">{nf(mine.n)}</div></td>
-              <td className="pl-3"><ResultBar w={s.win} d={s.draw} l={s.loss} /><div className="text-xs text-muted">score {pct(s.score)}{mine.n < 10 ? ' (alle niveaus)' : ''}</div></td>
-            </tr>
+            <li key={m[0]}>
+              <Row className={`grid w-full grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] items-center gap-3 rounded-xl px-2 py-2 text-left ${highlight === m[0] ? 'bg-brand-soft' : ''} ${onPick ? 'transition hover:bg-surface-2' : ''}`} {...(onPick ? { onClick: () => onPick(m[0]) } : {})}>
+                <span className="flex items-center gap-1 text-base font-bold">{m[1]}{best === m[0] && <Star size={13} aria-label="best scorend" className="fill-star text-star" />}</span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-(--board-dark)" style={{ width: `${(freq / maxFreq) * 100}%` }} /></span>
+                    <span className="w-9 text-right text-sm font-semibold tabular-nums">{pct(freq)}</span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">{nf(mine.n)} partijen<span className="hidden sm:inline"> · alle niveaus {pct(allFreq)}</span></span>
+                </span>
+                <span className="flex flex-col items-end gap-1.5">
+                  <span className={`rounded-lg px-2 py-0.5 text-sm font-bold tabular-nums ${scoreTone(s.score)}`} title={mine.n < 10 ? 'Te weinig partijen op jouw niveau: score over alle niveaus' : undefined}>{pct(s.score)}</span>
+                  <ResultBar w={s.win} d={s.draw} l={s.loss} />
+                </span>
+              </Row>
+            </li>
           )
         })}
-      </tbody>
-    </table>
+      </ul>
+      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs text-muted">
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-brand" aria-hidden />winst</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-line" aria-hidden />remise</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-danger" aria-hidden />verlies</span>
+        <span>· score = winst + ½ remise</span>
+      </p>
+    </div>
   )
 }
 
@@ -151,7 +180,7 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
         </div>
         <div className="card p-4">
           <div className="mb-2 flex items-baseline justify-between">
-            <h3 className="font-semibold">Praktijk (offline steekproef)</h3>
+            <h3 className="font-bold">Wat wordt hier gespeeld</h3>
             <span className="text-xs text-muted">{pos ? `${nf(pos.n)} partijen` : ''}</span>
           </div>
           {pos ? <StatsTable moves={pos.m} total={pos.n} side={side} band={band} onPick={u => setUci(x => [...x, u])} /> : <p className="text-sm text-muted">Deze stelling kwam te weinig voor in de steekproef (minder dan 20 partijen).</p>}
