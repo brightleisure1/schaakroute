@@ -27,6 +27,8 @@
   --star-empty: #9a917f;
   --board-light: #f1e9d8;
   --board-dark: #8fae86;
+  --board-hl-light: #edce92;
+  --board-hl-dark: #bcb169;
   --notation-on-light: #4c6a46;
   --notation-on-dark: #20341d;
   --on-brand: #ffffff;
@@ -69,6 +71,8 @@
   --star-empty: #6f776f;
   --board-light: #d9d0bd;
   --board-dark: #6d8f68;
+  --board-hl-light: #dcc086;
+  --board-hl-dark: #a39a5a;
   --notation-on-light: #3f5c3b;
   --notation-on-dark: #142212;
   --on-brand: #0d1510;

@@ -240,7 +240,7 @@ function Shell() {
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
           <nav className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex gap-1 rounded-full border border-(--nav-border) bg-(--nav-bg) shadow-(--nav-shadow) backdrop-blur-md transition-all duration-300 ease-out motion-reduce:transition-none lg:hidden ${compactNav ? 'inset-x-[max(1rem,calc(50%-7.5rem))] h-12 p-1' : 'inset-x-4 h-16 p-1.5'}`} aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-3.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? `${compactNav ? 'grow' : 'grow-[1.6]'} bg-(--nav-active-bg) text-(--nav-active-ink)` : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `relative flex min-w-0 basis-0 items-center justify-center gap-2.5 rounded-full text-sm font-bold transition-[flex-grow,background-color,color] duration-300 motion-reduce:transition-none ${isActive ? `${compactNav ? 'grow' : 'grow-[2]'} bg-(--nav-active-bg) text-(--nav-active-ink)` : 'grow text-(--nav-ink) hover:text-(--nav-hover)'}`}>
                 {({ isActive }) => (
                   <>
                     <span className="relative shrink-0">

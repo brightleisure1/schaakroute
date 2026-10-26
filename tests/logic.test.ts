@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { Chess } from 'chess.js'
 import { DAY, RELEARN_DELAY, masteryScore, newSrsState, review, stageOf } from '../src/lib/srs'
 import { isUserPly, judgeMove, qualityFor, starsFor } from '../src/lib/trainer'
-import { needsPromotion, epdOf } from '../src/lib/chess'
+import { needsPromotion, epdOf, cropWindow } from '../src/lib/chess'
 import { parsePgn, splitGames, treeToPgn } from '../src/lib/pgn'
 import { computeStreak, levelFromXp } from '../src/lib/gamification'
 import { learnLessons, learnThreshold, userMoveCount } from '../src/lib/course'
@@ -187,4 +187,23 @@ describe('leerpad zonder korte lijnen', () => {
     expect(learnThreshold(f)).toBe(3)
     expect(learnLessons(f).flatMap(l => l.variationIds)).toEqual(['b', 'b'])
   })
+})
+
+describe('4×4-uitsnede van de beginzetten', () => {
+  // Verwachte vensters komen uit Claude Design, ronde 5
+  const cases: [string, string[], string, number[], string[]][] = [
+    ['Italian Game', ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'], 'cdef', [3, 4, 5, 6], ['c4']],
+    ['London System', ['d2d4', 'd7d5', 'c1f4'], 'cdef', [3, 4, 5, 6], ['f4']],
+    ["Queen's Gambit", ['d2d4', 'd7d5', 'c2c4'], 'bcde', [3, 4, 5, 6], ['c4']],
+    ['English Opening', ['c2c4'], 'bcde', [2, 3, 4, 5], ['c2', 'c4']],
+    ['Scotch Game', ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'd2d4'], 'cdef', [3, 4, 5, 6], ['d4']],
+    ["Bishop's Opening", ['e2e4', 'e7e5', 'f1c4'], 'cdef', [3, 4, 5, 6], ['c4']],
+    ['Ruy Lopez', ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1b5'], 'bcde', [3, 4, 5, 6], ['b5']],
+    ["King's Gambit", ['e2e4', 'e7e5', 'f2f4'], 'defg', [3, 4, 5, 6], ['f4']],
+    ['Vienna Game', ['e2e4', 'e7e5', 'b1c3'], 'cdef', [3, 4, 5, 6], ['c3']],
+    ['Hungarian Opening', ['g2g3'], 'efgh', [1, 2, 3, 4], ['g2', 'g3']],
+  ]
+  for (const [name, uci, files, ranks, highlight] of cases) {
+    it(name, () => expect(cropWindow(uci)).toEqual({ files, ranks, highlight }))
+  }
 })

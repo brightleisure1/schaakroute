@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap } from '../lib/hooks'
-import { fenFromEpd, formatMoves } from '../lib/chess'
-import { MiniBoard } from '../components/Board'
+import { formatMoves } from '../lib/chess'
+import { CropBoard } from '../components/CropBoard'
 import { ErrorBox, PageHeader, ProgressBar, Spinner, Tabs, pct, nf, useSettings } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
 import type { Side } from '../lib/types'
@@ -34,7 +34,7 @@ export function Openings() {
           return (
             <article key={f.id} className="card flex flex-col p-4">
               <div className="flex gap-3">
-                <div className="w-28 shrink-0"><MiniBoard id={`ov-${f.id}`} fen={fenFromEpd(f.rootEpd)} orientation={f.side} /></div>
+                <div className="w-28 shrink-0 self-start"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} /></div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs font-semibold text-muted">#{f.rank} · {f.ecoRange}{mine && <span className="chip chip-on !py-0 !text-xs">mijn opening</span>}</div>
                   <h2 className="text-lg font-bold leading-tight">{f.name}</h2>

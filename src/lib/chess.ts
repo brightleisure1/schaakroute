@@ -95,3 +95,32 @@ export function describeSan(san: string): string {
   else if (san.includes('+')) s += ' met schaak'
   return s
 }
+
+/**
+ * Het 4×4-venster waarin de beginzetten van een opening gebeuren (voor de kleine bordjes).
+ * Het venster bevat altijd de laatste zet, dekt zoveel mogelijk doelvelden en ligt zo dicht mogelijk bij het
+ * midden van die velden en daarna van het bord. Bij één zet tellen begin- en doelveld mee.
+ */
+export function cropWindow(uci: string[]): { files: string; ranks: number[]; highlight: string[] } {
+  if (!uci.length) return { files: 'cdef', ranks: [3, 4, 5, 6], highlight: [] }
+  const last = uci[uci.length - 1]
+  const squares = uci.map(u => u.slice(2, 4))
+  if (uci.length === 1) squares.push(last.slice(0, 2))
+  const highlight = uci.length === 1 ? [last.slice(0, 2), last.slice(2, 4)] : [last.slice(2, 4)]
+  // Kleinste score wint: eerst zoveel mogelijk velden, dan dicht bij het midden van de zetten, dan bij het bordmidden
+  const better = (a: number[], b: number[]) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i]; return false }
+  const pick = (values: number[], must: number) => {
+    const mid = (Math.min(...values) + Math.max(...values)) / 2
+    let best = -1
+    let bestScore: number[] = []
+    for (let start = Math.max(0, must - 3); start <= Math.min(4, must); start++) {
+      const covered = values.filter(v => v >= start && v <= start + 3).length
+      const score = [-covered, Math.abs(start + 1.5 - mid), Math.abs(start + 1.5 - 3.5)]
+      if (best < 0 || better(score, bestScore)) { best = start; bestScore = score }
+    }
+    return best
+  }
+  const f = pick(squares.map(s => s.charCodeAt(0) - 97), last.charCodeAt(2) - 97)
+  const r = pick(squares.map(s => Number(s[1]) - 1), Number(last[3]) - 1)
+  return { files: 'abcdefgh'.slice(f, f + 4), ranks: [r + 1, r + 2, r + 3, r + 4], highlight }
+}

@@ -9,6 +9,7 @@ import { fenFromEpd, moveNumberLabel } from '../lib/chess'
 import { courseOrder } from '../lib/daily'
 import { displayName } from '../lib/data'
 import { MiniBoard } from '../components/Board'
+import { CropBoard } from '../components/CropBoard'
 import { ProgressBar, Spinner, useSettings, sideLabel, plural } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
 
@@ -87,7 +88,7 @@ export function Dashboard() {
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {famStats.map(({ f, p }) => (
               <Link key={f.family.id} to={`/opening/${f.family.id}`} className="card flex flex-col p-2.5 transition hover:border-brand sm:p-3">
-                <MiniBoard id={`dash-${f.family.id}`} fen={fenFromEpd(f.family.rootEpd)} orientation={f.family.side} />
+                <CropBoard epd={f.family.rootEpd} uci={f.family.rootUci} orientation={f.family.side} inset={4} />
                 <div className="px-0.5 pt-2.5">
                   <div className="text-xs font-semibold text-muted">{sideLabel(f.family.side)} · {f.family.ecoRange}</div>
                   <div className="truncate font-bold sm:text-base">{f.family.name}</div>
