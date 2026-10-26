@@ -5,7 +5,7 @@ import { BookOpen, ChessKnight, ChevronLeft, ChevronRight, CircleAlert, CircleCh
 import { Board } from './Board'
 import { MoveInput } from './MoveInput'
 import { ProgressBar, Stars, useSettings, pct, nf, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
-import { START_FEN, describeSan, epdOf, formatMoves, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
+import { START_FEN, describeSan, epdOf, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
 import { judgeMove, isUserPly, qualityFor, starsFor, moveScore, bandCount } from '../lib/trainer'
 import { completeVariation, recordMistake, recordMove, checkBadges } from '../lib/progress'
@@ -382,7 +382,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const info = line.familyId ? OPENING_INFO[line.familyId] : undefined
   const currentName = names?.[epdOf(fens[displayPly])]?.[1] ?? lastNamed(names, fens, displayPly)
   const canHint = userTurn && mode !== 'mastery' && mode !== 'learn' && !intro
-  const meta = [MODE_LABEL[mode], `je speelt ${line.side === 'white' ? 'wit' : 'zwart'}`, line.subtitle].filter(Boolean).join(' · ')
+  const meta = [MODE_LABEL[mode], sideNl(line.side), line.subtitle].filter(Boolean).join(' · ')
   const boardLabel = `Schaakbord, je speelt ${line.side === 'white' ? 'wit' : 'zwart'}${userTurn ? ', jij bent aan zet' : ''}`
 
   return (
@@ -438,11 +438,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
           <>
             {intro ? (
               <div className="card order-2 p-4 animate-fade-up lg:order-none">
-                <h3 className="font-semibold">{line.title}</h3>
-                {info && <p className="mt-1 text-sm text-muted">{info.idea}</p>}
-                <p className="mt-2 text-sm">Zettenreeks: <span className="font-mono text-xs">{formatMoves(sans.slice(0, endPly))}</span></p>
-                <p className="mt-2 text-sm text-muted">De computer speelt de zetten van de tegenstander. Jij speelt de aangegeven zetten; de pijl laat zien wat je moet doen.</p>
-                <button className="btn btn-primary mt-3 w-full" onClick={() => setIntro(false)}>Start <kbd className="ml-1 hidden rounded border border-white/40 px-1 text-xs font-normal lg:inline">Enter</kbd></button>
+                <p className="text-sm text-muted">Speel de zet van de pijl; de computer speelt de tegenstander.</p>
+                <button className="btn btn-primary mt-3 w-full max-lg:hidden" onClick={() => setIntro(false)}>Start <kbd className="ml-1 hidden rounded border border-white/40 px-1 text-xs font-normal lg:inline">Enter</kbd></button>
               </div>
             ) : (
               <FeedbackBox feedback={feedback} opponentLine={opponentLine} userTurn={userTurn} done={done} showFull={showFull} />
@@ -476,7 +473,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
               <div className="mt-1 text-xs text-muted">
                 {startPly > 0 && endPly - startPly <= 1
                   ? 'Losse positie: vind de zet die je eerder leerde.'
-                  : <>{doneUser} van {plural(userPlies.length, 'zet', 'zetten')} van jouw kant · de lijn eindigt na {endPly} halve zetten{line.variationId ? ' (einde van de Lichess-data)' : ''}</>}
+                  : <>{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</>}
               </div>
             </div>
 
@@ -517,7 +514,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                 />
               </div>
             )}
-            <p className="order-4 hidden text-xs text-muted lg:block">Sneltoetsen: H hint · U uitleg · Z terug · R opnieuw · ← → door de zetten. Je kunt een zet ook typen onder het bord.</p>
+            <p className="order-4 hidden text-xs text-muted lg:block">Sneltoetsen: H hint · U uitleg · Z terug · R opnieuw · ← →</p>
           </>
         )}
       </aside>

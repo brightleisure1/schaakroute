@@ -137,7 +137,7 @@ function Shell() {
       {!onboarding && (
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
           <NavLink to="/" className="mb-5 flex items-center gap-2 px-2 text-xl font-extrabold tracking-tight">
-            <img src="./icon.svg" alt="" className="h-8 w-8" /> SchaakRoute
+            <img src="./icon.svg" alt="" className="h-9 w-9" /><span>Schaak<span className="text-brand-strong">Route</span></span>
           </NavLink>
           <nav aria-label="Hoofdmenu" className="flex flex-col gap-4">
             {NAV_GROUPS.map(g => (
@@ -162,7 +162,7 @@ function Shell() {
 
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-bg/90 px-4 py-2 backdrop-blur lg:hidden">
-          <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-7 w-7" />SchaakRoute</NavLink>
+          <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           {!onboarding && <MoreMenu due={due} />}
         </header>
         <main id="main" className={`mx-auto w-full max-w-6xl px-4 pt-5 sm:px-6 lg:pb-10 lg:pt-8 ${focus || onboarding ? 'pb-8' : 'pb-28'}`}>

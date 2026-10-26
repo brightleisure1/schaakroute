@@ -43,7 +43,7 @@ export function Course() {
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen met ${inCourse} varianten, belangrijkste lijnen eerst.${short ? ` ${short} korte lijnen (minder dan ${learnThreshold(file)} eigen zetten) staan alleen in de variantenboom.` : ''}`}
+      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten${short ? ` · korte lijnen (< ${learnThreshold(file)} zetten) staan in de variantenboom` : ''}`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={p.pct} />

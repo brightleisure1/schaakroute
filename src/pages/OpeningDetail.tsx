@@ -85,7 +85,7 @@ export function OpeningDetail() {
 
           <section aria-labelledby="var-title">
             <h2 id="var-title" className="text-lg font-bold">Alle {f.variationCount} varianten</h2>
-            <p className="mb-3 max-w-prose text-sm text-muted">Rechtstreeks uit de Lichess-openingsdatabase, zonder limiet. Wijs een variant aan om de eindstelling te zien; klik om hem te leren. Frequentie = aandeel van de partijen in deze opening dat de stelling bereikte.</p>
+            <p className="mb-3 text-sm text-muted">Uit de Lichess-database. Kies een variant om hem te leren.</p>
             <VariationBrowser file={file} progress={progress} cards={cards} onPreview={setPreview} />
           </section>
         </div>
