@@ -60,12 +60,14 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
           const last = i === steps.length - 1
           const state = stateOf(s.kind)
           return (
-            <li key={s.kind} className={`grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5 ${state === 'done' ? 'opacity-60' : ''}`} aria-current={state === 'current' ? 'step' : undefined}>
+            <li key={s.kind} className={`relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5 ${state === 'done' ? 'opacity-60' : ''}`} aria-current={state === 'current' ? 'step' : undefined}>
+              {/* Telefoon: verticale stippellijn absoluut gepositioneerd (Safari geeft een flex-1-lijn in een gridcel geen hoogte) */}
+              {!last && <span className="absolute bottom-0 left-4 top-10 -translate-x-1/2 border-l-[3px] border-dotted border-accent lg:hidden" aria-hidden />}
               <div className="flex flex-col items-center lg:flex-row">
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold lg:h-9 lg:w-9 ${s.soft} ${state === 'current' ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg' : ''}`}>
                   {state === 'done' ? <><Check size={16} strokeWidth={3} aria-hidden /><span className="sr-only">Afgerond</span></> : <span aria-hidden>{i + 1}</span>}
                 </span>
-                {!last && <span className="my-1 flex-1 border-l-[3px] border-dotted border-accent lg:my-0 lg:-mr-5 lg:ml-2.5 lg:border-l-0 lg:border-t-[3px]" aria-hidden />}
+                {!last && <span className="hidden flex-1 border-t-[3px] border-dotted border-accent lg:-mr-5 lg:ml-2.5 lg:block" aria-hidden />}
               </div>
               <div className={`card mb-3 flex items-center gap-3 p-2.5 lg:mb-0 lg:flex-col lg:items-stretch lg:p-3 ${state === 'current' ? 'border-accent' : ''}`}>
                 <div className="w-21 shrink-0 lg:w-full">{s.board}</div>
