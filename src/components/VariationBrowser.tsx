@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeftRight, ChevronRight } from 'lucide-react'
 import type { FamilyFile, Variation } from '../lib/types'
@@ -34,6 +34,7 @@ interface Props {
   onPreview?: (v: Variation | null) => void
 }
 
+const PAGE = 20
 const FILTERS: VariationFilter[] = ['all', 'main', 'side', 'gambit', 'tactical', 'rare', 'sub', 'new', 'hard', 'mastered']
 const PreviewContext = createContext<((v: Variation | null) => void) | undefined>(undefined)
 
@@ -41,6 +42,9 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all',
   const [view, setView] = useState<'tree' | 'list'>(initialFilter === 'popular' ? 'list' : 'tree')
   const [filter, setFilter] = useState<VariationFilter>(initialFilter === 'popular' ? 'all' : initialFilter)
   const [query, setQuery] = useState('')
+  // Lange lijsten in stappen: eerst de 20 meest gespeelde, dan op verzoek meer
+  const [limit, setLimit] = useState(PAGE)
+  useEffect(() => setLimit(PAGE), [view, filter, query])
   const side = file.family.side
 
   const meta = useMemo(() => {
@@ -104,7 +108,14 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all',
         <div className="card p-6 text-center text-sm text-muted">Geen varianten gevonden voor dit filter.</div>
       ) : flat ? (
         <ul className="card divide-y divide-line">
-          {sorted.map(v => <VariationRow key={v.id} v={v} file={file} meta={meta.get(v.id)!} progress={progress.get(v.id)} showFull />)}
+          {sorted.slice(0, limit).map(v => <VariationRow key={v.id} v={v} file={file} meta={meta.get(v.id)!} progress={progress.get(v.id)} showFull />)}
+          {sorted.length > limit && (
+            <li className="flex flex-wrap items-center gap-2 p-3">
+              <button className="btn btn-ghost min-h-11" onClick={() => setLimit(l => l + PAGE)}>Toon {Math.min(PAGE, sorted.length - limit)} meer</button>
+              {sorted.length - limit > PAGE && <button className="btn btn-quiet min-h-11" onClick={() => setLimit(sorted.length)}>Toon alle {sorted.length}</button>}
+              <span className="ml-auto text-sm text-muted">{limit} van {sorted.length}</span>
+            </li>
+          )}
         </ul>
       ) : (
         <Tree file={file} meta={meta} progress={progress} />

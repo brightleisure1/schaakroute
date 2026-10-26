@@ -42,7 +42,9 @@ export function Openings() {
                   <div className="mt-1 font-mono text-xs text-muted">{formatMoves(f.rootSan)}</div>
                 </div>
               </div>
-              <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              {/* Telefoon: één regel in plaats van drie tegels, zodat de lijst korter wordt */}
+              <p className="mt-2 text-xs text-muted sm:hidden">{f.variationCount} varianten · {pct(f.share, 1)} van de partijen</p>
+              <dl className="mt-3 hidden grid-cols-3 gap-2 text-center text-xs sm:grid">
                 <div className="rounded-lg bg-surface-2 p-2"><dt className="text-muted">Varianten</dt><dd className="text-base font-bold">{f.variationCount}</dd></div>
                 <div className="rounded-lg bg-surface-2 p-2"><dt className="text-muted">Subvarianten</dt><dd className="text-base font-bold">{f.subvariationCount}</dd></div>
                 <div className="rounded-lg bg-surface-2 p-2" title={`${nf(f.games)} partijen in de steekproef`}><dt className="text-muted">Populariteit</dt><dd className="text-base font-bold">{pct(f.share, 1)}</dd></div>

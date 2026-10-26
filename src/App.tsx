@@ -253,7 +253,7 @@ function MoreMenu({ due }: { due: number }) {
   }, [open])
   return (
     <div className="fixed right-4 top-2 z-40" ref={ref}>
-      <button className="btn btn-ghost min-h-11 min-w-11 px-3 shadow-sm" aria-label={open ? 'Menu sluiten' : 'Menu openen'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(o => !o)}>
+      <button className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface/85 text-ink shadow-[0_4px_16px_rgb(31_42_36/0.14)] backdrop-blur-md transition hover:border-brand active:scale-95" aria-label={open ? 'Menu sluiten' : 'Menu openen'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(o => !o)}>
         {open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
       </button>
       {open && (
