@@ -192,7 +192,7 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
           {!history ? (
             <button className="btn btn-quiet mt-1 px-0" onClick={loadHistory}>Haal de partij op bij Lichess (online)</button>
           ) : history.loading ? <div className="text-muted">Laden…</div> : history.error ? <div className="text-muted">{history.error}</div> : <MoveList sans={history.san} current={history.san.length} />}
-          <a className="mt-2 inline-block text-xs text-muted underline" href={puzzle.gameUrl} target="_blank" rel="noreferrer">Bekijk de partij op lichess.org</a>
+          <a className="mt-1 inline-flex min-h-11 items-center text-xs text-muted underline" href={puzzle.gameUrl} target="_blank" rel="noreferrer">Bekijk de partij op lichess.org</a>
         </div>
       </aside>
     </div>

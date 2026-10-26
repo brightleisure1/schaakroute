@@ -82,7 +82,7 @@ export function Dashboard() {
       <section>
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="text-lg font-bold lg:text-xl">Mijn openingen</h2>
-          <Link to="/welkom" className="text-sm text-muted underline">aanpassen</Link>
+          <Link to="/welkom" className="inline-flex min-h-11 items-center text-sm text-muted underline">aanpassen</Link>
         </div>
         {families.loading ? <Spinner /> : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">

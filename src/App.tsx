@@ -178,7 +178,8 @@ function Shell() {
       )}
 
       <div className="min-w-0 flex-1">
-        <header className={`sticky top-0 z-20 items-center justify-between border-b border-line bg-bg/90 px-4 py-2 backdrop-blur lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
+        {/* De kopbalk scrolt gewoon mee weg; alleen de menuknop blijft vast rechtsboven staan (geen scroll-JavaScript) */}
+        <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           {!onboarding && <MoreMenu due={due} />}
         </header>
@@ -251,8 +252,8 @@ function MoreMenu({ due }: { due: number }) {
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown) }
   }, [open])
   return (
-    <div className="relative" ref={ref}>
-      <button className="btn btn-ghost min-h-11 min-w-11 px-3" aria-label={open ? 'Menu sluiten' : 'Menu openen'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(o => !o)}>
+    <div className="fixed right-4 top-2 z-40" ref={ref}>
+      <button className="btn btn-ghost min-h-11 min-w-11 px-3 shadow-sm" aria-label={open ? 'Menu sluiten' : 'Menu openen'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(o => !o)}>
         {open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
       </button>
       {open && (

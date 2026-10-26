@@ -62,7 +62,7 @@ export function RepertoireList() {
             {manifest?.families.map(f => <option key={f.id} value={f.id}>Op basis van {f.name} ({sideLabel(f.side)})</option>)}
           </select>
           {!familyId && (
-            <div className="flex gap-2">{(['white', 'black'] as const).map(s => <button key={s} aria-pressed={side === s} className={`chip min-h-11 px-3 ${side === s ? 'chip-on' : ''}`} onClick={() => setSide(s)}>{sideLabel(s)}</button>)}</div>
+            <div className="flex gap-2">{(['white', 'black'] as const).map(s => <button key={s} aria-pressed={side === s} className={`chip min-h-11 min-w-14 justify-center px-3 ${side === s ? 'chip-on' : ''}`} onClick={() => setSide(s)}>{sideLabel(s)}</button>)}</div>
           )}
           <button className="btn btn-primary w-full" onClick={create}>Aanmaken</button>
         </div>

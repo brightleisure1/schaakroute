@@ -11,12 +11,13 @@ import { Confetti, ErrorBox, PageHeader, ProgressBar, Spinner, Stars } from '../
 import type { FamilyFile, Lesson, TrainMode, Variation } from '../lib/types'
 import type { VariationProgress } from '../lib/db'
 
+// Niveaus worden doorlopend genummerd: als korte lijnen een niveau leeg maken, begint het leerpad niet bij 'Niveau 2'
 const LEVELS: Record<number, { title: string; text: string }> = {
-  1: { title: 'Niveau 1 — Basis', text: 'De basiszetten en belangrijkste reacties' },
-  2: { title: 'Niveau 2 — Hoofdvarianten', text: 'Varianten die in minstens 1% van de partijen voorkomen' },
-  3: { title: 'Niveau 3 — Alternatieven', text: 'Zijvarianten en andere zetten van de tegenstander' },
-  4: { title: 'Niveau 4 — Minder gebruikelijk', text: 'Zeldzamere lijnen en korte subvarianten' },
-  5: { title: 'Niveau 5 — Gevorderd', text: 'Diepe subvarianten, gambieten en combinaties' },
+  1: { title: 'Basis', text: 'De basiszetten en belangrijkste reacties' },
+  2: { title: 'Hoofdvarianten', text: 'Varianten die in minstens 1% van de partijen voorkomen' },
+  3: { title: 'Alternatieven', text: 'Zijvarianten en andere zetten van de tegenstander' },
+  4: { title: 'Minder gebruikelijk', text: 'Zeldzamere lijnen en korte subvarianten' },
+  5: { title: 'Gevorderd', text: 'Diepe subvarianten, gambieten en combinaties' },
 }
 
 function lessonState(lesson: Lesson, file: FamilyFile, progress: Map<string, VariationProgress>) {
@@ -39,6 +40,8 @@ export function Course() {
   const firstOpen = allLessons.find(l => !lessonState(l, file, progress).complete)
   const inCourse = allLessons.reduce((n, l) => n + l.variationIds.length, 0)
   const short = file.variations.length - inCourse
+  // Telling binnen het leerpad, zodat die klopt met het aantal varianten in de lessen
+  const doneInCourse = allLessons.reduce((n, l) => n + l.variationIds.filter(id => (progress.get(id)?.completions ?? 0) > 0).length, 0)
   const learnedCount = file.variations.filter(v => (progress.get(v.id)?.completions ?? 0) > 0).length
 
   return (
@@ -46,22 +49,22 @@ export function Course() {
       <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten${short ? ` · korte lijnen (< ${learnThreshold(file)} zetten) staan in de variantenboom` : ''}`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
-        <ProgressBar value={p.pct} />
-        <div className="mt-1 text-sm text-muted">{p.learned} van {p.total} varianten afgerond · {p.mastered} beheerst</div>
+        <ProgressBar value={inCourse ? doneInCourse / inCourse : 0} />
+        <div className="mt-1 text-sm text-muted">{doneInCourse} van {inCourse} varianten afgerond</div>
       </div>
       <ol className="relative space-y-8">
-        {levels.map(({ level, lessons }) => {
+        {levels.map(({ level, lessons }, li) => {
           const done = lessons.filter(l => lessonState(l, file, progress).complete).length
           return (
             <li key={level}>
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-bold">{LEVELS[level].title}</h2>
+                  <h2 className="text-lg font-bold">Niveau {li + 1} — {LEVELS[level].title}</h2>
                   <p className="text-sm text-muted">{LEVELS[level].text}</p>
                 </div>
                 <span className="text-sm tabular-nums text-muted">{done}/{lessons.length} lessen</span>
               </div>
-              <div className="relative grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {lessons.map(lesson => {
                   const s = lessonState(lesson, file, progress)
                   const current = firstOpen?.id === lesson.id
@@ -71,7 +74,7 @@ export function Course() {
                         {s.complete ? <Check size={20} aria-label="afgerond" /> : <span aria-label={`${s.done} van ${s.vs.length} afgerond`}>{s.done}/{s.vs.length}</span>}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{lesson.title}</span>
+                        <span className="block font-semibold leading-snug line-clamp-2">{lesson.title}</span>
                         <span className="block text-xs text-muted">{s.vs.length} {s.vs.length === 1 ? 'variant' : 'varianten'}{current ? ' · hier ben je' : ''}</span>
                       </span>
                       {s.complete && <Stars count={s.stars} size="text-sm" />}

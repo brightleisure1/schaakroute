@@ -168,6 +168,11 @@ table, .tabular-nums {
 }
 .chip-sm { padding: 0.05rem 0.45rem; }
 button.chip { min-height: 2rem; }
+/* Touchscreens: elk tikdoel minstens 44px hoog (WCAG 2.5.5 / Apple HIG) */
+@media (pointer: coarse) {
+  .btn, button.chip, .input { min-height: 2.75rem; }
+  input[type='range'] { min-height: 2.75rem; }
+}
 .chip-on { background: var(--brand-soft); color: var(--brand-strong); border-color: var(--brand); }
 
 .input {

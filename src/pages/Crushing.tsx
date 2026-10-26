@@ -44,7 +44,8 @@ export function Crushing() {
     return from[Math.floor(Math.random() * from.length)]?.id ?? null
   }
   useEffect(() => { setCurrent(null) }, [id, range, variation])
-  useEffect(() => { if (!current && pool.length) setCurrent(pick()) }, [current, pool]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Ook opnieuw kiezen als de lijst verandert (bijv. als je rating uit de instellingen later binnenkomt)
+  useEffect(() => { if (pool.length && !pool.some(p => p.id === current)) setCurrent(pick()) }, [current, pool]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <ErrorBox error={error} />
   if (!manifest || !settings) return <Spinner />

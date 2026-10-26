@@ -116,7 +116,7 @@ export function Statistics() {
           <ul className="space-y-3">
             {famRows.map(({ f, p }) => (
               <li key={f.family.id}>
-                <div className="flex justify-between text-sm"><Link to={`/opening/${f.family.id}`} className="font-medium hover:underline">{f.family.name}</Link><span className="tabular-nums text-muted">{p.score}% · {p.learned}/{p.total} varianten · {p.positions} posities</span></div>
+                <div className="flex justify-between text-sm"><Link to={`/opening/${f.family.id}`} className="inline-flex min-h-11 items-center font-medium hover:underline">{f.family.name}</Link><span className="tabular-nums text-muted">{p.score}% · {p.learned}/{p.total} varianten · {p.positions} posities</span></div>
                 <ProgressBar value={p.score / 100} className="mt-1" />
               </li>
             ))}
@@ -132,7 +132,7 @@ export function Statistics() {
               <thead className="text-xs text-muted"><tr><th className="text-left">Variant</th><th className="text-right">Fouten/keer</th><th className="text-right">Beheersing</th></tr></thead>
               <tbody>{hardest.map(r => (
                 <tr key={r.v.id} className="border-t border-line">
-                  <td className="py-1.5"><Link className="hover:underline" to={`/train/${r.f.family.id}/${r.v.id}?mode=practice`}>{displayName(r.v, r.f.family.name)}</Link><div className="text-xs text-muted">{r.f.family.name}</div></td>
+                  <td className="py-1.5"><Link className="inline-flex min-h-11 items-center hover:underline" to={`/train/${r.f.family.id}/${r.v.id}?mode=practice`}>{displayName(r.v, r.f.family.name)}</Link><div className="text-xs text-muted">{r.f.family.name}</div></td>
                   <td className="text-right tabular-nums">{r.errRate.toFixed(1).replace('.', ',')}</td>
                   <td className="text-right tabular-nums">{r.m.score}%</td>
                 </tr>))}</tbody>
@@ -239,7 +239,7 @@ function Legend({ onTable, tableLabel }: { onTable: () => void; tableLabel: stri
     <div className="mb-2 flex items-center gap-4 text-xs text-muted">
       <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--chart-1)' }} />Goede zetten</span>
       <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--chart-2)' }} />Fouten</span>
-      <button className="ml-auto underline" onClick={onTable}>{tableLabel}</button>
+      <button className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center px-2 underline" onClick={onTable}>{tableLabel}</button>
     </div>
   )
 }

@@ -51,7 +51,7 @@ export function Settings() {
       <section className="card space-y-3 p-4">
         <h2 className="font-semibold">Stockfish (optioneel, lokaal)</h2>
         <p className="text-sm text-muted">Stockfish 19 lite draait als WebAssembly in een Web Worker op je eigen apparaat (±1,8 MB, wordt pas geladen als je hem aanzet). Gebruikt voor het onderscheiden van speelbare en slechte zetten en voor evaluaties. Licentie: GPLv3 — <a className="underline" href="./engine/SOURCE.md" target="_blank" rel="noreferrer">broncode en licentie</a>.</p>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={s.engineEnabled} onChange={e => set({ engineEnabled: e.target.checked })} className="h-4 w-4 accent-[var(--brand)]" /> Stockfish gebruiken</label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input type="checkbox" checked={s.engineEnabled} onChange={e => set({ engineEnabled: e.target.checked })} className="h-5 w-5 shrink-0 accent-[var(--brand)]" /> Stockfish gebruiken</label>
         {s.engineEnabled && <button className="btn btn-ghost" onClick={testEngine}>Test de engine</button>}
         {engineMsg && <p className="text-sm">{engineMsg} <span className="text-xs text-muted">({engineStatus()})</span></p>}
       </section>

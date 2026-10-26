@@ -84,7 +84,7 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all',
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-xl border border-line bg-surface-2 p-1" role="group" aria-label="Weergave">
             {(['tree', 'list'] as const).map(v => (
-              <button key={v} aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-10 rounded-lg px-3 text-sm font-semibold transition ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}>
+              <button key={v} aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}>
                 {v === 'tree' ? 'Boom' : 'Meest gespeeld'}
               </button>
             ))}
