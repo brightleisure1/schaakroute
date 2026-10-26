@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Check, Flame, Sun } from 'lucide-react'
+import { ChartColumn, Check, Flame, Sun } from 'lucide-react'
 import { buildDailyPlan, estimateMinutes, planBreakdown, type DailyItem } from '../lib/daily'
 import { loadFamily } from '../lib/data'
 import { db, saveSettings, today } from '../lib/db'
@@ -12,17 +12,20 @@ import { CropBoard } from '../components/CropBoard'
 import { epdOf } from '../lib/chess'
 import { BadgesEarned, Confetti, Empty, FocusBar, Spinner, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile } from '../lib/types'
-import type { BadgeDef } from '../lib/gamification'
+import { BADGES, type BadgeDef } from '../lib/gamification'
 
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
 
 /** De dagroute (ontwerp 6e): startscherm, of met `done` het scherm om verder te gaan waar je was */
-function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onStart }: {
+function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onStart, completed }: {
   plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number; minutesGoal?: number
   onStart: () => void
+  /** Afgeronde route: resultaat van vandaag, met verder kijken of nog een ronde */
+  completed?: { totals: Totals; dueTomorrow: number; badges: BadgeDef[]; onAgain: () => void }
 }) {
   const steps = routeSteps(plan, planBreakdown(plan))
   const resuming = resume
+  if (completed) done = plan.length
   const minutes = estimateMinutes(plan.slice(done))
   const date = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   // Per halte: afgerond, bezig of nog te doen (het plan staat op volgorde van soort)
@@ -34,27 +37,49 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
   // Het dagdoel stel je in bij Instellingen; hier alleen een verwijzing, zodat starten één tik is
   const goalNote = minutesGoal && !resuming && <span className="text-sm text-muted">Dagdoel: {minutesGoal} min · <Link to="/instellingen" className="inline-flex min-h-11 items-center underline">Aanpassen</Link></span>
   const label = resuming ? 'Ga verder' : 'Start de route'
-  const buttons = (cls: string) => (
+  const buttons = (cls: string) => completed ? (
+    <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
+      <Link to="/statistieken" className="btn btn-primary min-h-13 px-7 text-base"><ChartColumn size={20} aria-hidden />Bekijk je voortgang</Link>
+      <button className="btn btn-ghost min-h-12" onClick={completed.onAgain}>Nog een ronde</button>
+    </div>
+  ) : (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
       <button className="btn btn-primary min-h-13 px-7 text-base" onClick={onStart} autoFocus={resuming}><Sun size={20} aria-hidden />{label}</button>
     </div>
   )
+  // Resultaat in één regel: alleen wat je echt gedaan hebt
+  const t = completed?.totals
+  const result = t ? [
+    t.correct && plural(t.correct, 'goede zet', 'goede zetten'),
+    t.mistakes && plural(t.mistakes, 'fout', 'fouten'),
+    t.newPositions && plural(t.newPositions, 'nieuwe positie', 'nieuwe posities'),
+    t.reviews && plural(t.reviews, 'herhaling', 'herhalingen'),
+    t.xp > 0 && `+${t.xp} XP`,
+  ].filter(Boolean).join(' · ') : ''
   return (
     <div className="space-y-5 lg:space-y-7">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-accent-ink">Daily Training · {resuming ? `${done} van ${plural(plan.length, 'onderdeel', 'onderdelen')} gedaan` : date}</div>
-          <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{resuming ? `Nog ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}` : `${minutes} minuten, ${plural(steps.length, 'stap', 'stappen')}`}</h1>
+          <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{completed ? 'Klaar voor vandaag' : resuming ? `Nog ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}` : `${minutes} minuten, ${plural(steps.length, 'stap', 'stappen')}`}</h1>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? `Streak van ${plural(streakDays, 'dag', 'dagen')}` : 'Begin vandaag een streak'}</span>
       </header>
+
+      {completed && (
+        <section className="card flex flex-col gap-3 p-4 lg:p-5" aria-label="Resultaat van vandaag">
+          <p className="flex items-start gap-2.5 font-semibold"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand" aria-hidden><Check size={16} strokeWidth={3} /></span><span className="pt-0.5">{result || 'Route afgerond'}</span></p>
+          <p className="text-sm text-muted">{completed.dueTomorrow ? <>Morgen staan er <b className="text-ink">{plural(completed.dueTomorrow, 'positie', 'posities')}</b> klaar om te herhalen.</> : 'Morgen leer je weer nieuwe varianten.'}</p>
+          <BadgesEarned badges={completed.badges} />
+        </section>
+      )}
 
       <ol className="grid grid-cols-1 lg:grid-cols-4 lg:gap-5">
         {steps.map((s, i) => {
           const last = i === steps.length - 1
           const state = stateOf(s.kind)
           return (
-            <li key={s.kind} className={`relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5 ${state === 'done' ? 'opacity-60' : ''}`} aria-current={state === 'current' ? 'step' : undefined}>
+            <li key={s.kind} className={`relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3 lg:flex lg:flex-col lg:gap-3.5 ${state === 'done' && !completed ? 'opacity-60' : ''}`} aria-current={state === 'current' ? 'step' : undefined}>
               {/* Telefoon: verticale stippellijn absoluut gepositioneerd (Safari geeft een flex-1-lijn in een gridcel geen hoogte) */}
               {!last && <span className="absolute bottom-0 left-4 top-10 -translate-x-1/2 border-l-[3px] border-dotted border-accent lg:hidden" aria-hidden />}
               <div className="flex flex-col items-center lg:flex-row">
@@ -79,7 +104,7 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
       {/* Desktop: keuze en start in één balk */}
       <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
         <div className="flex flex-wrap items-center gap-4">
-          <span className="font-bold">{resuming ? 'Je gaat verder waar je was.' : 'Stoppen kan altijd, je gaat later verder.'}</span>
+          <span className="font-bold">{completed ? (streakDays ? `Je streak staat op ${plural(streakDays, 'dag', 'dagen')}. Tot morgen!` : 'Tot morgen!') : resuming ? 'Je gaat verder waar je was.' : 'Stoppen kan altijd, je gaat later verder.'}</span>
           {goalNote}
         </div>
         {buttons('')}
@@ -131,6 +156,9 @@ function routeSteps(plan: DailyItem[], parts: ReturnType<typeof planBreakdown>) 
 type Totals = { correct: number; mistakes: number; newPositions: number; reviews: number; xp: number; puzzles: number }
 interface SavedDaily { day: string; plan: DailyItem[]; index: number; totals: Totals; startXp: number }
 const DAILY_KEY = 'dailyState'
+/** De afgeronde route van vandaag: blijft zichtbaar als je later terugkomt */
+const DONE_KEY = 'dailyDone'
+interface DoneDaily { day: string; plan: DailyItem[]; totals: Totals; dueTomorrow: number; badgeIds: string[] }
 
 export function Daily() {
   const settings = useSettings()
@@ -143,6 +171,7 @@ export function Daily() {
   const [sessionId, setSessionId] = useState<number>()
   const totals = useRef({ correct: 0, mistakes: 0, newPositions: 0, reviews: 0, xp: 0, puzzles: 0 })
   const [summary, setSummary] = useState<null | (Totals & { badges: BadgeDef[]; dueTomorrow: number })>(null)
+  const [doneToday, setDoneToday] = useState<DoneDaily | null>(null)
   // Tijdens de sessie: geen tabbalk en kopbalk, wel de bovenbalk met stoppen en voortgang
   useTrainingFocus(started && !summary)
   const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
@@ -154,6 +183,10 @@ export function Daily() {
       const v = m?.value as SavedDaily | undefined
       setSaved(v && v.day === today() && v.index < v.plan.length ? v : null)
     }).catch(() => setSaved(null))
+    db.meta.get(DONE_KEY).then(m => {
+      const v = m?.value as DoneDaily | undefined
+      if (v && v.day === today()) setDoneToday(v)
+    }).catch(() => {})
   }, [])
 
   async function loadFiles(p: DailyItem[]) {
@@ -207,7 +240,19 @@ export function Daily() {
     const badges = await checkBadges()
     const xpNow = ((await db.meta.get('xp'))?.value as number) ?? 0
     const dueTomorrow = await db.cards.where('dueAt').belowOrEqual(Date.now() + 36 * 3600_000).filter(c => !c.suspended).count()
-    setSummary({ ...totals.current, xp: xpNow - startXp.current, badges, dueTomorrow })
+    const result = { ...totals.current, xp: xpNow - startXp.current }
+    setSummary({ ...result, badges, dueTomorrow })
+    if (plan) db.meta.put({ key: DONE_KEY, value: { day: today(), plan, totals: result, dueTomorrow, badgeIds: badges.map(b => b.id) } satisfies DoneDaily }).catch(() => {})
+  }
+
+  // Nog een ronde: nieuwe route samenstellen; de afgeronde blijft bewaard
+  function again() {
+    totals.current = { correct: 0, mistakes: 0, newPositions: 0, reviews: 0, xp: 0, puzzles: 0 }
+    setSummary(null)
+    setDoneToday(null)
+    setStarted(false)
+    setIndex(0)
+    setPlan(null)
   }
 
   function advance(r?: LineResult, item?: DailyItem) {
@@ -223,6 +268,10 @@ export function Daily() {
     if (plan && next >= plan.length) finish()
   }
 
+  if (doneToday && !saved && !started && !summary) {
+    return <DailyRoute plan={doneToday.plan} streakDays={st.current} onStart={start} completed={{ totals: doneToday.totals, dueTomorrow: doneToday.dueTomorrow, badges: BADGES.filter(b => doneToday.badgeIds.includes(b.id)), onAgain: again }} />
+  }
+
   if (saved && !started && !summary) {
     return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} />
   }
@@ -231,28 +280,10 @@ export function Daily() {
 
   if (summary) {
     return (
-      <div className="mx-auto max-w-lg">
+      <>
         <Confetti fire={1} />
-        <div className="card p-6 text-center animate-pop">
-          <Sun size={44} strokeWidth={1.5} aria-hidden className="mx-auto text-star" />
-          <h1 className="mt-2 text-2xl font-extrabold">Daily Training voltooid</h1>
-          <p className="text-muted">{new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          <div className="mt-5 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <Stat label="Goede zetten" value={summary.correct} />
-            <Stat label="Fouten" value={summary.mistakes} />
-            <Stat label="Nieuwe posities" value={summary.newPositions} />
-            <Stat label="Herhaalde posities" value={summary.reviews} />
-            <Stat label="Puzzels" value={summary.puzzles} />
-            <Stat label="Verdiende XP" value={`+${summary.xp}`} />
-          </div>
-          <p className="mt-4 text-sm">{summary.dueTomorrow ? <>Morgen staan er <b>{plural(summary.dueTomorrow, 'positie', 'posities')}</b> klaar om te herhalen.</> : 'Morgen leer je weer nieuwe varianten.'}</p>
-          <BadgesEarned badges={summary.badges} className="mt-3" />
-          <div className="mt-5 grid gap-2">
-            <Link to="/statistieken" className="btn btn-primary">Bekijk je voortgang</Link>
-            <Link to="/" className="btn btn-ghost">Naar het dashboard</Link>
-          </div>
-        </div>
-      </div>
+        <DailyRoute plan={plan} streakDays={st.current} onStart={start} completed={{ totals: summary, dueTomorrow: summary.dueTomorrow, badges: summary.badges, onAgain: again }} />
+      </>
     )
   }
 
@@ -306,6 +337,3 @@ export function Daily() {
 }
 
 
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return <div className="rounded-xl bg-surface-2 p-3"><div className="text-xl font-bold">{value}</div><div className="text-muted">{label}</div></div>
-}
