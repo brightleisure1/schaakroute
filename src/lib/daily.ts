@@ -123,6 +123,17 @@ export async function buildDailyPlan(settings: UserSettings): Promise<DailyItem[
   return items
 }
 
+/** Per soort onderdeel: aantal (nieuwe varianten één keer, niet leren + spelen apart) en geschatte seconden */
+export function planBreakdown(items: DailyItem[]): Record<DailyItem['kind'], { count: number; seconds: number }> {
+  const out = { review: { count: 0, seconds: 0 }, new: { count: 0, seconds: 0 }, hard: { count: 0, seconds: 0 }, puzzle: { count: 0, seconds: 0 } }
+  for (const i of items) {
+    const b = out[i.kind]
+    if (i.kind !== 'new' || i.mode !== 'learn') b.count++
+    b.seconds += i.kind === 'review' ? COST.review : i.kind === 'puzzle' ? COST.puzzle : Math.ceil(i.line.uci.length / 2) * COST.perUserMove
+  }
+  return out
+}
+
 export function estimateMinutes(items: DailyItem[]) {
   let s = 0
   for (const i of items) {
