@@ -22,11 +22,8 @@ export function Openings() {
 
   return (
     <div>
-      <PageHeader
-        title="Openingen"
-        subtitle={<>De 10 populairste openingsfamilies per kleur, op basis van {nf(manifest.source.games.usedGames)} rated Lichess-partijen ({manifest.source.games.month}). <Link to="/bronnen" className="underline">Methode</Link></>}
-      />
-      <Tabs value={side} onChange={setSide} options={[{ value: 'white', label: 'Wit — 10 openingen' }, { value: 'black', label: 'Zwart — 10 openingen' }]} />
+      <PageHeader title="Openingen" />
+      <Tabs value={side} onChange={setSide} options={[{ value: 'white', label: 'Wit' }, { value: 'black', label: 'Zwart' }]} />
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {list.map(f => {
           const file = files.get(f.id)

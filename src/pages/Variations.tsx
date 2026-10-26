@@ -33,11 +33,11 @@ export function Variations() {
         <header className="mb-5">
           <Link to={`/opening/${id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← {fam?.name ?? 'Opening'}</Link>
           <h1 className="text-3xl font-extrabold leading-none tracking-tight lg:text-[2.5rem]">Alle varianten</h1>
-          <p className="mt-2 text-muted">{fam?.name} · {fam?.variationCount} varianten. Zoek, filter of kies er een om te leren.</p>
+          <p className="mt-2 text-muted">{fam?.name} · {fam?.variationCount} varianten</p>
         </header>
       ) : (
         <>
-          <PageHeader title="Variations" subtitle="Oefen elke variant van een opening, vanaf de eerste zet." />
+          <PageHeader title="Variations" />
           <div className="mb-4"><FamilyPicker value={id ?? ''} onChange={v => setSearch({ opening: v })} families={manifest.families} mine={settings.openings} /></div>
         </>
       )}

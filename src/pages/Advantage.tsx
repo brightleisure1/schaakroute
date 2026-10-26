@@ -68,7 +68,7 @@ export function Advantage() {
   if (!manifest || !settings) return <Spinner />
   return (
     <div>
-      <PageHeader title="Advantage" subtitle="Wat spelers van jouw niveau echt spelen, en welke zet daarna het best scoort." />
+      <PageHeader title="Advantage" subtitle="Wat werkt op jouw niveau." />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`)} families={manifest.families} mine={settings.openings} />
         <Tabs value={tab} onChange={setTab} options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]} />
@@ -155,12 +155,11 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
             <span className="text-xs text-muted">{pos ? `${nf(pos.n)} partijen` : ''}</span>
           </div>
           {pos ? <StatsTable moves={pos.m} total={pos.n} side={side} band={band} onPick={u => setUci(x => [...x, u])} /> : <p className="text-sm text-muted">Deze stelling kwam te weinig voor in de steekproef (minder dan 20 partijen).</p>}
-          <p className="mt-2 text-xs text-muted">Bron: rated blitz/rapid/classical-partijen uit de Lichess-database ({stats.totalGames.toLocaleString('nl-NL')} in totaal). Jouw niveau = gemiddelde rating {BAND_LABEL[band]}. Klik op een zet om verder te gaan.</p>
         </div>
         <div className="card p-4">
           <h3 className="font-semibold">Live Lichess Explorer <span className="text-xs font-normal text-muted">(optioneel)</span></h3>
           {!token ? (
-            <p className="mt-1 text-sm text-muted">De Lichess Explorer vereist sinds 2025 een gratis persoonlijk Lichess-token. Voeg er een toe in Instellingen voor actuele aantallen per ratinggroep. Zonder token werkt alles met de offline data.</p>
+            <p className="mt-1 text-sm text-muted">Voeg een Lichess-token toe in Instellingen voor actuele aantallen.</p>
           ) : !live ? (
             <button className="btn btn-ghost mt-2 w-full" onClick={fetchLive}>Haal live statistieken op (rating {ratingGroupsFor(elo).join(', ')})</button>
           ) : live.loading ? <div className="text-sm text-muted">Laden…</div> : live.error ? <div className="text-sm text-danger-ink">{live.error}</div> : live.data && (
@@ -189,7 +188,6 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
         <div className="card p-4">
           <h3 className="mb-2 font-semibold">Engine <span className="text-xs font-normal text-muted">(objectief, niet hetzelfde als praktisch succes)</span></h3>
           <EvalButton fen={fen} multipv={3} label="Analyseer met Stockfish (3 beste zetten)" />
-          <p className="mt-2 text-xs text-muted">Een zet die volgens Stockfish het beste is, scoort in menselijke partijen niet altijd het best — en andersom. Zet Stockfish aan in Instellingen.</p>
         </div>
       </aside>
     </div>
@@ -243,12 +241,12 @@ function PracticeTrainer({ rootUci, side, stats, elo, names }: { rootUci: string
     const mine = candidates.find(x => x.m[0] === u)
     setReveal(false)
     if (!mine) {
-      setFeedback({ tone: 'info', text: `${mv.san} kwam in de steekproef (bijna) niet voor op dit niveau — er is geen betrouwbare praktijkscore. Kies een gangbare zet.` })
+      setFeedback({ tone: 'info', text: `${mv.san} komt op dit niveau (bijna) niet voor. Kies een gangbare zet.` })
       return false
     }
     setScore(s => ({ good: s.good + (mine.s.score >= best.s.score - 0.03 ? 1 : 0), total: s.total + 1 }))
     if (mine.s.score >= best.s.score - 0.03) {
-      setFeedback({ tone: 'good', text: `${mv.san}: praktische score ${pct(mine.s.score)} over ${nf(mine.n)} partijen — een van de best scorende keuzes.`, uci: u })
+      setFeedback({ tone: 'good', text: `${mv.san}: praktische score ${pct(mine.s.score)} over ${nf(mine.n)} partijen, een van de best scorende keuzes.`, uci: u })
       addXp(3).catch(() => {})
     } else {
       setFeedback({ tone: 'bad', text: `${mv.san} scoort ${pct(mine.s.score)}; ${best.m[1]} scoort ${pct(best.s.score)} op jouw niveau. Je speelt verder met jouw zet.`, uci: u })
@@ -288,7 +286,7 @@ function PracticeTrainer({ rootUci, side, stats, elo, names }: { rootUci: string
         <div className="flex gap-2">
           <button className="btn btn-ghost flex-1" onClick={restart}>⟲ Opnieuw</button>
         </div>
-        <p className="text-xs text-muted">Praktische score = winst + ½ remise voor jouw kleur in partijen tussen spelers van jouw ratinggroep (minimaal 20 partijen). Een hoge score betekent niet dat de zet objectief het best is.</p>
+        <p className="text-xs text-muted">Praktische score = winst + ½ remise op jouw niveau.</p>
       </aside>
     </div>
   )

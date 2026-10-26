@@ -15,18 +15,18 @@ export function Sources() {
       <section className="card space-y-2 p-5 text-sm">
         <h2 className="text-base font-semibold">Dataset {m.datasetVersion}</h2>
         <ul className="list-disc space-y-1 pl-5 text-muted">
-          <li>Openingen: <a className="underline" href={m.source.openings.repo} target="_blank" rel="noreferrer">lichess-org/chess-openings</a> @ <span className="font-mono">{m.source.openings.ref.slice(0, 10)}</span> ({m.source.openings.license}) — {nf(m.source.openings.rows)} regels uit a.tsv–e.tsv, {m.source.openings.illegal} illegale lijnen.</li>
+          <li>Openingen: <a className="underline" href={m.source.openings.repo} target="_blank" rel="noreferrer">lichess-org/chess-openings</a> @ <span className="font-mono">{m.source.openings.ref.slice(0, 10)}</span> ({m.source.openings.license}), {nf(m.source.openings.rows)} regels uit a.tsv–e.tsv, {m.source.openings.illegal} illegale lijnen.</li>
           <li>Populariteit en praktijkstatistieken: <a className="underline" href="https://database.lichess.org" target="_blank" rel="noreferrer">Lichess-partijendatabase</a> ({g.license}), maand {g.month}. {g.method}. {nf(g.sampledGames)} partijen verzameld, waarvan {nf(g.usedGames)} rated blitz/rapid/classical gebruikt.</li>
           <li>Ratingverdeling in de steekproef (gemiddelde van beide spelers): {Object.entries(g.ratingBands).map(([k, v]) => `${k}: ${pct(v / g.usedGames)}`).join(' · ')}.</li>
           <li>Snelheden: {Object.entries(g.speeds).map(([k, v]) => `${k} ${nf(v)}`).join(' · ')}.</li>
           {m.source.puzzles && <li>Crushing-puzzels: <a className="underline" href="https://database.lichess.org/#puzzles" target="_blank" rel="noreferrer">Lichess-puzzeldatabase</a> ({m.source.puzzles.license}), {nf(m.source.puzzles.scanned)} puzzels gescand; alleen thema “opening” en waarin jouw kant een fout afstraft.</li>}
-          <li>In totaal {nf(totalVariations)} benoemde varianten in de 20 openingen — zonder limiet per opening.</li>
+          <li>In totaal {nf(totalVariations)} benoemde varianten in de 20 openingen, zonder limiet per opening.</li>
         </ul>
       </section>
       <section className="card space-y-2 p-5 text-sm">
         <h2 className="text-base font-semibold">Methode van de ranglijst</h2>
         <ol className="list-decimal space-y-1 pl-5 text-muted">{m.method.map(x => <li key={x}>{x}</li>)}</ol>
-        <p className="text-muted"><b>Beperkingen:</b> de cijfers komen uit één maand Lichess-partijen, waar snelle partijen en lagere ratings sterk vertegenwoordigd zijn — daardoor staan bijvoorbeeld de Englund- en Scandinavische opening hoog. Het opnieuw draaien van het importscript met een andere maand kan de onderste plaatsen veranderen. De Lichess Opening Explorer (die een token vereist) is niet gebruikt voor de ranglijst, zodat de selectie zonder account reproduceerbaar is.</p>
+        <p className="text-muted"><b>Beperkingen:</b> de cijfers komen uit één maand Lichess-partijen, waar snelle partijen en lagere ratings sterk vertegenwoordigd zijn. Daardoor staan bijvoorbeeld de Englund- en Scandinavische opening hoog. Het opnieuw draaien van het importscript met een andere maand kan de onderste plaatsen veranderen. De Lichess Opening Explorer (die een token vereist) is niet gebruikt voor de ranglijst, zodat de selectie zonder account reproduceerbaar is.</p>
       </section>
       <section className="grid gap-4 lg:grid-cols-2">
         {(['white', 'black'] as const).map(side => (
@@ -65,9 +65,9 @@ export function Sources() {
         <h2 className="text-base font-semibold text-ink">Licenties</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>SchaakRoute: GPL-3.0-or-later (vanwege de meegeleverde Stockfish).</li>
-          <li>Stockfish 19 (via stockfish.js van Nathan Rugg): GPLv3 — <a className="underline" href="./engine/SOURCE.md" target="_blank" rel="noreferrer">broncode-verwijzing</a>, <a className="underline" href="./engine/COPYING.txt" target="_blank" rel="noreferrer">licentietekst</a>.</li>
+          <li>Stockfish 19 (via stockfish.js van Nathan Rugg): GPLv3, <a className="underline" href="./engine/SOURCE.md" target="_blank" rel="noreferrer">broncode-verwijzing</a>, <a className="underline" href="./engine/COPYING.txt" target="_blank" rel="noreferrer">licentietekst</a>.</li>
           <li>chess.js (BSD-2-Clause), react-chessboard (MIT), React (MIT), Dexie (Apache-2.0), Tailwind CSS (MIT), Vite (MIT), vite-plugin-pwa (MIT).</li>
-          <li>Lichess-data (openingen, partijen, puzzels): CC0 1.0 — publiek domein.</li>
+          <li>Lichess-data (openingen, partijen, puzzels): CC0 1.0, publiek domein.</li>
           <li>Lotus Chess diende als inspiratie voor de leerervaring; er is geen tekst, afbeelding of vormgeving van overgenomen.</li>
         </ul>
       </section>

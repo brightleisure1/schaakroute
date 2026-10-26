@@ -28,7 +28,7 @@ export const THEME_NL: Record<string, { name: string; why?: string }> = {
   zugzwang: { name: 'Zetdwang', why: 'Elke zet van de tegenstander verslechtert zijn stelling.' },
   kingsideAttack: { name: 'Koningsaanval', why: 'De aanval richt zich op de gerokeerde koning.' },
   queensideAttack: { name: 'Damevleugelaanval' },
-  attackingF2F7: { name: 'Aanval op f2/f7', why: 'Het zwakke veld f2/f7 (alleen door de koning gedekt) wordt aangevallen — klassiek in de opening.' },
+  attackingF2F7: { name: 'Aanval op f2/f7', why: 'Het zwakke veld f2/f7 (alleen door de koning gedekt) wordt aangevallen, klassiek in de opening.' },
   exposedKing: { name: 'Blootgestelde koning', why: 'De koning van de tegenstander staat onveilig en wordt aangevallen.' },
   backRankMate: { name: 'Achterste-rijmat', why: 'De koning staat opgesloten achter zijn eigen pionnen.' },
   smotheredMate: { name: 'Stikmat', why: 'Een paard geeft mat aan een koning die door eigen stukken is ingesloten.' },

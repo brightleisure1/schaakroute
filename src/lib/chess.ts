@@ -91,7 +91,7 @@ export function describeSan(san: string): string {
   const promo = san.match(/=([QRBN])/)
   let s = `${piece} ${capture ? 'slaat op' : 'naar'} ${target}`
   if (promo) s += `, promoveert tot ${PIECE_NL[promo[1]]}`
-  if (san.includes('#')) s += ' — schaakmat'
+  if (san.includes('#')) s += ', schaakmat'
   else if (san.includes('+')) s += ' met schaak'
   return s
 }

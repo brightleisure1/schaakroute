@@ -33,7 +33,7 @@ export function ImportGames() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Mijn partijen" subtitle="Haal je eigen partijen op van Lichess of Chess.com, of kies een PGN-bestand. Alles blijft op dit apparaat." />
+      <PageHeader title="Mijn partijen" subtitle="Haal je partijen op van Lichess of Chess.com." />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card space-y-2 p-4">
           <h2 className="font-semibold">Lichess</h2>
@@ -100,11 +100,9 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
                 <td className="text-right tabular-nums">{pct(f.score)}</td>
               </tr>))}</tbody>
           </table>
-          <p className="mt-2 text-xs text-muted">Alleen de 20 openingen van SchaakRoute. Score = winst + ½ remise.</p>
         </div>
         <div className="card p-4">
           <h3 className="mb-2 font-semibold">Welke varianten ken je het slechtst?</h3>
-          <p className="mb-2 text-xs text-muted">Diepste benoemde Lichess-variant per partij, minimaal 3 partijen, laagste score eerst.</p>
           <ul className="space-y-1 text-sm">
             {analysis.byName.filter(n => n.games >= 3).sort((a, b) => a.score - b.score).slice(0, 8).map(n => (
               <li key={n.name + n.color} className="flex justify-between gap-2 border-t border-line pt-1"><span className="truncate">{n.name} <span className="text-xs text-muted">({sideLabel(n.color).toLowerCase()})</span></span><span className="shrink-0 tabular-nums text-muted">{n.games} · {pct(n.score)}</span></li>
@@ -129,7 +127,6 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
             ))}
           </ul>
         )}
-        <p className="mt-2 text-xs text-muted">“Theorie” = een vervolg dat in de Lichess-openingsdatabase staat. Een afwijking is niet altijd een fout; het is een stelling waarin je de boekzet nog niet speelt.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -138,7 +135,7 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
           {reps.length === 0 ? <p className="text-sm text-muted"><Link to="/repertoire" className="underline">Maak een repertoire</Link> om dit te zien.</p> : analysis.repertoireDeviations.length === 0 && analysis.repertoireGaps.length === 0 ? <p className="text-sm text-muted">Geen afwijkingen gevonden.</p> : (
             <ul className="space-y-2 text-sm">
               {analysis.repertoireDeviations.slice(0, 6).map(d => <li key={d.repertoire + d.epd + d.played}><span className="font-mono text-xs text-muted">{formatMoves(d.lineSan)}</span><br />Jij: <b>{d.played}</b>, repertoire: <b>{d.expected}</b> ({d.count}×) · {d.repertoire}</li>)}
-              {analysis.repertoireGaps.slice(0, 6).map(d => <li key={'g' + d.repertoire + d.epd + d.opponentMove}><span className="font-mono text-xs text-muted">{formatMoves(d.lineSan)}</span><br />Tegenstander speelde <b>{d.opponentMove}</b> ({d.count}×) — niet in je repertoire · {d.repertoire}</li>)}
+              {analysis.repertoireGaps.slice(0, 6).map(d => <li key={'g' + d.repertoire + d.epd + d.opponentMove}><span className="font-mono text-xs text-muted">{formatMoves(d.lineSan)}</span><br />Tegenstander speelde <b>{d.opponentMove}</b> ({d.count}×), niet in je repertoire · {d.repertoire}</li>)}
             </ul>
           )}
         </div>

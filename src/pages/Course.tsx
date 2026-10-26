@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { familyProgress, useCardMap, useFamily, useProgressMap, variationMastery } from '../lib/hooks'
 import { displayName } from '../lib/data'
 import { variationLine } from '../lib/daily'
-import { learnLessons, learnThreshold } from '../lib/course'
+import { learnLessons } from '../lib/course'
 import { endSession, startSession } from '../lib/progress'
 import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
@@ -12,12 +12,12 @@ import type { FamilyFile, Lesson, TrainMode, Variation } from '../lib/types'
 import type { VariationProgress } from '../lib/db'
 
 // Niveaus worden doorlopend genummerd: als korte lijnen een niveau leeg maken, begint het leerpad niet bij 'Niveau 2'
-const LEVELS: Record<number, { title: string; text: string }> = {
-  1: { title: 'Basis', text: 'De basiszetten en belangrijkste reacties' },
-  2: { title: 'Hoofdvarianten', text: 'Varianten die in minstens 1% van de partijen voorkomen' },
-  3: { title: 'Alternatieven', text: 'Zijvarianten en andere zetten van de tegenstander' },
-  4: { title: 'Minder gebruikelijk', text: 'Zeldzamere lijnen en korte subvarianten' },
-  5: { title: 'Gevorderd', text: 'Diepe subvarianten, gambieten en combinaties' },
+const LEVELS: Record<number, { title: string }> = {
+  1: { title: 'Basis' },
+  2: { title: 'Hoofdvarianten' },
+  3: { title: 'Alternatieven' },
+  4: { title: 'Minder gebruikelijk' },
+  5: { title: 'Gevorderd' },
 }
 
 function lessonState(lesson: Lesson, file: FamilyFile, progress: Map<string, VariationProgress>) {
@@ -39,14 +39,13 @@ export function Course() {
   const levels = [1, 2, 3, 4, 5].map(l => ({ level: l, lessons: allLessons.filter(x => x.level === l) })).filter(l => l.lessons.length)
   const firstOpen = allLessons.find(l => !lessonState(l, file, progress).complete)
   const inCourse = allLessons.reduce((n, l) => n + l.variationIds.length, 0)
-  const short = file.variations.length - inCourse
   // Telling binnen het leerpad, zodat die klopt met het aantal varianten in de lessen
   const doneInCourse = allLessons.reduce((n, l) => n + l.variationIds.filter(id => (progress.get(id)?.completions ?? 0) > 0).length, 0)
   const learnedCount = file.variations.filter(v => (progress.get(v.id)?.completions ?? 0) > 0).length
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten${short ? ` · korte lijnen (< ${learnThreshold(file)} zetten) staan in de variantenboom` : ''}`}
+      <PageHeader back={`/opening/${file.family.id}`} title={`Course · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten`}
         actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={inCourse ? doneInCourse / inCourse : 0} />
@@ -59,8 +58,7 @@ export function Course() {
             <li key={level}>
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-bold">Niveau {li + 1} — {LEVELS[level].title}</h2>
-                  <p className="text-sm text-muted">{LEVELS[level].text}</p>
+                  <h2 className="text-lg font-bold">Niveau {li + 1} · {LEVELS[level].title}</h2>
                 </div>
                 <span className="text-sm tabular-nums text-muted">{done}/{lessons.length} lessen</span>
               </div>
@@ -87,7 +85,6 @@ export function Course() {
         })}
         <li>
           <h2 className="text-lg font-bold">Mastery</h2>
-          <p className="mb-3 text-sm text-muted">Speel de geleerde varianten zonder hints uit je hoofd. Spaced repetition bepaalt wanneer je ze herhaalt.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <Link to={`/mastery?family=${file.family.id}&type=lines`} className="card p-4 hover:border-brand"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
             <Link to={`/mastery?family=${file.family.id}&type=positions`} className="card p-4 hover:border-brand"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>

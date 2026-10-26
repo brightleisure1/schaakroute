@@ -66,7 +66,6 @@ export function Onboarding() {
         <span className="text-sm font-medium">Geschatte rating (Elo, Lichess of Chess.com): <b className="tabular-nums">{elo}</b></span>
         <input type="range" min={400} max={2800} step={25} value={elo} onChange={e => setElo(Number(e.target.value))} className="mt-2 w-full accent-[var(--brand)]" />
       </label>
-      <p className="text-sm text-muted">Je rating wordt gebruikt om puzzels op jouw niveau te kiezen en om te tonen wat spelers van jouw niveau in de praktijk spelen.</p>
     </div>,
     <div key="1" className="space-y-4">
       <h2 className="text-xl font-bold">Met welke kleur wil je oefenen?</h2>
@@ -81,7 +80,7 @@ export function Onboarding() {
     </div>,
     <div key="2" className="space-y-4">
       <h2 className="text-xl font-bold">Welke openingen wil je leren?</h2>
-      <p className="text-sm text-muted">De 20 populairste openingsfamilies op Lichess, op basis van {manifest.source.games.usedGames.toLocaleString('nl-NL')} echte partijen. Kies er minstens één; je kunt dit later altijd aanpassen.</p>
+      <p className="text-sm text-muted">Kies er minstens één. Je kunt dit later aanpassen.</p>
       <p className="text-sm font-semibold" aria-live="polite">{openings.length ? `${openings.length} gekozen` : 'Nog niets gekozen'}</p>
       {(['white', 'black'] as const).filter(s => sides === 'both' || sides === s).map(side => (
         <div key={side}>
@@ -110,7 +109,7 @@ export function Onboarding() {
           </button>
         ))}
       </div>
-      <p className="text-sm text-muted">Alles wordt lokaal op dit apparaat bewaard. Geen account, geen abonnement.</p>
+      <p className="text-sm text-muted">Geen account nodig. Alles blijft op dit apparaat.</p>
     </div>,
   ]
 
@@ -119,7 +118,7 @@ export function Onboarding() {
       <div className="mb-6 text-center">
         <img src="./icon.svg" alt="" className="mx-auto h-14 w-14" />
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Welkom bij SchaakRoute</h1>
-        <p className="mt-1 text-muted">Leer openingen door ze zelf te spelen — met alle varianten uit de openbare Lichess-database.</p>
+        <p className="mt-1 text-muted">Leer openingen door ze zelf te spelen.</p>
       </div>
       <div className="mb-4 flex gap-1.5" aria-hidden>{steps.map((_, i) => <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-line'}`} />)}</div>
       <div className="card p-5 sm:p-6">{steps[step]}</div>

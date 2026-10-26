@@ -39,7 +39,7 @@ export function RepertoireList() {
 
   return (
     <div>
-      <PageHeader title="Mijn repertoire" subtitle="Stel je eigen openingen samen. Wat je al kent, blijft behouden." />
+      <PageHeader title="Mijn repertoire" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-3">
           {reps.length === 0 ? <Empty title="Nog geen repertoire">Maak hiernaast je eerste repertoire, of voeg een variant toe vanuit het eindscherm van een training.</Empty> : reps.map(r => (
@@ -192,7 +192,7 @@ export function RepertoireEditor() {
             )}
             {pos && (
               <div className="mt-3 border-t border-line pt-3">
-                <div className="mb-1 text-xs font-semibold text-muted">Vaak gespeeld hier (Lichess-steekproef) — klik om toe te voegen</div>
+                <div className="mb-1 text-xs font-semibold text-muted">Vaak gespeeld hier</div>
                 <div className="flex flex-wrap gap-1">
                   {pos.m.slice(0, 8).map(m => <button key={m[0]} className="chip" onClick={() => play(m[0].slice(0, 2), m[0].slice(2, 4), m[0][4])}>{m[1]} <span className="font-normal">{pct(m[2] / pos.n)}</span></button>)}
                 </div>

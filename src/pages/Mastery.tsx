@@ -26,7 +26,7 @@ export function Mastery() {
         <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mastery</h1>
-            <p className="mt-1 text-muted">Herhaal wat je bijna vergeet. Fouten komen snel terug, wat je goed kent steeds later.</p>
+            <p className="mt-1 text-muted">Herhaal wat je bijna vergeet.</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <div className="shrink-0 [&_button]:whitespace-nowrap"><Tabs value={type} onChange={t => setSearch({ type: t, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: 'Losse posities' }, { value: 'lines', label: 'Complete varianten' }]} /></div>
@@ -204,7 +204,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const card = queue[index]
   const file = files.get(card.familyIds[0])
   const v = file?.variations.find(x => x.id === card.variationIds[0])
-  const line = { ...cardLine(card, v ? `Vind de zet — ${v.path.join(', ') || file!.family.name}` : 'Vind de zet'), subtitle: file?.family.name }
+  const line = { ...cardLine(card, v ? `Vind de zet: ${v.path.join(', ') || file!.family.name}` : 'Vind de zet'), subtitle: file?.family.name }
   return (
     <div>
     <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? 'Zwakste posities' : 'Herhalen'} onClose={() => setStarted(false)} closeLabel="Stoppen, je gaat later verder" />
@@ -287,7 +287,7 @@ function LineReview({ family, onSession }: { family: string; onSession: (on: boo
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{learned.length} geleerde varianten · {learned.filter(x => x.due).length} met openstaande herhalingen. Geen hints: speel de hele variant vanaf de eerste zet.</p>
+        <p className="text-sm text-muted">{learned.length} geleerde varianten · {learned.filter(x => x.due).length} te herhalen</p>
         <button className="btn btn-primary" onClick={() => setCurrent({ file: learned[0].file, v: learned[0].v })}>Start</button>
       </div>
       <ul className="card divide-y divide-line">

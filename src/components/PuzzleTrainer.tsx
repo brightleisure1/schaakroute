@@ -183,7 +183,6 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
               <div className="mt-2 flex flex-wrap gap-1">{themes.filter(t => !t.why).map(t => <span key={t.id} className="chip">{t.name}</span>)}</div>
             </div>
             <div className="text-sm"><div className="font-medium">Oplossing</div><MoveList sans={puzzle.san} current={puzzle.san.length} startPly={(Number(puzzle.fen.split(' ')[5] ?? 1) - 1) * 2 + (puzzle.fen.split(' ')[1] === 'b' ? 1 : 0)} /></div>
-            <p className="text-xs text-muted">Bron: Lichess-puzzeldatabase (CC0). De oplossing is door Lichess met Stockfish gecontroleerd; SchaakRoute verzint geen combinaties.</p>
             <EvalButton fen={fens[1]} label="Stockfish: evaluatie na de fout" />
           </div>
         )}

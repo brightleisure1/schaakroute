@@ -4,7 +4,7 @@ import type { Arrow } from 'react-chessboard'
 import { BookOpen, ChessKnight, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleX, Ellipsis, Eye, Info, Lightbulb, ListOrdered, RotateCcw, Undo2 } from 'lucide-react'
 import { Board } from './Board'
 import { MoveInput } from './MoveInput'
-import { ProgressBar, Stars, useSettings, pct, nf, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
+import { ProgressBar, Stars, useSettings, pct, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
 import { START_FEN, describeSan, epdOf, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
 import { judgeMove, isUserPly, qualityFor, starsFor, moveScore, bandCount } from '../lib/trainer'
@@ -621,7 +621,6 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
       {mode !== 'learn' && !single && (
         <div className="mt-3">
           <Stars count={result.stars} size="text-2xl" />
-          <p className="mt-1 text-xs text-muted">3 sterren: zonder fouten en hints · 2 sterren: hooguit enkele fouten · 1 ster: afgerond</p>
         </div>
       )}
       {single && <p className="mt-2 text-sm">{perfect ? 'Het interval wordt langer: je ziet deze stelling later pas terug.' : 'Deze stelling komt over 10 minuten terug.'}</p>}
@@ -646,7 +645,6 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-xs text-muted">Klik op een regel om de stelling op het bord te zien, met de juiste zet als pijl.</p>
         </div>
       )}
       {!single && (
@@ -723,9 +721,8 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
             </tbody>
           </table>
         ) : (
-          <p className="text-muted">Geen partijstatistiek voor deze stelling in de steekproef (te zeldzaam of te diep).</p>
+          <p className="text-muted">Geen statistiek voor deze stelling.</p>
         )}
-        {pos && !hideAnswer && <p className="mt-1 text-xs text-muted">Bron: {nf(pos.n)} rated blitz/rapid/classical-partijen uit de Lichess-database (steekproef). Score = winst + ½ remise. Dit zegt iets over de praktijk, niet over de objectieve stellingswaarde.</p>}
       </div>
     </div>
   )

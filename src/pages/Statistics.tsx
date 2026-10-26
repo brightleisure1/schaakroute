@@ -80,7 +80,7 @@ export function Statistics() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Statistieken" subtitle={<>Je trainingsgegevens staan alleen op dit apparaat. <Link to="/instellingen" className="underline">Back-up maken</Link></>} />
+      <PageHeader title="Statistieken" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Goede zetten" value={totals.correct.toLocaleString('nl-NL')} />
         <StatTile label="Fouten" value={totals.mistakes.toLocaleString('nl-NL')} hint={totals.correct + totals.mistakes ? `${pct(totals.correct / (totals.correct + totals.mistakes))} nauwkeurig` : undefined} />
@@ -101,7 +101,6 @@ export function Statistics() {
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="card p-4">
           <h2 className="mb-1 font-semibold">Geleerde posities door de tijd</h2>
-          <p className="mb-3 text-xs text-muted">Cumulatief aantal posities dat je minstens één keer goed speelde.</p>
           <LineChart days={days} values={cumulative} />
         </div>
         <div className="card p-4">
