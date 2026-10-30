@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Check, ChessKing } from 'lucide-react'
+import { ChessKing } from 'lucide-react'
 import { saveSettings, type UserSettings } from '../lib/db'
 import { useManifest } from '../lib/hooks'
-import { OPENING_INFO } from '../content/openingInfo'
-import { ErrorBox, Spinner, pct, useSettings } from '../components/ui'
+import { OpeningPicker } from '../components/OpeningPicker'
+import { ErrorBox, Spinner, useSettings } from '../components/ui'
 
 const STRENGTHS: { value: UserSettings['strength']; label: string; elo: number; text: string }[] = [
   { value: 'beginner', label: 'Beginner', elo: 900, text: 'Ik ken de regels en speel af en toe' },
@@ -43,8 +43,6 @@ export function Onboarding() {
   if (error) return <ErrorBox error={error} />
   if (!manifest) return <Spinner />
 
-  const toggle = (id: string) => setOpenings(o => (o.includes(id) ? o.filter(x => x !== id) : [...o, id]))
-
   async function finish() {
     if (!openings.length) return
     await saveSettings({ onboarded: true, elo, strength, sides, openings, dailyMinutes: minutes })
@@ -78,27 +76,7 @@ export function Onboarding() {
         ))}
       </div>
     </div>,
-    <div key="2" className="space-y-4">
-      <h2 className="text-xl font-bold">Welke openingen wil je leren?</h2>
-      <p className="text-sm text-muted">Kies er minstens één. Je kunt dit later aanpassen.</p>
-      <p className="text-sm font-semibold" aria-live="polite">{openings.length ? `${openings.length} gekozen` : 'Nog niets gekozen'}</p>
-      {(['white', 'black'] as const).filter(s => sides === 'both' || sides === s).map(side => (
-        <div key={side}>
-          <h3 className="mb-2 font-semibold">{side === 'white' ? 'Met wit' : 'Met zwart'}</h3>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {manifest.families.filter(f => f.side === side).map(f => (
-              <button key={f.id} aria-pressed={openings.includes(f.id)} className={`card flex items-center gap-3 p-3 text-left ${openings.includes(f.id) ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => toggle(f.id)}>
-                <span aria-hidden className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${openings.includes(f.id) ? 'border-brand bg-brand text-on-brand' : 'border-line'}`}>{openings.includes(f.id) && <Check size={16} strokeWidth={3} />}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{f.name}</span>
-                  <span className="block text-xs text-muted">{OPENING_INFO[f.id]?.nameNl} · {f.variationCount} varianten · {pct(f.share, 1)} van de partijen</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>,
+    <OpeningPicker key="2" families={manifest.families} sides={sides} value={openings} onChange={setOpenings} />,
     <div key="3" className="space-y-4">
       <h2 className="text-xl font-bold">Hoeveel minuten per dag?</h2>
       <div className="grid grid-cols-4 gap-2">

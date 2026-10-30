@@ -7,7 +7,42 @@ import { needsPromotion, epdOf, cropWindow } from '../src/lib/chess'
 import { parsePgn, splitGames, treeToPgn } from '../src/lib/pgn'
 import { computeStreak, levelFromXp } from '../src/lib/gamification'
 import { learnLessons, learnThreshold, userMoveCount } from '../src/lib/course'
-import type { FamilyFile, Variation } from '../src/lib/types'
+import { groupByFirstMove, matchesOpening } from '../src/lib/openingGroups'
+import type { FamilyFile, FamilySummary, Side, Variation } from '../src/lib/types'
+
+describe('openingskeuze', () => {
+  const family = (id: string, name: string, side: Side, rootSan: string[]) => ({ id, name, side, rootSan }) as FamilySummary
+  const families = [
+    family('italian', 'Italian Game', 'white', ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4']),
+    family('english', 'English Opening', 'white', ['c4']),
+    family('london', 'London System', 'white', ['d4', 'Nf6', 'Bf4']),
+    family('kings', "King's Gambit", 'white', ['e4', 'e5', 'f4']),
+    family('sicilian', 'Sicilian Defense', 'black', ['e4', 'c5']),
+    family('englund', 'Englund Gambit', 'black', ['d4', 'e5']),
+  ]
+
+  it('groepeert per eerste zet: e4, d4, dan de rest, met behoud van volgorde', () => {
+    const groups = groupByFirstMove(families, 'white')
+    expect(groups.map(g => g.label)).toEqual(['Begint met 1. e4', 'Begint met 1. d4', 'Andere eerste zetten'])
+    expect(groups[0].families.map(f => f.id)).toEqual(['italian', 'kings'])
+    expect(groups[2].families.map(f => f.id)).toEqual(['english'])
+  })
+
+  it('noemt de groepen voor zwart naar de zet van wit en laat lege groepen weg', () => {
+    expect(groupByFirstMove(families, 'black').map(g => g.label)).toEqual(['Tegen 1. e4', 'Tegen 1. d4'])
+  })
+
+  it('zoekt op Engelse naam, Nederlandse naam en zetten, los van leestekens', () => {
+    const [italian, , , kings] = families
+    expect(matchesOpening(italian, 'Italiaans', 'italiaans')).toBe(true)
+    expect(matchesOpening(italian, 'Italiaans', 'ITALIAN')).toBe(true)
+    expect(matchesOpening(kings, 'Koningsgambiet', 'kings')).toBe(true)
+    expect(matchesOpening(italian, 'Italiaans', 'Nf3')).toBe(true)
+    expect(matchesOpening(italian, 'Italiaans', '1.e4')).toBe(true)
+    expect(matchesOpening(italian, 'Italiaans', 'siciliaans')).toBe(false)
+    expect(matchesOpening(italian, 'Italiaans', '  ')).toBe(true)
+  })
+})
 
 describe('SM-2 spaced repetition', () => {
   it('geeft groeiende intervallen bij goede antwoorden (1, 6, 15 dagen…)', () => {
