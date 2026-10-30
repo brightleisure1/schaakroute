@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, X } from 'lucide-react'
+import { defaultPieces } from 'react-chessboard'
 import { formatMoves } from '../lib/chess'
 import { groupByFirstMove, matchesOpening } from '../lib/openingGroups'
 import { OPENING_INFO } from '../content/openingInfo'
@@ -36,8 +37,8 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
           ? (
             <div className="flex flex-wrap gap-1.5">
               {chosen.map(f => (
-                <button key={f.id} className="chip chip-on" aria-label={`${f.name} verwijderen`} onClick={() => toggle(f.id)}>
-                  {f.name}<X size={13} strokeWidth={3} aria-hidden />
+                <button key={f.id} className="chip chip-on" aria-label={`${f.name} (${SIDE_LABEL[f.side].toLowerCase()}) verwijderen`} onClick={() => toggle(f.id)}>
+                  <SidePawn side={f.side} />{f.name}<X size={13} strokeWidth={3} aria-hidden />
                 </button>
               ))}
             </div>
@@ -71,6 +72,12 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
         ))}
     </div>
   )
+}
+
+/** Pionnetje op een licht rondje, zodat wit en zwart in elk thema zichtbaar zijn */
+function SidePawn({ side }: { side: Side }) {
+  const pawn = defaultPieces[side === 'white' ? 'wP' : 'bP']
+  return <span aria-hidden className="h-5 w-5 shrink-0 rounded-full" style={{ background: 'var(--board-light)' }}>{pawn({ svgStyle: { width: '100%', height: '100%', display: 'block' } })}</span>
 }
 
 function OpeningSection({ title, families, value, onToggle }: { title?: string; families: FamilySummary[]; value: string[]; onToggle: (id: string) => void }) {
