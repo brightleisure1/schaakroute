@@ -141,10 +141,10 @@ describe('Alien Gambit (samengestelde opening)', () => {
   })
 
   it('begint elke lijn met het offer op f7, of komt daar via een andere zetvolgorde', () => {
+    expect(file.family.rootSan.at(-1)).toBe('Nxf7')
+    for (const v of file.variations) expect(v.uci.slice(0, file.family.rootUci.length)).toEqual(file.family.rootUci)
     const root = file.variations.find(v => v.path.length === 0)!
     expect(root.name).toBe('Alien Gambit')
-    expect(root.san.at(-1)).toBe('Nxf7')
-    for (const v of file.variations) expect(v.uci.slice(0, root.uci.length)).toEqual(root.uci)
     for (const m of root.moveOrders ?? []) {
       const c = new Chess()
       for (const san of m.san) c.move(san)
@@ -156,12 +156,29 @@ describe('Alien Gambit (samengestelde opening)', () => {
   it('wint het stuk terug in de valstrik na 7...Bg4', () => {
     const trap = file.variations.find(v => v.name === 'Alien Gambit: Bg4 Trap')!
     expect(trap.tags).toContain('tactical')
-    expect(trap.san.slice(-6)).toEqual(['Bg4', 'Ne5+', 'Ke8', 'Nxg4', 'Nxg4', 'Qxg4'])
+    expect(trap.san.slice(13, 19)).toEqual(['Bg4', 'Ne5+', 'Ke8', 'Nxg4', 'Nxg4', 'Qxg4'])
   })
 
-  it('heeft alle lijnen lang genoeg om te leren', () => {
-    for (const v of file.variations) expect(Math.ceil(v.uci.length / 2)).toBeGreaterThanOrEqual(4)
+  it('gaat in elke lijn verder dan het offer en eindigt op een zet van wit', () => {
+    for (const v of file.variations) {
+      expect(v.uci.length).toBeGreaterThan(file.family.rootUci.length + 2)
+      expect(v.uci.length % 2).toBe(1)
+    }
     expect(file.lessons.length).toBeGreaterThan(0)
+  })
+
+  it('leert per stelling één witte zet, behalve de bewuste keuze na 6...Kxf7', () => {
+    const moves = new Map<string, Set<string>>()
+    for (const v of file.variations) {
+      const c = new Chess()
+      for (const san of v.san) {
+        const epd = epdOf(c.fen())
+        if (c.turn() === 'w') moves.set(epd, (moves.get(epd) ?? new Set()).add(san))
+        c.move(san)
+      }
+    }
+    const choices = [...moves.values()].filter(s => s.size > 1).map(s => [...s].sort())
+    expect(choices).toEqual([['Bc4+', 'Nf3']])
   })
 
   it('telt dezelfde partijen als de Lichess-naam in de Caro-Kann', () => {

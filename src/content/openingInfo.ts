@@ -22,6 +22,7 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
       "Ontwikkel met schaak: Nf3 gevolgd door Ne5+ en Bc4+ kosten zwart tijd.",
       "Speel Ng6 als de koning naar g8 gaat: het paard valt de toren op h8 aan en houdt de koning opgesloten.",
       "Let op ...Bg4: met Ne5+ val je koning en loper tegelijk aan en win je het stuk terug.",
+      "Tegen ...Bf5 win je met g4 en g5 ruimte op de koningsvleugel en opent de loper op c1 de aanval.",
       "Rokeer snel en breng de dame en torens naar de open lijnen rond de zwarte koning.",
     ],
     strengths: [

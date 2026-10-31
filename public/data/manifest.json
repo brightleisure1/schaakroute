@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c-cb09c76",
+ "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c-cc9ef4b",
  "generatedAt": "2026-10-24T14:35:53.806Z",
  "source": {
   "openings": {
@@ -528,12 +528,12 @@
    "rootEpd": "rnbqkb1r/pp2pNp1/2p2n1p/8/3P4/8/PPP2PPP/R1BQKBNR b KQkq -",
    "games": 89,
    "share": 0.00017,
-   "variationCount": 10,
-   "namedCount": 10,
+   "variationCount": 11,
+   "namedCount": 11,
    "subvariationCount": 3,
-   "gambitCount": 10,
+   "gambitCount": 11,
    "lessonCount": 4,
-   "maxPlies": 19
+   "maxPlies": 25
   },
   {
    "id": "sicilian-defense",
@@ -1147,9 +1147,9 @@
    },
    {
     "family": "Alien Gambit",
-    "sourceRows": 10,
-    "variations": 10,
-    "distinctNames": 10,
+    "sourceRows": 11,
+    "variations": 11,
+    "distinctNames": 11,
     "duplicatesMerged": 0,
     "withMoveOrders": 1,
     "linesWithTransposition": 0,

@@ -64,7 +64,7 @@ for (const l of readFileSync(gamesPath, 'utf8').split('\n').slice(1)) {
   const name = normalizeName(opening)
   namedCount.set(name, (namedCount.get(name) ?? 0) + 1)
   // Naspelen is duur; alleen partijen die in de buurt van een gezochte opening komen
-  if (!openings.some(o => moves.includes(o.played[0].san.at(-1)))) continue
+  if (!openings.some(o => moves.includes(o.rootMoves.split(' ').at(-1)))) continue
   const c = new Chess()
   for (const san of moves.split(' ').slice(0, REACH_MAX_PLY)) {
     try { c.move(san) } catch { break }
@@ -164,7 +164,7 @@ for (const o of openings) {
   }
 
   const sideFamilies = manifest.families.filter(f => f.side === o.side)
-  const root = o.played[0]
+  const root = play(o.rootMoves)
   const summary = {
     id: o.id,
     name: o.name,
