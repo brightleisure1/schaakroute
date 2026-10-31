@@ -55,7 +55,7 @@ export function OpeningDetail() {
           <Link to="/openingen" className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Openingen</Link>
           <h1 className="text-3xl font-extrabold leading-none tracking-tight lg:text-[2.5rem]">{f.name}</h1>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {[info?.nameNl, `Met ${sideNl}`, `#${f.rank} populairst voor ${sideNl}`].filter(Boolean).map(t => <span key={t} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-sm font-semibold">{t}</span>)}
+            {[info?.nameNl, `Met ${sideNl}`, f.curated ? 'Extra opening' : `#${f.rank} populairst voor ${sideNl}`].filter(Boolean).map(t => <span key={t} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-sm font-semibold">{t}</span>)}
           </div>
         </div>
         <div className="w-full sm:w-64">

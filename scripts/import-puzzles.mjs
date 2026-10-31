@@ -20,7 +20,8 @@ import { makeFamilyResolver, normalizeName, prefixOf } from './lib/families.mjs'
 const src = process.argv[2] ?? 'data-raw/lichess_db_puzzle.csv.zst'
 const OUT = 'public/data'
 const manifest = JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8'))
-const selected = new Map(manifest.families.map(f => [f.name, f]))
+// Samengestelde openingen krijgen hun puzzels van add-curated-openings
+const selected = new Map(manifest.families.filter(f => !f.curated).map(f => [f.name, f]))
 const PER_BUCKET = 30
 
 // Alle Lichess-namen uit de geïmporteerde ref, om puzzel-labels terug te vertalen naar onze families

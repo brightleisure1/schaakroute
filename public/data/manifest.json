@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c",
+ "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c-cb09c76",
  "generatedAt": "2026-10-24T14:35:53.806Z",
  "source": {
   "openings": {
@@ -44,7 +44,8 @@
   "Populariteit = aantal rated blitz/rapid/classical-partijen in de steekproef waarvan de Lichess-openingsnaam (header \"Opening\") bij de familie hoort. Iedere partij telt in precies één familie: geen dubbeltellingen.",
   "Generieke verzamelnamen (King's Pawn Game, Queen's Pawn Game, Indian Defense, Zukertort Opening, Van't Kruijs Opening) tellen mee in de ranglijst maar worden niet geselecteerd.",
   "Transpositie = een stelling uit een lijn die in de Lichess-dataset ook via een andere zetvolgorde (van dezelfde lengte) bereikt wordt.",
-  "Frequentie van een variant = aantal steekproefpartijen dat de eindstelling bereikte (alle zetvolgordes samen), mits de stelling binnen 24 ply en minstens 5 keer voorkwam."
+  "Frequentie van een variant = aantal steekproefpartijen dat de eindstelling bereikte (alle zetvolgordes samen), mits de stelling binnen 24 ply en minstens 5 keer voorkwam.",
+  "Samengestelde openingen (Alien Gambit) staan buiten de top 10. Lichess benoemt alleen de eindstelling; de vervolgen komen uit de partijensteekproef en zijn beoordeeld met Stockfish. Hun partijen tellen ook mee bij de opening waarin ze vallen."
  ],
  "families": [
   {
@@ -487,6 +488,52 @@
    "gambitCount": 9,
    "lessonCount": 7,
    "maxPlies": 10
+  },
+  {
+   "id": "alien-gambit",
+   "name": "Alien Gambit",
+   "side": "white",
+   "rank": 11,
+   "curated": true,
+   "ecoRange": "B15",
+   "ecoCodes": [
+    "B15"
+   ],
+   "rootSan": [
+    "e4",
+    "c6",
+    "d4",
+    "d5",
+    "Nc3",
+    "dxe4",
+    "Nxe4",
+    "Nf6",
+    "Ng5",
+    "h6",
+    "Nxf7"
+   ],
+   "rootUci": [
+    "e2e4",
+    "c7c6",
+    "d2d4",
+    "d7d5",
+    "b1c3",
+    "d5e4",
+    "c3e4",
+    "g8f6",
+    "e4g5",
+    "h7h6",
+    "g5f7"
+   ],
+   "rootEpd": "rnbqkb1r/pp2pNp1/2p2n1p/8/3P4/8/PPP2PPP/R1BQKBNR b KQkq -",
+   "games": 89,
+   "share": 0.00017,
+   "variationCount": 10,
+   "namedCount": 10,
+   "subvariationCount": 3,
+   "gambitCount": 10,
+   "lessonCount": 4,
+   "maxPlies": 19
   },
   {
    "id": "sicilian-defense",
@@ -1097,6 +1144,16 @@
     "withMoveOrders": 0,
     "linesWithTransposition": 46,
     "statPositions": 225
+   },
+   {
+    "family": "Alien Gambit",
+    "sourceRows": 10,
+    "variations": 10,
+    "distinctNames": 10,
+    "duplicatesMerged": 0,
+    "withMoveOrders": 1,
+    "linesWithTransposition": 0,
+    "statPositions": 15
    }
   ],
   "unmatchedGameFamilies": [],
@@ -1200,6 +1257,11 @@
     "family": "Four Knights Game",
     "candidates": 1071,
     "selected": 311
+   },
+   {
+    "family": "Alien Gambit",
+    "candidates": 106,
+    "selected": 106
    }
   ]
  }

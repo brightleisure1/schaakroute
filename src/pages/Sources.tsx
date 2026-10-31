@@ -11,7 +11,7 @@ export function Sources() {
   const totalVariations = m.families.reduce((a, f) => a + f.variationCount, 0)
   return (
     <div className="space-y-6">
-      <PageHeader title="Bronnen & methode" subtitle="Hoe de 20 openingen zijn gekozen, waar de data vandaan komt en welke licenties gelden." />
+      <PageHeader title="Bronnen & methode" subtitle="Hoe de openingen zijn gekozen, waar de data vandaan komt en welke licenties gelden." />
       <section className="card space-y-2 p-5 text-sm">
         <h2 className="text-base font-semibold">Dataset {m.datasetVersion}</h2>
         <ul className="list-disc space-y-1 pl-5 text-muted">
@@ -20,7 +20,7 @@ export function Sources() {
           <li>Ratingverdeling in de steekproef (gemiddelde van beide spelers): {Object.entries(g.ratingBands).map(([k, v]) => `${k}: ${pct(v / g.usedGames)}`).join(' · ')}.</li>
           <li>Snelheden: {Object.entries(g.speeds).map(([k, v]) => `${k} ${nf(v)}`).join(' · ')}.</li>
           {m.source.puzzles && <li>Puzzels bij Afstraffen: <a className="underline" href="https://database.lichess.org/#puzzles" target="_blank" rel="noreferrer">Lichess-puzzeldatabase</a> ({m.source.puzzles.license}), {nf(m.source.puzzles.scanned)} puzzels gescand; alleen thema “opening” en waarin jouw kant een fout afstraft.</li>}
-          <li>In totaal {nf(totalVariations)} benoemde varianten in de 20 openingen, zonder limiet per opening.</li>
+          <li>In totaal {nf(totalVariations)} varianten in de {m.families.length} openingen, zonder limiet per opening.</li>
         </ul>
       </section>
       <section className="card space-y-2 p-5 text-sm">

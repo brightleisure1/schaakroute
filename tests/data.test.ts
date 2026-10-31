@@ -14,10 +14,13 @@ const families = manifest.families.map(f => read<FamilyFile>(`families/${f.id}.j
 const epdOf = (fen: string) => fen.split(' ').slice(0, 4).join(' ')
 
 describe('selectie van de 20 openingen', () => {
+  const selected = manifest.families.filter(f => !f.curated)
+
   it('heeft precies 10 witte en 10 zwarte families', () => {
-    expect(manifest.families.filter(f => f.side === 'white')).toHaveLength(10)
-    expect(manifest.families.filter(f => f.side === 'black')).toHaveLength(10)
-    expect(new Set(manifest.families.map(f => f.id)).size).toBe(20)
+    expect(selected.filter(f => f.side === 'white')).toHaveLength(10)
+    expect(selected.filter(f => f.side === 'black')).toHaveLength(10)
+    expect(new Set(selected.map(f => f.id)).size).toBe(20)
+    expect(new Set(manifest.families.map(f => f.id)).size).toBe(manifest.families.length)
   })
 
   it('is de top 10 (zonder verzamelnamen) van de ranglijst, gesorteerd op aantal partijen', () => {
@@ -26,7 +29,7 @@ describe('selectie van de 20 openingen', () => {
       const list = ranking[side]
       for (let i = 1; i < list.length; i++) expect(list[i - 1].games).toBeGreaterThanOrEqual(list[i].games)
       const top = list.filter(e => !e.excluded).slice(0, 10).map(e => e.family)
-      expect(manifest.families.filter(f => f.side === side).map(f => f.name)).toEqual(top)
+      expect(selected.filter(f => f.side === side).map(f => f.name)).toEqual(top)
       for (const e of list.filter(e => e.excluded)) expect(Object.keys(GENERIC_FAMILIES)).toContain(e.family)
     }
   })
@@ -57,7 +60,7 @@ describe('volledigheid van de import (alle benoemde varianten)', () => {
       }
     }
     const familyOf = makeFamilyResolver(rows.map(r => r.name))
-    for (const file of families) {
+    for (const file of families.filter(f => !f.family.curated)) {
       const source = rows.filter(r => familyOf(r.name) === file.family.name)
       const report = manifest.validation.report.find(r => r.family === file.family.name)!
       expect(source.length).toBe(report.sourceRows)
@@ -126,6 +129,45 @@ describe('legaliteit, ID\'s en bomen', () => {
       for (const n of seen.values()) expect(n).toBe(1)
     })
   }
+})
+
+describe('Alien Gambit (samengestelde opening)', () => {
+  const file = families.find(f => f.family.id === 'alien-gambit')!
+
+  it('staat bij wit, na de 10 populairste en vóór zwart', () => {
+    expect(file.family.side).toBe('white')
+    expect(file.family.curated).toBe(true)
+    expect(manifest.families.map(f => f.id).indexOf('alien-gambit')).toBe(10)
+  })
+
+  it('begint elke lijn met het offer op f7, of komt daar via een andere zetvolgorde', () => {
+    const root = file.variations.find(v => v.path.length === 0)!
+    expect(root.name).toBe('Alien Gambit')
+    expect(root.san.at(-1)).toBe('Nxf7')
+    for (const v of file.variations) expect(v.uci.slice(0, root.uci.length)).toEqual(root.uci)
+    for (const m of root.moveOrders ?? []) {
+      const c = new Chess()
+      for (const san of m.san) c.move(san)
+      expect(epdOf(c.fen())).toBe(root.epd)
+    }
+    expect(root.moveOrders).toHaveLength(2)
+  })
+
+  it('wint het stuk terug in de valstrik na 7...Bg4', () => {
+    const trap = file.variations.find(v => v.name === 'Alien Gambit: Bg4 Trap')!
+    expect(trap.tags).toContain('tactical')
+    expect(trap.san.slice(-6)).toEqual(['Bg4', 'Ne5+', 'Ke8', 'Nxg4', 'Nxg4', 'Qxg4'])
+  })
+
+  it('heeft alle lijnen lang genoeg om te leren', () => {
+    for (const v of file.variations) expect(Math.ceil(v.uci.length / 2)).toBeGreaterThanOrEqual(4)
+    expect(file.lessons.length).toBeGreaterThan(0)
+  })
+
+  it('telt dezelfde partijen als de Lichess-naam in de Caro-Kann', () => {
+    const caro = families.find(f => f.family.id === 'caro-kann-defense')!
+    expect(caro.variations.find(v => v.name === 'Caro-Kann Defense: Alien Gambit')?.namedGames).toBe(file.family.games)
+  })
 })
 
 describe('positiestatistieken en puzzels', () => {

@@ -10,6 +10,8 @@ export interface FamilySummary {
   name: string
   side: Side
   rank: number
+  /** Bewust toegevoegd buiten de top 10; rank zegt dan niets over populariteit */
+  curated?: boolean
   ecoRange: string
   ecoCodes: string[]
   rootSan: string[]

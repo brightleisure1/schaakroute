@@ -12,6 +12,34 @@ export interface OpeningInfo {
 export const OPENING_INFO: Record<string, OpeningInfo> = {
   // ===================== WIT =====================
 
+  "alien-gambit": {
+    nameNl: "Alien-gambiet",
+    summary:
+      "De Alien Gambit is een wild stukoffer tegen de Caro-Kann: na 5.Ng5 h6 slaat wit met 6.Nxf7 op f7. Wit geeft een paard voor een pion, haalt de zwarte koning naar voren en neemt zwart de rokade af. Objectief is het offer niet correct (Stockfish geeft zwart ongeveer 2 pionnen voordeel), maar in snelle partijen op Lichess scoort wit er goed mee.",
+    idea:
+      "Wit ruilt materiaal in voor tijd en een onveilige zwarte koning. Met Nf3-e5+ en Bc4+ komen de stukken met tempo in het spel, terwijl zwart nog moet uitzoeken waar de koning veilig staat.",
+    plans: [
+      "Ontwikkel met schaak: Nf3 gevolgd door Ne5+ en Bc4+ kosten zwart tijd.",
+      "Speel Ng6 als de koning naar g8 gaat: het paard valt de toren op h8 aan en houdt de koning opgesloten.",
+      "Let op ...Bg4: met Ne5+ val je koning en loper tegelijk aan en win je het stuk terug.",
+      "Rokeer snel en breng de dame en torens naar de open lijnen rond de zwarte koning.",
+    ],
+    strengths: [
+      "Groot verrassingseffect: weinig zwartspelers kennen de juiste antwoorden.",
+      "Zwart moet zelf de weg vinden en de witte aanval speelt zich makkelijk.",
+      "Een bekende valstrik na 7...Bg4 levert wit direct voordeel op.",
+      "In onze steekproef won wit 46 van de 89 partijen, tegen 38 verliespartijen.",
+    ],
+    weaknesses: [
+      "Objectief verloren materiaal: met goed spel houdt zwart een stuk meer voor te weinig compensatie.",
+      "Werkt alleen als zwart meegaat tot 5...h6: na andere vijfde zetten is er geen offer op f7.",
+      "Tegen voorbereide tegenstanders blijft er weinig over, zeker met langere bedenktijd.",
+    ],
+    keyMoves: "1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Nf6 5.Ng5 h6 6.Nxf7",
+    tip:
+      "Gebruik dit vooral in blitz en rapid. Hetzelfde offer werkt ook via 3.Nd2. Stelt zwart de aanval goed af, ga dan niet forceren maar speel rustig door met je actieve stukken.",
+  },
+
   "italian-game": {
     nameNl: "Italiaans",
     summary:

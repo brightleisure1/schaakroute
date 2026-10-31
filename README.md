@@ -72,6 +72,11 @@ het 29,2 GB-bestand, dus alle dagen en tijdstippen). Ratingverdeling (gemiddelde
 De volledige ranglijst (top 40 per kleur) staat in `public/data/ranking.json` en in de app onder
 **Bronnen & methode**.
 
+**Extra opening: Alien Gambit (wit).** Deze staat buiten de top 10 en is bewust toegevoegd. Lichess benoemt
+alleen de stelling na 6.Nxf7 en plaatst die bij de Caro-Kann, waar je met zwart traint. De 10 lijnen in
+`scripts/lib/curated-openings.mjs` zijn samengesteld uit de partijensteekproef (89 partijen) en per witte keuze
+beoordeeld met Stockfish. De partijen tellen ook mee bij de Caro-Kann. Toevoegen gaat met `npm run data:curated`.
+
 ### Methode (transparant en reproduceerbaar)
 
 1. **Familie** = Lichess-naam vóór de dubbele punt (`Sicilian Defense: Najdorf Variation` → `Sicilian Defense`).

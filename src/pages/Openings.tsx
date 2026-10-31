@@ -36,7 +36,7 @@ export function Openings() {
               <div className="flex gap-3">
                 <div className="w-28 shrink-0 self-start"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} /></div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-muted">#{f.rank} · {f.ecoRange}</div>
+                  <div className="text-xs font-semibold text-muted">{f.curated ? 'Extra' : `#${f.rank}`} · {f.ecoRange}</div>
                   <h2 className="text-lg font-bold leading-tight">{f.name}</h2>
                   <div className="text-sm text-muted">{OPENING_INFO[f.id]?.nameNl}</div>
                   <div className="mt-1 font-mono text-xs text-muted">{formatMoves(f.rootSan)}</div>
