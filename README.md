@@ -78,6 +78,11 @@ alleen de stelling na 6.Nxf7 en plaatst die bij de Caro-Kann, waar je met zwart 
 witte zet is beoordeeld met Stockfish. De 89 partijen met deze naam tellen ook mee bij de Caro-Kann. Toevoegen gaat
 met `npm run data:curated`.
 
+**Extra opening: Nakhmanson Gambit (wit).** Het offer 6.Nc3 in het Schots gambiet (1.e4 e5 2.Nf3 Nc6 3.Bc4 Nf6
+4.d4 exd4 5.O-O Nxe4 6.Nc3). Lichess plaatst het bij Italiaans; de 11 partijen in de steekproef tellen daar ook mee.
+De 9 lijnen volgen dezelfde methode als de Alien Gambit, met dit verschil: Lichess-puzzels hebben geen label voor de
+Nakhmanson zelf, dus de puzzels komen uit de Scotch Gambit van het Italiaans.
+
 ### Methode (transparant en reproduceerbaar)
 
 1. **Familie** = Lichess-naam vóór de dubbele punt (`Sicilian Defense: Najdorf Variation` → `Sicilian Defense`).

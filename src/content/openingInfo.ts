@@ -41,6 +41,34 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
       "Gebruik dit vooral in blitz en rapid. Hetzelfde offer werkt ook via 3.Nd2. Stelt zwart de aanval goed af, ga dan niet forceren maar speel rustig door met je actieve stukken.",
   },
 
+  "nakhmanson-gambit": {
+    nameNl: "Nakhmanson-gambiet",
+    summary:
+      "De Nakhmanson Gambit is een scherp offer in het Schots gambiet: na 5.O-O Nxe4 speelt wit 6.Nc3 en laat het paard op c3 gewoon slaan. Na 6...dxc3 volgt 7.Bxf7+ Kxf7 8.Qd5+ en wit wint het paard op e4 terug met een open lijn naar de zwarte koning. Volgens Stockfish is het ongeveer gelijk, maar zwart moet precies weten wat hij doet.",
+    idea:
+      "Wit geeft materiaal voor snelle ontwikkeling. Met Bxf7+ en Qd5+ wordt de zwarte koning uit zijn schuilplaats gehaald, en via Re1 en de e-lijn valt wit het paard op e4 en de koning aan.",
+    plans: [
+      "Na 6...dxc3 speel je 7.Bxf7+ en 8.Qd5+: de dame schaakt en valt tegelijk het paard op e4 aan.",
+      "Breng de toren met Re1 naar de e-lijn en neem het paard op e4 terug.",
+      "Met Bg5 ruil je de verdedigende loper van zwart af of pen je stukken op de e-lijn.",
+      "Speelt zwart 8...Kg6, dan wint 9.Qxe4+ Kf7 10.Ng5+ de dame.",
+      "Slaat zwart 6...Nxc3, dan herneem je met bxc3 en speel je actief met Bb5 en Ne5.",
+    ],
+    strengths: [
+      "Weinig zwartspelers kennen het offer; de natuurlijke zetten lopen snel tegen een valstrik aan.",
+      "Wit ontwikkelt met tempo en de zwarte koning kan niet meer rokeren.",
+      "Objectief houdbaar: Stockfish ziet het als ongeveer gelijk.",
+    ],
+    weaknesses: [
+      "Wit blijft na 10.Rxe4 een stuk achter en moet de aanval precies voeren om het terug te winnen.",
+      "Werkt alleen als zwart 5...Nxe4 speelt; na andere vijfde zetten is er geen offer.",
+      "Weinig partijen: in onze steekproef zijn het er maar 11, dus de vervolgen komen vooral van Stockfish.",
+    ],
+    keyMoves: "1.e4 e5 2.Nf3 Nc6 3.Bc4 Nf6 4.d4 exd4 5.O-O Nxe4 6.Nc3",
+    tip:
+      "Je komt er ook via 3.d4 exd4 4.Bc4 Nf6 5.O-O Nxe4 6.Nc3. Ken vooral de lijn tot 10.Rxe4: je staat dan een stuk achter, maar met Bg5 en Rae1 drukken al je stukken op de gepende loper op e7 en de zwarte koning.",
+  },
+
   "italian-game": {
     nameNl: "Italiaans",
     summary:

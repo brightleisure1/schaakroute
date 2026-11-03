@@ -2,12 +2,16 @@
 // Lichess kent per stelling maar één naam, dus lijnen na de benoemde stelling stellen wij zelf samen.
 // Herkomst van de lijnen: zetten uit de partijensteekproef (data-raw/games-2026-09.tsv) zolang die er zijn,
 // daarna de voorkeur van Stockfish 19 lite op diepte 16. Zwart speelt de meest gespeelde zet als die niet duidelijk
-// slechter is. De witte zetten zijn beoordeeld op verlies ten opzichte van de beste zet; objectief staat wit in dit
-// gambiet wel slechter.
+// slechter is. De witte zetten zijn beoordeeld op verlies ten opzichte van de beste zet; objectief staat wit in de
+// Alien Gambit wel slechter, in de Nakhmanson Gambit ongeveer gelijk.
 
 const ALIEN_ROOT = 'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Nf6 Ng5 h6 Nxf7'
 const ALIEN_MAIN = `${ALIEN_ROOT} Kxf7 Nf3`
 const ALIEN_FIRST_LESSON = 'Kxf7 Nf3 c5 Bc4+ e6 Ne5+'
+
+const NAKH_ROOT = 'e4 e5 Nf3 Nc6 Bc4 Nf6 d4 exd4 O-O Nxe4 Nc3'
+const NAKH_CHECK = `${NAKH_ROOT} dxc3 Bxf7+ Kxf7 Qd5+`
+const NAKH_FIRST_LESSON = 'dxc3 Bxf7+ Kxf7 Qd5+ Ke8 Re1 Be7 Rxe4'
 
 export const CURATED_OPENINGS = [
   {
@@ -38,6 +42,33 @@ export const CURATED_OPENINGS = [
       { name: 'Alien Gambit: Kg8 Variation', level: 3, moves: `${ALIEN_MAIN} Kg8 Bc4+ e6 O-O c5 Qe2 cxd4 Bf4` },
       { name: 'Alien Gambit: Bc4 Line, e6', level: 4, moves: `${ALIEN_ROOT} Kxf7 Bc4+ e6 Nf3 Bd6 Qe2 Nd5 Bb3 Nd7 c4 Nf4 Bxf4` },
       { name: 'Alien Gambit: Bc4 Line, Be6', level: 4, moves: `${ALIEN_ROOT} Kxf7 Bc4+ Be6 Bxe6+ Kxe6 Nf3 Kf7 Ne5+ Kg8 Ng6 Rh7 h4` },
+    ],
+  },
+  {
+    name: 'Nakhmanson Gambit',
+    side: 'white',
+    eco: 'C56',
+    lichessName: 'Italian Game: Scotch Gambit, Nakhmanson Gambit',
+    // Lichess-puzzels hebben alleen labels tot op variantniveau; daarom de puzzels uit de Scotch Gambit
+    puzzleTag: 'Italian_Game_Scotch_Gambit',
+    puzzleName: 'Italian Game: Scotch Gambit',
+    statsFrom: 'italian-game',
+    rootMoves: NAKH_ROOT,
+    rootMoveOrders: [
+      `e4 e5 Nf3 Nc6 d4 exd4 Bc4 Nf6 O-O Nxe4 Nc3 ${NAKH_FIRST_LESSON}`,
+      `e4 e5 Bc4 Nf6 d4 exd4 Nf3 Nc6 O-O Nxe4 Nc3 ${NAKH_FIRST_LESSON}`,
+    ],
+    lessons: { 1: 'Het offer en de hoofdlijn', 2: 'De belangrijkste antwoorden', 3: 'Andere antwoorden' },
+    lines: [
+      { name: 'Nakhmanson Gambit', level: 1, moves: `${NAKH_ROOT} ${NAKH_FIRST_LESSON}` },
+      { name: 'Nakhmanson Gambit: Main Line', level: 2, moves: `${NAKH_CHECK} Ke8 Re1 Be7 Rxe4 d6 Bg5 Kf8 Rae1` },
+      { name: 'Nakhmanson Gambit: Kg6 Trap', level: 2, moves: `${NAKH_CHECK} Kg6 Qxe4+ Kf7 Ng5+ Qxg5 Bxg5 d5 Qxd5+` },
+      { name: 'Nakhmanson Gambit: Nxc3 Variation', level: 2, moves: `${NAKH_ROOT} Nxc3 bxc3 d5 Bb5 Be7 Bxc6+ bxc6 Ne5` },
+      { name: 'Nakhmanson Gambit: Qf6 Variation', level: 3, moves: `${NAKH_CHECK} Ke8 Re1 Qf6 Qxe4+ Be7 Bg5 Qf7 Ne5` },
+      { name: 'Nakhmanson Gambit: Kf6 Variation', level: 3, moves: `${NAKH_CHECK} Kf6 Re1 Ne7 Qxe4 Kf7 Bg5 cxb2 Rab1` },
+      { name: 'Nakhmanson Gambit: Nxc3 Variation, Be7', level: 3, moves: `${NAKH_ROOT} Nxc3 bxc3 Be7 cxd4 d5 Bd3 Bg4 c3` },
+      { name: 'Nakhmanson Gambit: Nd6 Variation', level: 3, moves: `${NAKH_ROOT} Nd6 Qe2+ Be7 Nd5 Nxc4 Qxc4 O-O Nxd4` },
+      { name: 'Nakhmanson Gambit: d5 Variation', level: 3, moves: `${NAKH_ROOT} d5 Bxd5 dxc3 Bxe4 Qxd1 Rxd1 Bd7 Bxc6 Bxc6 Re1+` },
     ],
   },
 ]

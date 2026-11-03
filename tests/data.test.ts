@@ -187,6 +187,54 @@ describe('Alien Gambit (samengestelde opening)', () => {
   })
 })
 
+describe('Nakhmanson Gambit (samengestelde opening)', () => {
+  const file = families.find(f => f.family.id === 'nakhmanson-gambit')!
+
+  it('staat bij wit, direct na de Alien Gambit', () => {
+    expect(file.family.side).toBe('white')
+    expect(file.family.curated).toBe(true)
+    expect(manifest.families.map(f => f.id).indexOf('nakhmanson-gambit')).toBe(11)
+  })
+
+  it('begint elke lijn met 6.Nc3 en komt ook via 3.d4 en 2.Bc4 in dezelfde stelling', () => {
+    expect(file.family.rootSan.at(-1)).toBe('Nc3')
+    for (const v of file.variations) expect(v.uci.slice(0, file.family.rootUci.length)).toEqual(file.family.rootUci)
+    const root = file.variations.find(v => v.path.length === 0)!
+    expect(root.name).toBe('Nakhmanson Gambit')
+    expect(root.moveOrders).toHaveLength(2)
+    for (const m of root.moveOrders ?? []) {
+      const c = new Chess()
+      for (const san of m.san) c.move(san)
+      expect(epdOf(c.fen())).toBe(root.epd)
+    }
+  })
+
+  it('wint de dame in de valstrik na 8...Kg6', () => {
+    const trap = file.variations.find(v => v.name === 'Nakhmanson Gambit: Kg6 Trap')!
+    expect(trap.tags).toContain('tactical')
+    expect(trap.san.slice(15, 21)).toEqual(['Kg6', 'Qxe4+', 'Kf7', 'Ng5+', 'Qxg5', 'Bxg5'])
+  })
+
+  it('eindigt elke lijn op een zet van wit en leert per stelling één witte zet', () => {
+    const moves = new Map<string, Set<string>>()
+    for (const v of file.variations) {
+      expect(v.uci.length % 2).toBe(1)
+      const c = new Chess()
+      for (const san of v.san) {
+        const epd = epdOf(c.fen())
+        if (c.turn() === 'w') moves.set(epd, (moves.get(epd) ?? new Set()).add(san))
+        c.move(san)
+      }
+    }
+    expect([...moves.values()].filter(s => s.size > 1)).toEqual([])
+  })
+
+  it('telt dezelfde partijen als de Lichess-naam in het Italiaans', () => {
+    const italian = families.find(f => f.family.id === 'italian-game')!
+    expect(italian.variations.find(v => v.name === 'Italian Game: Scotch Gambit, Nakhmanson Gambit')?.namedGames).toBe(file.family.games)
+  })
+})
+
 describe('positiestatistieken en puzzels', () => {
   it('statistieken bevatten alleen legale zetten en consistente aantallen', () => {
     for (const f of manifest.families.slice(0, 6)) {

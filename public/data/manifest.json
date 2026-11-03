@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c-cc9ef4b",
+ "datasetVersion": "a6189a3-2d3b4850227b-2026-09-d014e2-pd76b5c-c96a9c4",
  "generatedAt": "2026-10-24T14:35:53.806Z",
  "source": {
   "openings": {
@@ -45,7 +45,7 @@
   "Generieke verzamelnamen (King's Pawn Game, Queen's Pawn Game, Indian Defense, Zukertort Opening, Van't Kruijs Opening) tellen mee in de ranglijst maar worden niet geselecteerd.",
   "Transpositie = een stelling uit een lijn die in de Lichess-dataset ook via een andere zetvolgorde (van dezelfde lengte) bereikt wordt.",
   "Frequentie van een variant = aantal steekproefpartijen dat de eindstelling bereikte (alle zetvolgordes samen), mits de stelling binnen 24 ply en minstens 5 keer voorkwam.",
-  "Samengestelde openingen (Alien Gambit) staan buiten de top 10. Lichess benoemt alleen de eindstelling; de vervolgen komen uit de partijensteekproef en zijn beoordeeld met Stockfish. Hun partijen tellen ook mee bij de opening waarin ze vallen."
+  "Samengestelde openingen (Alien Gambit, Nakhmanson Gambit) staan buiten de top 10. Lichess benoemt alleen de eindstelling; de vervolgen komen uit de partijensteekproef en zijn beoordeeld met Stockfish. Hun partijen tellen ook mee bij de opening waarin ze vallen."
  ],
  "families": [
   {
@@ -534,6 +534,52 @@
    "gambitCount": 11,
    "lessonCount": 4,
    "maxPlies": 25
+  },
+  {
+   "id": "nakhmanson-gambit",
+   "name": "Nakhmanson Gambit",
+   "side": "white",
+   "rank": 12,
+   "curated": true,
+   "ecoRange": "C56",
+   "ecoCodes": [
+    "C56"
+   ],
+   "rootSan": [
+    "e4",
+    "e5",
+    "Nf3",
+    "Nc6",
+    "Bc4",
+    "Nf6",
+    "d4",
+    "exd4",
+    "O-O",
+    "Nxe4",
+    "Nc3"
+   ],
+   "rootUci": [
+    "e2e4",
+    "e7e5",
+    "g1f3",
+    "b8c6",
+    "f1c4",
+    "g8f6",
+    "d2d4",
+    "e5d4",
+    "e1g1",
+    "f6e4",
+    "b1c3"
+   ],
+   "rootEpd": "r1bqkb1r/pppp1ppp/2n5/8/2Bpn3/2N2N2/PPP2PPP/R1BQ1RK1 b kq -",
+   "games": 11,
+   "share": 0.00002,
+   "variationCount": 9,
+   "namedCount": 9,
+   "subvariationCount": 1,
+   "gambitCount": 9,
+   "lessonCount": 3,
+   "maxPlies": 23
   },
   {
    "id": "sicilian-defense",
@@ -1154,6 +1200,16 @@
     "withMoveOrders": 1,
     "linesWithTransposition": 0,
     "statPositions": 15
+   },
+   {
+    "family": "Nakhmanson Gambit",
+    "sourceRows": 9,
+    "variations": 9,
+    "distinctNames": 9,
+    "duplicatesMerged": 0,
+    "withMoveOrders": 1,
+    "linesWithTransposition": 0,
+    "statPositions": 11
    }
   ],
   "unmatchedGameFamilies": [],
@@ -1262,6 +1318,11 @@
     "family": "Alien Gambit",
     "candidates": 106,
     "selected": 106
+   },
+   {
+    "family": "Nakhmanson Gambit",
+    "candidates": 373,
+    "selected": 276
    }
   ]
  }

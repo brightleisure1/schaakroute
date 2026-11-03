@@ -98,7 +98,7 @@ export function Dashboard() {
                 </div>
               </Link>
             ))}
-            <Link to="/openingen" className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-line p-3 text-center text-sm font-semibold text-muted transition hover:border-brand hover:text-ink"><Plus size={20} aria-hidden />Alle 20 openingen bekijken</Link>
+            <Link to="/openingen" className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-line p-3 text-center text-sm font-semibold text-muted transition hover:border-brand hover:text-ink"><Plus size={20} aria-hidden />Alle openingen bekijken</Link>
           </div>
         )}
       </section>

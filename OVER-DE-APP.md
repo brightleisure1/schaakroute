@@ -31,7 +31,7 @@ Ook bruikbaar voor:
 
 ## Wat zit erin
 
-De 10 populairste openingen voor wit en de 10 populairste voor zwart, met alle 2.246 benoemde varianten uit de openbare Lichess-database. De populariteit is gemeten op ruim 500.000 echte partijen. Daarnaast staat de Alien Gambit erin als extra opening voor wit, met 11 zelf samengestelde lijnen.
+De 10 populairste openingen voor wit en de 10 populairste voor zwart, met alle 2.246 benoemde varianten uit de openbare Lichess-database. De populariteit is gemeten op ruim 500.000 echte partijen. Daarnaast staan de Alien Gambit (11 lijnen) en de Nakhmanson Gambit (9 lijnen) erin als extra openingen voor wit, met zelf samengestelde lijnen.
 
 | Onderdeel | Wat je doet |
 |---|---|

@@ -64,7 +64,7 @@ for (const l of readFileSync(gamesPath, 'utf8').split('\n').slice(1)) {
   const name = normalizeName(opening)
   namedCount.set(name, (namedCount.get(name) ?? 0) + 1)
   // Naspelen is duur; alleen partijen die in de buurt van een gezochte opening komen
-  if (!openings.some(o => moves.includes(o.rootMoves.split(' ').at(-1)))) continue
+  if (!openings.some(o => o.rootMoves.split(' ').slice(-2).every(m => moves.includes(m)))) continue
   const c = new Chess()
   for (const san of moves.split(' ').slice(0, REACH_MAX_PLY)) {
     try { c.move(san) } catch { break }
@@ -159,7 +159,7 @@ for (const o of openings) {
     for (const p of list.slice(0, PER_BUCKET)) {
       const c = new Chess(p.fen)
       const san = p.moves.map(u => c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }).san)
-      puzzles.push({ id: p.id, fen: p.fen, uci: p.moves, san, rating: p.rating, themes: p.themes.filter(t => t !== 'opening'), gameUrl: p.gameUrl, ply: p.ply, variation: o.lichessName, plays: p.plays })
+      puzzles.push({ id: p.id, fen: p.fen, uci: p.moves, san, rating: p.rating, themes: p.themes.filter(t => t !== 'opening'), gameUrl: p.gameUrl, ply: p.ply, variation: o.puzzleName ?? o.lichessName, plays: p.plays })
     }
   }
 
@@ -202,8 +202,8 @@ for (const o of openings) {
   for (const v of variations) console.log(`  L${v.level} ${v.name}: ${v.san.length} ply, bereikt ${v.reach ?? '<5'} keer`)
 }
 
-const note = 'Samengestelde openingen (Alien Gambit) staan buiten de top 10. Lichess benoemt alleen de eindstelling; de vervolgen komen uit de partijensteekproef en zijn beoordeeld met Stockfish. Hun partijen tellen ook mee bij de opening waarin ze vallen.'
-manifest.method = [...manifest.method.filter(m => m !== note), note]
+const note = `Samengestelde openingen (${openings.map(o => o.name).join(', ')}) staan buiten de top 10. Lichess benoemt alleen de eindstelling; de vervolgen komen uit de partijensteekproef en zijn beoordeeld met Stockfish. Hun partijen tellen ook mee bij de opening waarin ze vallen.`
+manifest.method = [...manifest.method.filter(m => !m.startsWith('Samengestelde openingen')), note]
 manifest.datasetVersion += '-c' + hasher.digest('hex').slice(0, 6)
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 1))
 console.log('dataset', manifest.datasetVersion)
