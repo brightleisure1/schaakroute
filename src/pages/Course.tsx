@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
-import { familyProgress, useCardMap, useFamily, useProgressMap, variationMastery } from '../lib/hooks'
+import { familyProgress, useCardMap, useFamily, useProgressMap, userCardIds } from '../lib/hooks'
 import { displayName } from '../lib/data'
 import { variationLine } from '../lib/daily'
 import { learnLessons } from '../lib/course'
 import { endSession, startSession } from '../lib/progress'
+import { db } from '../lib/db'
+import { MAX_REDO, knownUserMoves, moveNo, planVariation, redoSteps, userPliesOf, type LessonStep, type StepKind } from '../lib/lessonPlan'
 import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, PageHeader, ProgressBar, Spinner, Stars } from '../components/ui'
-import type { FamilyFile, Lesson, TrainMode, Variation } from '../lib/types'
+import type { FamilyFile, Lesson, TrainingLine } from '../lib/types'
 import type { VariationProgress } from '../lib/db'
 
 // Niveaus worden doorlopend genummerd: als korte lijnen een niveau leeg maken, begint het leerpad niet bij 'Niveau 2'
@@ -95,32 +97,40 @@ export function Course() {
   )
 }
 
+interface StepResult { step: LessonStep; result: LineResult }
+
 export function LessonRun() {
   const { id, lessonId } = useParams()
   const { data: file, error } = useFamily(id)
-  const progress = useProgressMap(id)
-  const cards = useCardMap(id)
   const lesson = file ? learnLessons(file).find(l => l.id === lessonId) : undefined
-  const queueRef = useRef<{ v: Variation; mode: TrainMode }[] | null>(null)
+  const [steps, setSteps] = useState<LessonStep[]>([])
+  const [planned, setPlanned] = useState(0) // aantal varianten waarvan de stappen al klaarstaan
   const [index, setIndex] = useState(0)
-  const [results, setResults] = useState<LineResult[]>([])
+  const [results, setResults] = useState<StepResult[]>([])
+  const misses = useRef(new Map<string, Set<number>>())
   const [sessionId, setSessionId] = useState<number>()
   const [fire, setFire] = useState(0)
 
-  // Wachtrij één keer opbouwen: nieuwe varianten eerst leren en dan oefenen; bekende alleen oefenen
-  const queue = useMemo(() => {
-    if (!file || !lesson) return null
-    if (queueRef.current) return queueRef.current
-    const q: { v: Variation; mode: TrainMode }[] = []
-    for (const vid of lesson.variationIds) {
-      const v = file.variations.find(x => x.id === vid)!
-      const vm = variationMastery(v, file.family.side, cards, progress.get(v.id))
-      if (!vm.learned) q.push({ v, mode: 'learn' })
-      q.push({ v, mode: 'practice' })
-    }
-    queueRef.current = q
-    return q
-  }, [file, lesson]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Nieuwe les: alles opnieuw
+  useEffect(() => {
+    setSteps([]); setPlanned(0); setIndex(0); setResults([]); misses.current = new Map()
+  }, [lessonId])
+
+  // De stappen van een variant worden pas bepaald als je eraan begint, zodat zetten die je net in deze les
+  // leerde (bijvoorbeeld een gedeeld begin) al als bekend gelden
+  useEffect(() => {
+    if (!file || !lesson || index < steps.length || planned >= lesson.variationIds.length) return
+    let alive = true
+    const v = file.variations.find(x => x.id === lesson.variationIds[planned])!
+    const ids = userCardIds(v, file.family.side)
+    db.cards.bulkGet(ids).then(cards => {
+      if (!alive) return
+      const known = knownUserMoves(ids, cid => (cards[ids.indexOf(cid)]?.correct ?? 0) > 0)
+      setSteps(s => [...s, ...planVariation(v.id, v.uci.length, file.family.side, known)])
+      setPlanned(n => n + 1)
+    })
+    return () => { alive = false }
+  }, [file, lesson, index, steps.length, planned])
 
   useEffect(() => {
     let sid: number | undefined
@@ -131,16 +141,16 @@ export function LessonRun() {
   if (error) return <ErrorBox error={error} />
   // Een les met alleen korte lijnen bestaat niet meer: terug naar het leerpad
   if (file && !lesson) return <Navigate to={`/cursus/${file.family.id}`} replace />
-  if (!file || !lesson || !queue) return <Spinner />
-  const item = queue[index]
-  const finished = index >= queue.length
+  if (!file || !lesson) return <Spinner />
   const lessons = learnLessons(file)
   const nextLesson = lessons[lessons.findIndex(l => l.id === lesson.id) + 1]
+  const finished = planned >= lesson.variationIds.length && index >= steps.length
 
   if (finished) {
-    const practice = results.filter((_, i) => queue[i].mode !== 'learn')
-    const stars = practice.length ? Math.min(...practice.map(r => r.stars)) : 0
-    const total = results.reduce((a, r) => ({ ...a, userMoves: a.userMoves + r.userMoves, correctFirstTry: a.correctFirstTry + r.correctFirstTry, mistakes: a.mistakes + r.mistakes, xp: a.xp + r.xp, badges: [...a.badges, ...r.badges] }), { userMoves: 0, correctFirstTry: 0, mistakes: 0, hints: 0, alternatives: 0, shown: 0, stars, xp: 0, newCards: 0, badges: [], misses: [] } as LineResult)
+    const counted = results.filter(r => r.step.kind !== 'learn' && r.step.kind !== 'redo')
+    const finals = results.filter(r => r.step.completes)
+    const stars = finals.length ? Math.min(...finals.map(r => r.result.stars)) : 0
+    const total = counted.map(r => r.result).reduce((a, r) => ({ ...a, userMoves: a.userMoves + r.userMoves, correctFirstTry: a.correctFirstTry + r.correctFirstTry, mistakes: a.mistakes + r.mistakes, xp: a.xp + r.xp, badges: [...a.badges, ...r.badges] }), { userMoves: 0, correctFirstTry: 0, mistakes: 0, hints: 0, alternatives: 0, shown: 0, stars, xp: results.filter(r => r.step.kind === 'learn' || r.step.kind === 'redo').reduce((a, r) => a + r.result.xp, 0), newCards: 0, badges: [], misses: [] } as LineResult)
     return (
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
         <Confetti fire={1} />
@@ -149,38 +159,105 @@ export function LessonRun() {
         <div className="mt-2"><Stars count={stars} size="text-3xl" /></div>
         <ResultNumbers result={total} />
         <div className="mt-4 grid gap-2">
-          {nextLesson && <Link to={`/les/${file.family.id}/${nextLesson.id}`} className="btn btn-primary" onClick={() => { queueRef.current = null; setIndex(0); setResults([]) }}>Volgende les: {nextLesson.title}</Link>}
+          {nextLesson && <Link to={`/les/${file.family.id}/${nextLesson.id}`} className="btn btn-primary">Volgende les: {nextLesson.title}</Link>}
           <Link to={`/cursus/${file.family.id}`} className="btn btn-ghost">Terug naar het leerpad</Link>
         </div>
       </div>
     )
   }
+  const step = steps[index]
+  if (!step) return <Spinner />
+  const v = file.variations.find(x => x.id === step.variationId)!
+  const vIndex = lesson.variationIds.indexOf(v.id)
+  const side = file.family.side
+  const user = userPliesOf(v.uci.length, side).filter(p => p >= step.startPly && p < step.endPly)
+  const range = user.length ? `${moveNo(user[0])}${user.length > 1 ? `–${moveNo(user[user.length - 1])}` : ''}` : ''
+  const label: Record<StepKind, string> = {
+    learn: `Kijk en speel na: zet ${range}`,
+    recall: `Nu uit je hoofd: zet ${range}`,
+    final: step.startPly === 0 ? 'De hele variant uit je hoofd' : `Alle nieuwe zetten uit je hoofd: zet ${range}`,
+    redo: `Fout herstellen: zet ${range}`,
+  }
+  const stepsOfVariation = steps.filter(s => s.variationId === v.id)
+  const posInVariation = stepsOfVariation.indexOf(step)
+  const line = { ...variationLine(file, v), key: `${v.id}:${index}`, startPly: step.startPly, endPly: step.endPly, previewFrom: step.previewFrom }
 
-  const line = variationLine(file, item.v)
+  function done(r: LineResult) {
+    setResults(x => [...x, { step, result: r }])
+    const extra: LessonStep[] = []
+    if (step.kind === 'recall' || step.kind === 'final') {
+      const set = misses.current.get(v.id) ?? new Set<number>()
+      for (const m of r.misses) set.add(m.ply)
+      misses.current.set(v.id, set)
+      // Aan het eind van de variant: de fouten opnieuw, met de zetten ervoor voorgespeeld
+      if (step.kind === 'final' && set.size) extra.push(...redoSteps(v.id, set))
+    } else if (step.kind === 'redo' && r.mistakes + r.hints + r.shown > 0 && (step.attempt ?? 1) < MAX_REDO) {
+      extra.push(...redoSteps(v.id, [step.startPly], (step.attempt ?? 1) + 1))
+    }
+    if (extra.length) {
+      // achter de herstelstappen die al klaarstaan voor deze variant
+      let at = index + 1
+      while (at < steps.length && steps[at].variationId === v.id) at++
+      setSteps(s => [...s.slice(0, at), ...extra, ...s.slice(at)])
+    }
+    setIndex(i => i + 1)
+  }
+
+  const next = steps[index + 1]
+  // Herstelstappen worden pas na deze stap ingepland; het label kijkt daarom ook naar de fouten van nu
+  const nextLabel = (r: LineResult) => {
+    const failed = r.mistakes + r.hints + r.shown > 0
+    if (step.kind === 'learn') return 'Nu zelf, zonder pijlen'
+    if (step.kind === 'final' && (failed || misses.current.get(v.id)?.size)) return 'Fouten herstellen'
+    if (step.kind === 'redo' && failed && (step.attempt ?? 1) < MAX_REDO) return 'Verder, deze zet komt nog terug'
+    if (next?.variationId === v.id) return next.kind === 'redo' ? 'Volgende fout herstellen' : next.kind === 'final' ? 'Nu alles uit je hoofd' : 'Volgende zetten leren'
+    if (vIndex + 1 < lesson.variationIds.length) return `Verder: ${displayName(file.variations.find(x => x.id === lesson.variationIds[vIndex + 1])!, file.family.name)}`
+    return 'Les afronden'
+  }
+  const endTitle = (r: LineResult) => step.kind === 'learn' ? 'Bekeken. Nu uit je hoofd.'
+    : r.mistakes + r.hints + r.shown === 0 ? 'Goed gedaan!' : step.kind === 'redo' ? 'Nog niet helemaal' : 'Afgerond, met fouten'
+
   return (
     <div>
       <Confetti fire={fire} />
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link to={`/cursus/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Leerpad</Link>
-        <div className="flex-1 sm:max-w-sm"><ProgressBar value={index / queue.length} /><div className="mt-1 text-right text-xs text-muted">{lesson.title} · stap {index + 1} van {queue.length}</div></div>
+        <div className="flex-1 sm:max-w-sm">
+          <ProgressBar value={(vIndex + Math.max(0, posInVariation) / Math.max(1, stepsOfVariation.length)) / lesson.variationIds.length} />
+          <div className="mt-1 text-right text-xs text-muted">{lesson.variationIds.length > 1 ? `Variant ${vIndex + 1} van ${lesson.variationIds.length} · ` : ''}{label[step.kind]}</div>
+        </div>
       </div>
-      <Trainer
-        key={`${item.v.id}-${item.mode}-${index}`}
+      <StepTrainer
+        key={line.key}
         line={line}
-        mode={item.mode}
+        step={step}
         family={file}
         sessionId={sessionId}
-        autoIntro={item.mode === 'learn'}
-        onComplete={r => { if (r.stars === 3) setFire(f => f + 1) }}
-        renderEnd={r => {
-          const nextItem = queue[index + 1]
-          return (
-            <button className="btn btn-primary min-h-12" autoFocus onClick={() => { setResults(x => [...x, r]); setIndex(i => i + 1) }}>
-              {!nextItem ? 'Les afronden' : nextItem.v.id === item.v.id ? 'Nu zelf spelen, zonder pijlen' : `Verder: ${displayName(nextItem.v, file.family.name)}`}
-            </button>
-          )
-        }}
+        endTitle={endTitle}
+        onComplete={r => { if (step.completes && r.stars === 3) setFire(f => f + 1) }}
+        renderEnd={r => <button className="btn btn-primary min-h-12" autoFocus onClick={() => done(r)}>{nextLabel(r)}</button>}
       />
     </div>
+  )
+}
+
+/** De trainer voor één stap; houdt het resultaat vast voor de eindkop */
+function StepTrainer({ line, step, family, sessionId, endTitle, onComplete, renderEnd }: {
+  line: TrainingLine; step: LessonStep; family: FamilyFile; sessionId?: number
+  endTitle: (r: LineResult) => string; onComplete: (r: LineResult) => void; renderEnd: (r: LineResult) => ReactNode
+}) {
+  const [title, setTitle] = useState<string>()
+  return (
+    <Trainer
+      line={line}
+      mode={step.kind === 'learn' ? 'learn' : 'practice'}
+      family={family}
+      sessionId={sessionId}
+      autoIntro={false}
+      completes={!!step.completes}
+      endTitle={title}
+      onComplete={r => { setTitle(endTitle(r)); onComplete(r) }}
+      renderEnd={renderEnd}
+    />
   )
 }

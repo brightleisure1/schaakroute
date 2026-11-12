@@ -6,7 +6,8 @@ import { isUserPly, judgeMove, qualityFor, starsFor } from '../src/lib/trainer'
 import { needsPromotion, epdOf, cropWindow } from '../src/lib/chess'
 import { parsePgn, splitGames, treeToPgn } from '../src/lib/pgn'
 import { computeStreak, levelFromXp } from '../src/lib/gamification'
-import { learnLessons, learnThreshold, userMoveCount } from '../src/lib/course'
+import { learnLessons, learnThreshold, lessonSizes, userMoveCount } from '../src/lib/course'
+import { chunkSizes, knownUserMoves, planVariation, redoSteps } from '../src/lib/lessonPlan'
 import { groupByFirstMove, matchesOpening } from '../src/lib/openingGroups'
 import type { FamilyFile, FamilySummary, Side, Variation } from '../src/lib/types'
 
@@ -221,6 +222,57 @@ describe('leerpad zonder korte lijnen', () => {
     const f = fam('black', [v('a', 2), v('b', 6)])
     expect(learnThreshold(f)).toBe(3)
     expect(learnLessons(f).flatMap(l => l.variationIds)).toEqual(['b', 'b'])
+  })
+
+  it('splitst grote lessen in delen van hooguit 3 varianten, met doorlopende nummering', () => {
+    expect(lessonSizes(7)).toEqual([3, 2, 2])
+    expect(lessonSizes(6)).toEqual([3, 3])
+    expect(lessonSizes(3)).toEqual([3])
+    const vars = ['a', 'b', 'c', 'd', 'e'].map(id => v(id, 9))
+    const f = { family: { side: 'white' }, variations: vars, lessons: [{ id: 'x', level: 2, title: 'Najdorf (1/2)', variationIds: ['a', 'b', 'c', 'd'] }, { id: 'y', level: 2, title: 'Najdorf (2/2)', variationIds: ['e'] }] } as unknown as FamilyFile
+    expect(learnLessons(f).map(l => [l.id, l.title, l.variationIds.join('')])).toEqual([
+      ['x', 'Najdorf (1/3)', 'ab'], ['x-2', 'Najdorf (2/3)', 'cd'], ['y', 'Najdorf (3/3)', 'e'],
+    ])
+  })
+})
+
+describe('les in blokjes van 3 zetten', () => {
+  it('maakt blokjes van 3 eigen zetten; een losse laatste zet gaat mee in het vorige blok', () => {
+    expect(chunkSizes(7)).toEqual([3, 4])
+    expect(chunkSizes(6)).toEqual([3, 3])
+    expect(chunkSizes(2)).toEqual([2])
+    expect(chunkSizes(8)).toEqual([3, 3, 2])
+  })
+
+  it('telt bekende zetten alleen aan het begin van de lijn', () => {
+    expect(knownUserMoves(['a', 'b', 'c', 'd'], id => id !== 'c')).toBe(2)
+    expect(knownUserMoves(['a'], () => false)).toBe(0)
+  })
+
+  it('wit, 7 nieuwe zetten: leren en uit het hoofd per blok, dan alles uit het hoofd', () => {
+    // 13 ply: wit speelt ply 0,2,…,12 = 7 zetten
+    const steps = planVariation('v', 13, 'white', 0)
+    expect(steps.map(s => `${s.kind}:${s.startPly}-${s.endPly}`)).toEqual(['learn:0-5', 'recall:0-5', 'learn:5-13', 'recall:5-13', 'final:0-13'])
+    expect(steps[2].previewFrom).toBe(0)
+    expect(steps.filter(s => s.completes).map(s => s.kind)).toEqual(['final'])
+  })
+
+  it('bekende zetten staan al op het bord: de les begint bij de eerste nieuwe zet', () => {
+    // zwart, 12 ply: zwart speelt ply 1,3,…,11 = 6 zetten; de eerste 3 ken je al
+    const steps = planVariation('v', 12, 'black', 3)
+    expect(steps.map(s => `${s.kind}:${s.startPly}-${s.endPly}`)).toEqual(['learn:6-12', 'final:6-12'])
+    expect(steps[1].completes).toBe(true)
+  })
+
+  it('een variant die je al kent speel je alleen helemaal uit je hoofd', () => {
+    expect(planVariation('v', 9, 'white', 5)).toEqual([{ kind: 'final', variationId: 'v', startPly: 0, endPly: 9, completes: true }])
+  })
+
+  it('herstelt fouten per zet, in volgorde, met de zetten ervoor voorgespeeld', () => {
+    expect(redoSteps('v', [14, 4, 14])).toEqual([
+      { kind: 'redo', variationId: 'v', startPly: 4, endPly: 5, previewFrom: 0, attempt: 1 },
+      { kind: 'redo', variationId: 'v', startPly: 14, endPly: 15, previewFrom: 6, attempt: 1 },
+    ])
   })
 })
 

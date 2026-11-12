@@ -148,6 +148,8 @@ export interface TrainingLine {
   startPly?: number
   /** Optioneel: maximale ply (losse positie = één zet) */
   endPly?: number
+  /** Optioneel: speel de zetten vanaf deze ply tot startPly eerst snel voor */
+  previewFrom?: number
 }
 
 export type TrainMode = 'learn' | 'practice' | 'mastery' | 'review'

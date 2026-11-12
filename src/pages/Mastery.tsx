@@ -50,6 +50,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const [extra, setExtra] = useState(false)
   const [index, setIndex] = useState(0)
   const [stats, setStats] = useState({ good: 0, bad: 0 })
+  const [answered, setAnswered] = useState(-1) // index van de kaart die al beantwoord is
   const [sessionId, setSessionId] = useState<number>()
   const [files, setFiles] = useState<Map<string, FamilyFile>>(new Map())
   const dueCount = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended && (!family || c.familyIds.includes(family))).count(), [family], 0)
@@ -204,10 +205,13 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const card = queue[index]
   const file = files.get(card.familyIds[0])
   const v = file?.variations.find(x => x.id === card.variationIds[0])
-  const line = { ...cardLine(card, v ? `Vind de zet: ${v.path.join(', ') || file!.family.name}` : 'Vind de zet'), subtitle: file?.family.name }
+  const base = cardLine(card, v ? `Vind de zet: ${v.path.join(', ') || file!.family.name}` : 'Vind de zet')
+  // De laatste zetten voor de stelling worden voorgespeeld, zodat je niet zomaar in een losse stelling springt
+  const line = { ...base, subtitle: file?.family.name, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
   return (
     <div>
     <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? 'Zwakste posities' : 'Herhalen'} onClose={() => setStarted(false)} closeLabel="Stoppen, je gaat later verder" />
+    <ReviewPiles todo={queue.length - index - (answered === index ? 1 : 0)} wrong={stats.bad} correct={stats.good} />
     <Trainer
       key={card.id + index}
       line={line}
@@ -215,12 +219,40 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
       family={file}
       sessionId={sessionId}
       autoIntro={false}
-      onComplete={r => setStats(s => ({ good: s.good + (r.mistakes + r.hints + r.shown === 0 ? 1 : 0), bad: s.bad + (r.mistakes + r.hints + r.shown > 0 ? 1 : 0) }))}
+      onComplete={r => {
+        const failed = r.mistakes + r.hints + r.shown > 0
+        setAnswered(index)
+        setStats(s => ({ good: s.good + (failed ? 0 : 1), bad: s.bad + (failed ? 1 : 0) }))
+        // Fout: de kaart komt achteraan de stapel terug, hooguit twee keer
+        if (failed && queue.filter(c => c.id === card.id).length <= MAX_RETRIES) setQueue(q => q && [...q, card])
+      }}
       renderEnd={() => (
         <button className="btn btn-primary min-h-12" autoFocus onClick={() => setIndex(i => i + 1)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
       )}
     />
     </div>
+  )
+}
+
+const PREVIEW_PLIES = 6
+const MAX_RETRIES = 2
+
+/** Drie stapels, zoals bij Lotus: wat nog komt, wat fout ging en wat goed ging */
+function ReviewPiles({ todo, wrong, correct }: { todo: number; wrong: number; correct: number }) {
+  const piles = [
+    { label: 'Nog doen', n: todo, tone: 'bg-info-soft text-info-ink' },
+    { label: 'Fout', n: wrong, tone: 'bg-danger-soft text-danger-ink' },
+    { label: 'Correct', n: correct, tone: 'bg-brand-soft text-brand-strong' },
+  ]
+  return (
+    <dl className="mb-3 grid grid-cols-3 gap-2" aria-live="polite">
+      {piles.map(p => (
+        <div key={p.label} className={`flex flex-col-reverse items-center rounded-xl px-2 py-1.5 ${p.tone}`}>
+          <dt className="text-xs font-semibold uppercase tracking-wide">{p.label}</dt>
+          <dd className="text-xl font-bold tabular-nums">{p.n}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 

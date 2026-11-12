@@ -65,6 +65,10 @@ export interface TrainerProps {
   autoIntro?: boolean
   /** Meldt of er een lijn half gespeeld is (om per ongeluk wisselen te voorkomen) */
   onProgressChange?: (inProgress: boolean) => void
+  /** Telt de lijn als afgeronde variant? Standaard alleen als de hele lijn vanaf zet 1 gespeeld is */
+  completes?: boolean
+  /** Eigen kop in de eindsamenvatting */
+  endTitle?: string
 }
 
 const MODE_LABEL: Record<TrainMode, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd', review: 'Herhaling' }
@@ -74,10 +78,12 @@ const isTyping = (t: EventTarget | null) => {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
 }
 
-export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange }: TrainerProps) {
+export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange, completes, endTitle }: TrainerProps) {
   const settings = useSettings()
   const startPly = line.startPly ?? 0
   const endPly = Math.min(line.endPly ?? line.uci.length, line.uci.length)
+  // Bekende zetten vóór startPly worden snel voorgespeeld, zodat je ziet hoe de stelling ontstond
+  const previewStart = Math.min(line.previewFrom ?? startPly, startPly)
   const opponent = line.side === 'white' ? 'black' : 'white'
   const wantsIntro = autoIntro && startPly === 0 && mode === 'learn'
 
@@ -102,7 +108,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     return out
   }, [startPly, endPly, line.side])
 
-  const [ply, setPly] = useState(startPly)
+  const [ply, setPly] = useState(previewStart)
   const [viewPly, setViewPly] = useState<number | null>(null)
   const [plyState, setPlyState] = useState<Record<number, PlyState>>({})
   const [feedback, setFeedback] = useState<Feedback>(null)
@@ -134,7 +140,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
 
   const restart = useCallback(() => {
     runId.current++
-    setPly(startPly)
+    setPly(previewStart)
     setViewPly(null)
     setPlyState({})
     setFeedback(null)
@@ -149,7 +155,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     xpRef.current = 0
     newCardsRef.current = 0
     busy.current = false
-  }, [startPly])
+  }, [previewStart])
 
   // Bij een nieuwe lijn alles resetten
   useEffect(() => {
@@ -158,7 +164,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   }, [line.key, mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const done = ply >= endPly
-  const userTurn = !done && isUserPly(ply, line.side)
+  const previewing = ply < startPly
+  const userTurn = !done && !previewing && isUserPly(ply, line.side)
 
   useEffect(() => {
     // Pas "halverwege" als je zelf een zet hebt gedaan; de openingszet van de computer telt niet
@@ -171,10 +178,11 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     const id = runId.current
     const t = setTimeout(() => {
       if (id !== runId.current) return
-      setOpponentLine(`${sideNl(opponent)} ${ply === startPly ? 'speelt' : 'antwoordt'} ${sans[ply]} (${describeSan(sans[ply])}).`)
+      if (ply < startPly) setOpponentLine(`Voorgespeeld: ${moveNumberLabel(ply)} ${sans[ply]}`)
+      else setOpponentLine(`${sideNl(opponent)} ${ply === startPly ? 'speelt' : 'antwoordt'} ${sans[ply]} (${describeSan(sans[ply])}).`)
       setPly(p => p + 1)
       setHintLevel(0)
-    }, ply === startPly ? 350 : 520)
+    }, ply < startPly ? 380 : ply === startPly ? 350 : 520)
     return () => clearTimeout(t)
   }, [ply, done, userTurn, intro, showFull, result, startPly, opponent, sans])
 
@@ -203,7 +211,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     const stars = mode === 'learn' ? 0 : starsFor(userPlies.length, mistakes + shown, hints)
     const finish = async () => {
       let xp = xpRef.current
-      if (line.variationId && line.familyId && startPly === 0) {
+      if (line.variationId && line.familyId && (completes ?? startPly === 0)) {
         xp += await completeVariation({ variationId: line.variationId, familyId: line.familyId, stars, mistakes, hints, correct: correctFirstTry, mode })
       }
       const badges = await checkBadges()
@@ -434,6 +442,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             onSelect={p => setViewPly(v => (v === p ? null : p))}
             actions={renderEnd ? renderEnd(result, restart) : <button className="btn btn-primary w-full" onClick={restart}>Nog een keer</button>}
             extra={renderEndExtra?.(result)}
+            title={endTitle}
           />
         ) : (
           <>
@@ -470,7 +479,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             <div className="card order-3 p-4 lg:order-first">
               <h2 className="font-bold leading-snug text-balance">{line.title}</h2>
               <div className="mt-0.5 text-sm text-muted">{meta}</div>
-              <ProgressBar className="mt-3" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />
+              {userPlies.length > 1 && userPlies.length <= 16
+                ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
+                : <ProgressBar className="mt-3" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
               <div className="mt-1 text-xs text-muted">
                 {startPly > 0 && endPly - startPly <= 1
                   ? 'Losse positie: vind de zet die je eerder leerde.'
@@ -520,6 +531,20 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         )}
       </aside>
     </div>
+  )
+}
+
+/** Een vakje per eigen zet: groen = in één keer goed, rood = met fout of hint, omrand = nu aan de beurt */
+function MoveSquares({ plies, ply, state }: { plies: number[]; ply: number; state: Record<number, PlyState> }) {
+  const good = plies.filter(p => p < ply && !(state[p]?.mistakes || state[p]?.hints || state[p]?.shown)).length
+  return (
+    <ol className="mt-3 flex gap-1.5" aria-label={`${good} van ${plies.length} zetten in één keer goed`}>
+      {plies.map(p => {
+        const s = state[p]
+        const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-surface-2 ring-2 ring-brand/50' : 'bg-surface-2') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
+        return <li key={p} className={`h-3 flex-1 rounded-[4px] transition-colors ${tone}`} />
+      })}
+    </ol>
   )
 }
 
@@ -610,10 +635,10 @@ export function MoveList({ sans, current, onSelect, startPly = 0, marked }: { sa
   )
 }
 
-function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, actions, extra }: { line: TrainingLine; mode: TrainMode; result: LineResult; sans: string[]; startPly: number; selected: number | null; onSelect: (ply: number) => void; actions: ReactNode; extra?: ReactNode }) {
+function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, actions, extra, title: customTitle }: { line: TrainingLine; mode: TrainMode; result: LineResult; sans: string[]; startPly: number; selected: number | null; onSelect: (ply: number) => void; actions: ReactNode; extra?: ReactNode; title?: string }) {
   const single = (line.endPly ?? line.uci.length) - startPly <= 1
   const perfect = result.mistakes + result.hints + result.shown === 0
-  const title = mode === 'learn' ? 'Variant doorlopen' : single ? (perfect ? 'Goed onthouden' : 'Afgerond') : perfect ? 'Foutloos gespeeld' : 'Variant afgerond'
+  const title = customTitle ?? (mode === 'learn' ? 'Variant doorlopen' : single ? (perfect ? 'Goed onthouden' : 'Afgerond') : perfect ? 'Foutloos gespeeld' : 'Variant afgerond')
   return (
     <div className="card p-5 animate-pop" aria-live="polite">
       <h2 className="text-xl font-bold">{title}</h2>
