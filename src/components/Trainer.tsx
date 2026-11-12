@@ -418,6 +418,15 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
           />
         </div>
         <div className="px-2 sm:px-0">
+          {/* Voortgang direct onder het bord, zodat je hem ziet zonder te scrollen */}
+          {!result && !(startPly > 0 && endPly - startPly <= 1) && (
+            <div className="mt-2 flex items-center gap-3">
+              {userPlies.length > 1 && userPlies.length <= 16
+                ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
+                : <ProgressBar className="flex-1" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
+              <span className="shrink-0 text-xs tabular-nums text-muted">{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</span>
+            </div>
+          )}
           {viewPly !== null && !showFull && !result && (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-info-soft px-3 py-2 text-sm text-info-ink">
               <span>Je bekijkt een eerdere stelling (na {plural(viewPly, 'halve zet', 'halve zetten')}).</span>
@@ -479,14 +488,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             <div className="card order-3 p-4 lg:order-first">
               <h2 className="font-bold leading-snug text-balance">{line.title}</h2>
               <div className="mt-0.5 text-sm text-muted">{meta}</div>
-              {userPlies.length > 1 && userPlies.length <= 16
-                ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
-                : <ProgressBar className="mt-3" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
-              <div className="mt-1 text-xs text-muted">
-                {startPly > 0 && endPly - startPly <= 1
-                  ? 'Losse positie: vind de zet die je eerder leerde.'
-                  : <>{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</>}
-              </div>
+              {startPly > 0 && endPly - startPly <= 1 && <div className="mt-1 text-xs text-muted">Losse positie: vind de zet die je eerder leerde.</div>}
             </div>
 
             {showFull && (
@@ -538,10 +540,10 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
 function MoveSquares({ plies, ply, state }: { plies: number[]; ply: number; state: Record<number, PlyState> }) {
   const good = plies.filter(p => p < ply && !(state[p]?.mistakes || state[p]?.hints || state[p]?.shown)).length
   return (
-    <ol className="mt-3 flex gap-1.5" aria-label={`${good} van ${plies.length} zetten in één keer goed`}>
+    <ol className="flex flex-1 gap-1.5" aria-label={`${good} van ${plies.length} zetten in één keer goed`}>
       {plies.map(p => {
         const s = state[p]
-        const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-surface-2 ring-2 ring-brand/50' : 'bg-surface-2') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
+        const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-line ring-2 ring-brand/60' : 'bg-line') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
         return <li key={p} className={`h-3 flex-1 rounded-[4px] transition-colors ${tone}`} />
       })}
     </ol>
