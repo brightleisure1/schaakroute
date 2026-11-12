@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Repeat } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -9,6 +9,7 @@ import { useAsync, useCardMap, useFamilies, useManifest, useProgressMap, variati
 import { DAY, masteryScore, stageOf } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
 import { Trainer } from '../components/Trainer'
+import { AUTO_NEXT_MS } from '../lib/lessonPlan'
 import { CropBoard } from '../components/CropBoard'
 import { Empty, FocusBar, ProgressBar, Spinner, Tabs, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
@@ -51,6 +52,9 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const [index, setIndex] = useState(0)
   const [stats, setStats] = useState({ good: 0, bad: 0 })
   const [answered, setAnswered] = useState(-1) // index van de kaart die al beantwoord is
+  const advanced = useRef(-1)
+  // Verder naar de volgende kaart, maar nooit twee keer voor dezelfde (knop en automatisch tegelijk)
+  const advance = (from: number) => { if (advanced.current === from) return; advanced.current = from; setIndex(from + 1) }
   const [sessionId, setSessionId] = useState<number>()
   const [files, setFiles] = useState<Map<string, FamilyFile>>(new Map())
   const dueCount = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended && (!family || c.familyIds.includes(family))).count(), [family], 0)
@@ -67,6 +71,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   async function begin(list: TrainingCard[], extraMode: boolean) {
     setQueue(list)
     setIndex(0)
+    advanced.current = -1
     setExtra(extraMode)
     const ids = [...new Set(list.flatMap(c => c.familyIds.slice(0, 1)))]
     const loaded = await Promise.all(ids.map(id => loadFamily(id).catch(() => null)))
@@ -225,9 +230,11 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
         setStats(s => ({ good: s.good + (failed ? 0 : 1), bad: s.bad + (failed ? 1 : 0) }))
         // Fout: de kaart komt achteraan de stapel terug, hooguit twee keer
         if (failed && queue.filter(c => c.id === card.id).length <= MAX_RETRIES) setQueue(q => q && [...q, card])
+        // Goed: vanzelf door naar de volgende kaart; na een fout blijft de knop staan, zodat je de correctie ziet
+        else if (!failed) setTimeout(() => advance(index), AUTO_NEXT_MS)
       }}
       renderEnd={() => (
-        <button className="btn btn-primary min-h-12" autoFocus onClick={() => setIndex(i => i + 1)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
+        <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(index)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
       )}
     />
     </div>

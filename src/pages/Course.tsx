@@ -6,7 +6,7 @@ import { variationLine } from '../lib/daily'
 import { learnLessons } from '../lib/course'
 import { endSession, startSession } from '../lib/progress'
 import { db } from '../lib/db'
-import { MAX_REDO, knownUserMoves, moveNo, planVariation, redoSteps, userPliesOf, type LessonStep, type StepKind } from '../lib/lessonPlan'
+import { AUTO_NEXT_MS, MAX_REDO, knownUserMoves, moveNo, planVariation, redoSteps, userPliesOf, type LessonStep, type StepKind } from '../lib/lessonPlan'
 import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, PageHeader, ProgressBar, Spinner, Stars } from '../components/ui'
@@ -108,12 +108,13 @@ export function LessonRun() {
   const [index, setIndex] = useState(0)
   const [results, setResults] = useState<StepResult[]>([])
   const misses = useRef(new Map<string, Set<number>>())
+  const advanced = useRef(-1) // laatste stap waarvoor al is doorgegaan (knop en automatisch tegelijk)
   const [sessionId, setSessionId] = useState<number>()
   const [fire, setFire] = useState(0)
 
   // Nieuwe les: alles opnieuw
   useEffect(() => {
-    setSteps([]); setPlanned(0); setIndex(0); setResults([]); misses.current = new Map()
+    setSteps([]); setPlanned(0); setIndex(0); setResults([]); misses.current = new Map(); advanced.current = -1
   }, [lessonId])
 
   // De stappen van een variant worden pas bepaald als je eraan begint, zodat zetten die je net in deze les
@@ -183,6 +184,8 @@ export function LessonRun() {
   const line = { ...variationLine(file, v), key: `${v.id}:${index}`, startPly: step.startPly, endPly: step.endPly, previewFrom: step.previewFrom }
 
   function done(r: LineResult) {
+    if (advanced.current === index) return
+    advanced.current = index
     setResults(x => [...x, { step, result: r }])
     const extra: LessonStep[] = []
     if (step.kind === 'recall' || step.kind === 'final') {
@@ -234,7 +237,11 @@ export function LessonRun() {
         family={file}
         sessionId={sessionId}
         endTitle={endTitle}
-        onComplete={r => { if (step.completes && r.stars === 3) setFire(f => f + 1) }}
+        onComplete={r => {
+          if (step.completes && r.stars === 3) setFire(f => f + 1)
+          // Een stap van één zet die meteen goed ging: vanzelf door, zonder op de knop te hoeven klikken
+          if (user.length <= 1 && r.mistakes + r.hints + r.shown === 0) setTimeout(() => done(r), AUTO_NEXT_MS)
+        }}
         renderEnd={r => <button className="btn btn-primary min-h-12" autoFocus onClick={() => done(r)}>{nextLabel(r)}</button>}
       />
     </div>

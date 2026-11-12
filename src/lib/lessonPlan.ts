@@ -8,6 +8,8 @@ import { isUserPly } from './trainer'
 export const CHUNK = 3
 /** Zoveel halve zetten vóór een fout worden voorgespeeld bij het herstellen */
 export const REDO_CONTEXT = 8
+/** Zo lang blijft een goede losse zet in beeld voordat het vanzelf verder gaat */
+export const AUTO_NEXT_MS = 900
 /** Een herstelzet komt hooguit zo vaak terug */
 export const MAX_REDO = 3
 
