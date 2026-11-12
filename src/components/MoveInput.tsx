@@ -1,13 +1,47 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Chess, type Move } from 'chess.js'
 import { Keyboard } from 'lucide-react'
+
+const OPEN_KEY = 'schaakroute.zetTypen'
+
+/** Staat het typen van zetten open? Standaard dicht; de keuze wordt per apparaat onthouden */
+export function useTypingOpen() {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(OPEN_KEY) === '1' } catch { return false }
+  })
+  const set = (v: boolean) => {
+    setOpen(v)
+    try { localStorage.setItem(OPEN_KEY, v ? '1' : '0') } catch { /* geen opslag: alleen voor nu */ }
+  }
+  return [open, set] as const
+}
+
+/** Klein toetsenbord-icoon dat het invoerveld voor zetten uitklapt */
+export function TypeToggle({ open, onToggle, className = '' }: { open: boolean; onToggle: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition hover:bg-surface-2 hover:text-ink ${open ? 'bg-brand-soft text-brand-strong' : 'text-muted'} ${className}`}
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={open ? 'Zet typen verbergen' : 'Zet typen'}
+      title={open ? 'Zet typen verbergen (T)' : 'Zet typen (T)'}
+      aria-keyshortcuts="T"
+    >
+      <Keyboard size={18} aria-hidden />
+    </button>
+  )
+}
 
 /**
  * Zet invoeren met het toetsenbord (Lichess-notatie, bijv. Nf3, exd5, O-O, e8=Q, of e2e4).
  * Maakt het bord volledig bruikbaar zonder muis of touch, ook met een schermlezer.
  */
-export function MoveInput({ fen, enabled, onMove, className = '' }: { fen: string; enabled: boolean; onMove: (from: string, to: string, promotion?: string) => boolean | void; className?: string }) {
+export function MoveInput({ fen, enabled, onMove, className = '', autoFocus = false }: { fen: string; enabled: boolean; onMove: (from: string, to: string, promotion?: string) => boolean | void; className?: string; autoFocus?: boolean }) {
   const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Alleen focussen als je het veld net zelf openklapte, niet bij elke nieuwe stelling
+  useEffect(() => { if (autoFocus) inputRef.current?.focus() }, [autoFocus])
   const [error, setError] = useState<string | null>(null)
   const id = useId()
 
@@ -45,11 +79,11 @@ export function MoveInput({ fen, enabled, onMove, className = '' }: { fen: strin
     <form onSubmit={submit} className={`mt-2 ${className}`}>
       <div className="flex items-center gap-2">
         <label htmlFor={id} className="sr-only">Typ je zet in Lichess-notatie</label>
-        <Keyboard size={18} aria-hidden className="shrink-0 text-muted" />
         <input
+          ref={inputRef}
           id={id}
           className="input min-h-11 py-2 text-sm"
-          placeholder={enabled ? 'Of typ je zet, bijv. Nf3' : 'Wacht op je beurt…'}
+          placeholder={enabled ? 'Typ je zet, bijv. Nf3' : 'Wacht op je beurt…'}
           value={value}
           onChange={e => { setValue(e.target.value); setError(null) }}
           readOnly={!enabled}

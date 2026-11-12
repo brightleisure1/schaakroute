@@ -3,7 +3,7 @@ import { Chess } from 'chess.js'
 import type { Arrow } from 'react-chessboard'
 import { BookOpen, ChessKnight, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleX, Ellipsis, Eye, Info, Lightbulb, ListOrdered, RotateCcw, Undo2 } from 'lucide-react'
 import { Board } from './Board'
-import { MoveInput } from './MoveInput'
+import { MoveInput, TypeToggle, useTypingOpen } from './MoveInput'
 import { ProgressBar, Stars, useSettings, pct, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
 import { START_FEN, describeSan, epdOf, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
@@ -121,6 +121,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const [revealedPly, setRevealedPly] = useState<number | null>(null)
   const [showFull, setShowFull] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [typing, setTyping] = useTypingOpen()
+  const [focusTyping, setFocusTyping] = useState(false)
+  const toggleTyping = () => { setFocusTyping(!typing); setTyping(!typing) }
   const [result, setResult] = useState<LineResult | null>(null)
   const [intro, setIntro] = useState(wantsIntro)
   const [names, setNames] = useState<Record<string, [string, string, string]> | null>(null)
@@ -360,6 +363,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       else if (k === 'u') setShowExplain(s => !s)
       else if (k === 'z') previousMove()
       else if (k === 'r') restart()
+      else if (k === 't') { e.preventDefault(); toggleTyping() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -419,12 +423,17 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         </div>
         <div className="px-2 sm:px-0">
           {/* Voortgang direct onder het bord, zodat je hem ziet zonder te scrollen */}
-          {!result && !(startPly > 0 && endPly - startPly <= 1) && (
-            <div className="mt-2 flex items-center gap-3">
-              {userPlies.length > 1 && userPlies.length <= 16
-                ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
-                : <ProgressBar className="flex-1" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
-              <span className="shrink-0 text-xs tabular-nums text-muted">{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</span>
+          {!result && (
+            <div className="mt-1 flex min-h-11 items-center gap-3">
+              {!(startPly > 0 && endPly - startPly <= 1) && (
+                <>
+                  {userPlies.length > 1 && userPlies.length <= 16
+                    ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
+                    : <ProgressBar className="flex-1" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
+                  <span className="shrink-0 text-xs tabular-nums text-muted">{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</span>
+                </>
+              )}
+              {!showFull && !intro && <TypeToggle open={typing} onToggle={toggleTyping} className="ml-auto -mr-2" />}
             </div>
           )}
           {viewPly !== null && !showFull && !result && (
@@ -433,8 +442,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
               <button className="min-h-11 font-semibold underline" onClick={() => setViewPly(null)}>Terug naar training</button>
             </div>
           )}
-          {!result && !showFull && !intro && (
-            <MoveInput fen={fens[ply] ?? fens[endPly]} enabled={userTurn && viewPly === null && !busy.current} onMove={onUserMove} />
+          {!result && !showFull && !intro && typing && (
+            <MoveInput fen={fens[ply] ?? fens[endPly]} enabled={userTurn && viewPly === null && !busy.current} onMove={onUserMove} autoFocus={focusTyping} className="mt-1" />
           )}
         </div>
       </div>
@@ -528,7 +537,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                 />
               </div>
             )}
-            <p className="order-4 hidden text-xs text-muted lg:block">Sneltoetsen: H hint · U uitleg · Z terug · R opnieuw · ← →</p>
+            <p className="order-4 hidden text-xs text-muted lg:block">Sneltoetsen: H hint · U uitleg · Z terug · R opnieuw · T zet typen · ← →</p>
           </>
         )}
       </aside>

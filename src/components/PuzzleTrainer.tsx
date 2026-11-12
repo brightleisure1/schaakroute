@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Chess } from 'chess.js'
 import { Lightbulb, Swords } from 'lucide-react'
 import { Board } from './Board'
-import { MoveInput } from './MoveInput'
+import { MoveInput, TypeToggle, useTypingOpen } from './MoveInput'
 import { MoveList } from './Trainer'
 import { EvalButton } from './EvalButton'
 import { STICKY_ACTIONS, BadgesEarned } from './ui'
@@ -35,6 +35,8 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
     return out
   }, [puzzle])
   const [ply, setPly] = useState(0)
+  const [typing, setTyping] = useTypingOpen()
+  const [focusTyping, setFocusTyping] = useState(false)
   const [mistakes, setMistakes] = useState(0)
   const [hints, setHints] = useState(0)
   const [hintSq, setHintSq] = useState<string | null>(null)
@@ -152,7 +154,12 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
           lastMove={ply > 0 ? [puzzle.uci[lastIdx].slice(0, 2), puzzle.uci[lastIdx].slice(2, 4)] : null}
           hintSquare={hintSq}
         />
-        {!done && <div className="px-2 sm:px-0"><MoveInput fen={fens[ply]} enabled={userTurn} onMove={onMove} /></div>}
+        {!done && (
+          <div className="px-2 sm:px-0">
+            <div className="mt-1 flex justify-end"><TypeToggle open={typing} onToggle={() => { setFocusTyping(!typing); setTyping(!typing) }} className="-mr-2" /></div>
+            {typing && <MoveInput fen={fens[ply]} enabled={userTurn} onMove={onMove} autoFocus={focusTyping} className="mt-1" />}
+          </div>
+        )}
       </div>
       <aside className="flex flex-col gap-3">
         <div className="card p-4">
