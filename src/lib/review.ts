@@ -44,16 +44,16 @@ export type MoveClass = 'brilliant' | 'great' | 'best' | 'excellent' | 'good' | 
 export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder']
 
 export const CLASS_INFO: Record<MoveClass, { label: string; symbol: string; color: string }> = {
-  brilliant: { label: 'Briljant', symbol: '!!', color: '#1f9e98' },
-  great: { label: 'Geweldig', symbol: '!', color: '#4f86c6' },
-  best: { label: 'Beste', symbol: '★', color: '#5a9a3c' },
-  excellent: { label: 'Uitstekend', symbol: '👍', color: '#78a94a' },
-  good: { label: 'Goed', symbol: '✓', color: '#8aa877' },
-  book: { label: 'Theorie', symbol: '📖', color: '#a2825f' },
-  inaccuracy: { label: 'Onnauwkeurig', symbol: '?!', color: '#e0ad2e' },
-  mistake: { label: 'Fout', symbol: '?', color: '#e3802b' },
-  miss: { label: 'Gemist', symbol: '✕', color: '#e0604e' },
-  blunder: { label: 'Blunder', symbol: '??', color: '#c8352f' },
+  brilliant: { label: 'Briljant', symbol: '!!', color: '#139e9a' },
+  great: { label: 'Geweldig', symbol: '!', color: '#3b7fd4' },
+  best: { label: 'Beste', symbol: '★', color: '#4c9a35' },
+  excellent: { label: 'Uitstekend', symbol: '👍', color: '#68a645' },
+  good: { label: 'Goed', symbol: '✓', color: '#86a86a' },
+  book: { label: 'Theorie', symbol: '📖', color: '#a17f5c' },
+  inaccuracy: { label: 'Onnauwkeurig', symbol: '?!', color: '#e4a92a' },
+  mistake: { label: 'Fout', symbol: '?', color: '#e8791f' },
+  miss: { label: 'Gemist', symbol: '✕', color: '#e0533f' },
+  blunder: { label: 'Blunder', symbol: '??', color: '#c62d29' },
 }
 
 export interface ReviewedMove {
@@ -204,13 +204,13 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
   return out
 }
 
-export function summarize(moves: ReviewedMove[], side: Side): SideSummary {
+export function summarize(moves: ReviewedMove[], side: Side, scale: RatingScale = 'lichess'): SideSummary {
   const own = moves.filter(m => m.side === side)
   const counts = Object.fromEntries(CLASS_ORDER.map(k => [k, 0])) as Record<MoveClass, number>
   for (const m of own) counts[m.cls]++
   const accuracy = gameAccuracy(own.map(m => m.accuracy))
   const played = own.filter(m => m.cls !== 'book').length
-  return { accuracy, counts, rating: played >= MIN_RATED_MOVES ? estimateRating(accuracy) : null }
+  return { accuracy, counts, rating: played >= MIN_RATED_MOVES ? estimateRating(accuracy, scale) : null }
 }
 
 // ---------------- Partijrating ----------------
@@ -218,18 +218,34 @@ export function summarize(moves: ReviewedMove[], side: Side): SideSummary {
 /** Zoveel eigen zetten buiten de theorie zijn nodig voor een schatting */
 export const MIN_RATED_MOVES = 10
 
-/**
- * Verband tussen rating en nauwkeurigheid, geijkt met scripts/calibrate-game-rating.mjs op 264 rated
- * blitz- en rapidpartijen van Lichess (september 2026, ratings 600–2600, Stockfish diepte 12):
- * nauwkeurigheid ≈ 60,66 + 1,21 per 100 ratingpunten.
- */
-export const ACCURACY_AT_ZERO = 60.66
-export const ACCURACY_PER_100 = 1.21
+export type RatingScale = 'lichess' | 'chesscom'
 
-/** Op welke rating iemand in deze partij speelde, geschat uit de nauwkeurigheid (afgerond op 10) */
-export function estimateRating(accuracy: number): number {
-  const r = ((accuracy - ACCURACY_AT_ZERO) / ACCURACY_PER_100) * 100
-  return Math.round(Math.max(100, Math.min(3200, r)) / 10) * 10
+/**
+ * Welke Lichess-rating hoort typisch bij een nauwkeurigheid: [nauwkeurigheid, rating], oplopend.
+ * Geijkt met scripts/calibrate-game-rating.mjs: rated blitz- en rapidpartijen uit de Lichess-database,
+ * ratings 600–2600, met dezelfde Stockfish-instelling als de app. Per groep spelers met ongeveer dezelfde
+ * nauwkeurigheid is dit hun mediane rating. Dat is bewust voorzichtig: één goede partij maakt je niet
+ * meteen 2400, want ook lager gerate spelers halen af en toe een hoge nauwkeurigheid.
+ */
+export const RATING_CURVE: [number, number][] = [[49.7, 940], [58.3, 1070], [71.5, 1180], [78.2, 1520], [80.9, 1640], [84.2, 1790], [86.1, 1840], [88, 1960], [91.1, 2080], [95.7, 2120]]
+
+/** Lichess- naar Chess.com-rating (blitz en rapid), een benadering: Chess.com ligt een paar honderd punten lager */
+export const toChesscom = (lichess: number) => 1.15 * lichess - 600
+
+/** De rating waarop iemand in deze partij speelde, geschat uit de nauwkeurigheid (afgerond op 10) */
+export function estimateRating(accuracy: number, scale: RatingScale = 'lichess'): number {
+  const c = RATING_CURVE
+  let r: number
+  if (accuracy <= c[0][0]) r = c[0][1]
+  else if (accuracy >= c[c.length - 1][0]) r = c[c.length - 1][1]
+  else {
+    const i = c.findIndex(([a]) => a >= accuracy)
+    const [a0, r0] = c[i - 1]
+    const [a1, r1] = c[i]
+    r = r0 + ((accuracy - a0) / (a1 - a0)) * (r1 - r0)
+  }
+  if (scale === 'chesscom') r = toChesscom(r)
+  return Math.round(Math.max(100, Math.min(3000, r)) / 10) * 10
 }
 
 /** Korte uitleg bij een zet, in gewone taal */

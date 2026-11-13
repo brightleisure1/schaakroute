@@ -8,10 +8,11 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, bookInfo, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, bookInfo, estimateRating, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board } from '../components/Board'
+import { MoveClassIcon } from '../components/MoveClassIcon'
 import { Empty, ErrorBox, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 
@@ -156,7 +157,9 @@ function GameList({ title, games, saved, onOpen, action }: { title: string; game
           const opp = g.myColor === 'white' ? g.black : g.white
           const o = OUTCOME[outcome(g)]
           const acc = saved.get(g.id)?.accuracy?.[g.myColor]
-          const est = saved.get(g.id)?.rating?.[g.myColor]
+          // Altijd met de huidige formule rekenen, ook voor eerder opgeslagen analyses
+          const rec = saved.get(g.id)
+          const est = rec?.rating?.[g.myColor] != null && rec.accuracy ? estimateRating(rec.accuracy[g.myColor], g.source) : null
           return (
             <li key={g.id}>
               <button className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
@@ -266,8 +269,8 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
   // Nauwkeurigheid bewaren voor de partijlijst, met dezelfde theorielengte als hier
   useEffect(() => {
     if (!ready || !names.data || !moves.length) return
-    const w = summarize(moves, 'white')
-    const b = summarize(moves, 'black')
+    const w = summarize(moves, 'white', game.source)
+    const b = summarize(moves, 'black', game.source)
     const accuracy = { white: w.accuracy, black: b.accuracy }
     const rating = { white: w.rating, black: b.rating }
     if (record.accuracy?.white !== accuracy.white || record.accuracy?.black !== accuracy.black || record.rating?.white !== rating.white || record.rating?.black !== rating.black) {
@@ -372,24 +375,14 @@ function PlayerRow({ p, side }: { p: { name: string; rating?: number }; side: Si
   )
 }
 
-function ClassIcon({ cls, size = 20 }: { cls: MoveClass; size?: number }) {
-  const info = CLASS_INFO[cls]
-  const emoji = cls === 'excellent' || cls === 'book'
-  return (
-    <span className="inline-flex shrink-0 items-center justify-center rounded-full font-extrabold text-white shadow-sm"
-      style={{ backgroundColor: info.color, width: size, height: size, fontSize: emoji ? size * 0.55 : size * (info.symbol.length > 1 ? 0.48 : 0.62), lineHeight: 1 }}
-      aria-hidden>{info.symbol}</span>
-  )
-}
-
 function SquareBadge({ square, cls, orientation }: { square: string; cls: MoveClass; orientation: Side }) {
   const f = 'abcdefgh'.indexOf(square[0])
   const r = Number(square[1])
   const col = orientation === 'white' ? f : 7 - f
   const row = orientation === 'white' ? 8 - r : r - 1
   return (
-    <div className="pointer-events-none absolute z-10" style={{ left: `calc(${(col + 1) * 12.5}% - 1.15rem)`, top: `calc(${row * 12.5}% + 0.15rem)` }}>
-      <span className="block animate-pop"><ClassIcon cls={cls} size={22} /></span>
+    <div className="pointer-events-none absolute z-10" style={{ left: `calc(${(col + 1) * 12.5}% - 1.3rem)`, top: `calc(${row * 12.5}% - 0.2rem)` }}>
+      <span className="block animate-pop"><MoveClassIcon cls={cls} size={26} ring /></span>
     </div>
   )
 }
@@ -416,7 +409,7 @@ function MoveComment({ move, evalAfter, ply, ready, compact }: { move?: Reviewed
   return (
     <div className={box} aria-live="polite">
       <div className={`flex items-center ${compact ? 'gap-2.5' : 'gap-3'}`}>
-        <ClassIcon cls={move.cls} size={compact ? 26 : 30} />
+        <MoveClassIcon cls={move.cls} size={compact ? 26 : 30} />
         <div className="min-w-0 flex-1">
           <div className="font-bold" style={{ color: info.color }}>{info.label}</div>
           <div className="text-sm">{explainMove(move)}</div>
@@ -437,8 +430,8 @@ function formatLine(san: string[], startPly: number): string {
 }
 
 function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: ReviewGame; onNextError: () => void }) {
-  const w = summarize(moves, 'white')
-  const b = summarize(moves, 'black')
+  const w = summarize(moves, 'white', game.source)
+  const b = summarize(moves, 'black', game.source)
   const myErrors = moves.filter(m => m.side === game.myColor && ERRORS.includes(m.cls)).length
   return (
     <div className="card p-4">
@@ -455,14 +448,14 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
       </div>
       <p className="mt-2 text-center text-xs text-muted">{w.rating === null || b.rating === null
         ? `Een partijrating komt er vanaf ${MIN_RATED_MOVES} eigen zetten na de theorie.`
-        : 'Partijrating: op welk niveau er in deze partij gespeeld werd, geschat uit de nauwkeurigheid. Eén partij zegt niet alles.'}</p>
+        : `Partijrating (${SOURCE_NAME[game.source]}-schaal): de rating die typisch hoort bij deze nauwkeurigheid. Eén partij zegt niet alles.`}</p>
       <table className="mt-3 w-full text-sm">
         <caption className="sr-only">Aantal zetten per beoordeling, wit en zwart</caption>
         <tbody>
           {CLASS_ORDER.filter(k => w.counts[k] + b.counts[k] > 0 || k === 'blunder' || k === 'best').map(k => (
             <tr key={k} className="border-t border-line">
               <td className="w-10 py-1 text-center tabular-nums font-semibold" style={{ color: w.counts[k] ? CLASS_INFO[k].color : undefined }}>{w.counts[k]}</td>
-              <td className="py-1"><span className="flex items-center justify-center gap-2"><ClassIcon cls={k} size={18} />{CLASS_INFO[k].label}</span></td>
+              <td className="py-1"><span className="flex items-center justify-center gap-2"><MoveClassIcon cls={k} size={18} />{CLASS_INFO[k].label}</span></td>
               <td className="w-10 py-1 text-center tabular-nums font-semibold" style={{ color: b.counts[k] ? CLASS_INFO[k].color : undefined }}>{b.counts[k]}</td>
             </tr>
           ))}
@@ -512,7 +505,7 @@ function MoveList({ san, moves, ply, onPick }: { san: string[]; moves: ReviewedM
       <button aria-current={ply === p + 1 ? 'true' : undefined} onClick={() => onPick(p + 1)}
         className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-left font-mono text-sm ${ply === p + 1 ? 'bg-brand-soft font-bold text-brand-strong' : 'hover:bg-surface-2'}`}
         aria-label={`${san[p]}${m ? `, ${CLASS_INFO[m.cls].label.toLowerCase()}` : ''}`}>
-        {notable && <ClassIcon cls={m.cls} size={16} />}
+        {notable && <MoveClassIcon cls={m.cls} size={16} />}
         <span style={notable ? { color: CLASS_INFO[m.cls].color } : undefined}>{san[p]}</span>
       </button>
     )

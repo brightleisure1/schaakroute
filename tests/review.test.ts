@@ -90,11 +90,16 @@ describe('theorie en Chess.com', () => {
 })
 
 describe('partijrating', () => {
-  it('hogere nauwkeurigheid geeft een hogere rating, binnen 100–3200', () => {
-    expect(estimateRating(80)).toBe(1600)
+  it('hogere nauwkeurigheid geeft een hogere rating, met een voorzichtige boven- en ondergrens', () => {
     expect(estimateRating(90)).toBeGreaterThan(estimateRating(85))
-    expect(estimateRating(30)).toBe(100)
-    expect(estimateRating(100)).toBe(3200)
+    expect(estimateRating(85)).toBeGreaterThan(estimateRating(75))
+    expect(estimateRating(30)).toBe(estimateRating(40))
+    expect(estimateRating(100)).toBeLessThanOrEqual(2200)
+    expect(estimateRating(80)).toBeGreaterThan(1450)
+    expect(estimateRating(80)).toBeLessThan(1750)
+  })
+  it('op Chess.com-schaal komt de rating lager uit', () => {
+    expect(estimateRating(80, 'chesscom')).toBeLessThan(estimateRating(80, 'lichess') - 200)
   })
   it('geen schatting bij te weinig eigen zetten buiten de theorie', () => {
     const san = ['e4', 'e5', 'Nf3', 'Nc6']

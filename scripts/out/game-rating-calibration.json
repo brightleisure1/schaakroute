@@ -1,2705 +1,4078 @@
 {
  "source": "https://database.lichess.org/standard/lichess_db_standard_rated_2026-09.pgn.zst",
- "depth": 12,
- "perBucket": 24,
- "createdAt": "2026-11-13T16:07:13.742Z",
+ "depth": 14,
+ "multipv": 2,
+ "perBucket": 36,
+ "createdAt": "2026-11-13T16:58:05.642Z",
  "table": [
   {
    "rating": 600,
-   "n": 53,
-   "median": 69.75
+   "n": 74,
+   "median": 72.09
   },
   {
    "rating": 800,
-   "n": 70,
-   "median": 73.72
+   "n": 98,
+   "median": 72.24
   },
   {
    "rating": 1000,
-   "n": 66,
-   "median": 73.02
+   "n": 97,
+   "median": 73.78
   },
   {
    "rating": 1200,
-   "n": 60,
-   "median": 75.75
+   "n": 94,
+   "median": 74.11
   },
   {
    "rating": 1400,
-   "n": 59,
-   "median": 81.26
+   "n": 88,
+   "median": 80.79
   },
   {
    "rating": 1600,
-   "n": 56,
-   "median": 81.71
+   "n": 88,
+   "median": 80.34
   },
   {
    "rating": 1800,
-   "n": 70,
-   "median": 85.31
+   "n": 101,
+   "median": 83.08
   },
   {
    "rating": 2000,
-   "n": 65,
-   "median": 88.38
+   "n": 99,
+   "median": 87.27
   },
   {
    "rating": 2200,
-   "n": 61,
-   "median": 87.93
+   "n": 93,
+   "median": 86.68
   },
   {
    "rating": 2400,
-   "n": 65,
-   "median": 89.78
+   "n": 100,
+   "median": 89.14
   },
   {
    "rating": 2600,
-   "n": 52,
-   "median": 89.47
+   "n": 75,
+   "median": 89.11
+  }
+ ],
+ "curve": [
+  {
+   "accuracy": 49.7,
+   "rating": 940,
+   "n": 66
+  },
+  {
+   "accuracy": 58.3,
+   "rating": 1070,
+   "n": 66
+  },
+  {
+   "accuracy": 71.5,
+   "rating": 1180,
+   "n": 132
+  },
+  {
+   "accuracy": 78.2,
+   "rating": 1520,
+   "n": 66
+  },
+  {
+   "accuracy": 80.9,
+   "rating": 1640,
+   "n": 66
+  },
+  {
+   "accuracy": 84.2,
+   "rating": 1790,
+   "n": 66
+  },
+  {
+   "accuracy": 86.1,
+   "rating": 1840,
+   "n": 66
+  },
+  {
+   "accuracy": 88,
+   "rating": 1960,
+   "n": 66
+  },
+  {
+   "accuracy": 91.1,
+   "rating": 2080,
+   "n": 132
+  },
+  {
+   "accuracy": 95.7,
+   "rating": 2120,
+   "n": 66
   }
  ],
  "samples": [
   {
-   "elo": 630,
-   "speed": "rapid",
-   "accuracy": 55.18849869459947
-  },
-  {
-   "elo": 647,
-   "speed": "rapid",
-   "accuracy": 57.830988531023195
-  },
-  {
    "elo": 692,
    "speed": "blitz",
-   "accuracy": 49.80184725515286
+   "accuracy": 50.183703245018805
   },
   {
    "elo": 708,
    "speed": "blitz",
-   "accuracy": 83.28472025932248
-  },
-  {
-   "elo": 697,
-   "speed": "rapid",
-   "accuracy": 69.75463540084257
-  },
-  {
-   "elo": 683,
-   "speed": "rapid",
-   "accuracy": 77.04898963862496
-  },
-  {
-   "elo": 595,
-   "speed": "rapid",
-   "accuracy": 79.46082239542982
-  },
-  {
-   "elo": 613,
-   "speed": "rapid",
-   "accuracy": 87.52370453975558
-  },
-  {
-   "elo": 494,
-   "speed": "rapid",
-   "accuracy": 55.5772957383969
-  },
-  {
-   "elo": 629,
-   "speed": "rapid",
-   "accuracy": 64.96146166516883
-  },
-  {
-   "elo": 703,
-   "speed": "rapid",
-   "accuracy": 85.47414025499688
-  },
-  {
-   "elo": 697,
-   "speed": "rapid",
-   "accuracy": 91.83790302162856
-  },
-  {
-   "elo": 701,
-   "speed": "blitz",
-   "accuracy": 86.71137897603845
-  },
-  {
-   "elo": 684,
-   "speed": "blitz",
-   "accuracy": 63.073405944720584
+   "accuracy": 83.18240582565814
   },
   {
    "elo": 653,
    "speed": "blitz",
-   "accuracy": 42.42554870790691
+   "accuracy": 41.7863923897966
   },
   {
    "elo": 651,
    "speed": "blitz",
-   "accuracy": 39.71157060797588
+   "accuracy": 39.984980006773156
+  },
+  {
+   "elo": 494,
+   "speed": "rapid",
+   "accuracy": 45.63514648419112
+  },
+  {
+   "elo": 629,
+   "speed": "rapid",
+   "accuracy": 54.086959633367414
+  },
+  {
+   "elo": 595,
+   "speed": "rapid",
+   "accuracy": 79.58887112962697
+  },
+  {
+   "elo": 613,
+   "speed": "rapid",
+   "accuracy": 88.43299493392026
+  },
+  {
+   "elo": 703,
+   "speed": "rapid",
+   "accuracy": 87.1134878222341
+  },
+  {
+   "elo": 697,
+   "speed": "rapid",
+   "accuracy": 93.89697016221183
+  },
+  {
+   "elo": 697,
+   "speed": "rapid",
+   "accuracy": 62.86770513508699
+  },
+  {
+   "elo": 683,
+   "speed": "rapid",
+   "accuracy": 71.4016640503002
+  },
+  {
+   "elo": 630,
+   "speed": "rapid",
+   "accuracy": 54.925069576560055
+  },
+  {
+   "elo": 647,
+   "speed": "rapid",
+   "accuracy": 57.75013496942384
   },
   {
    "elo": 580,
    "speed": "rapid",
-   "accuracy": 37.07199859699
+   "accuracy": 36.59744140154484
   },
   {
    "elo": 454,
    "speed": "rapid",
-   "accuracy": 34.344936920819684
-  },
-  {
-   "elo": 605,
-   "speed": "rapid",
-   "accuracy": 78.07076462822094
-  },
-  {
-   "elo": 487,
-   "speed": "rapid",
-   "accuracy": 81.26913425560996
-  },
-  {
-   "elo": 642,
-   "speed": "rapid",
-   "accuracy": 54.11260152594183
-  },
-  {
-   "elo": 594,
-   "speed": "rapid",
-   "accuracy": 49.681988695501964
-  },
-  {
-   "elo": 710,
-   "speed": "rapid",
-   "accuracy": 66.56178755185678
-  },
-  {
-   "elo": 578,
-   "speed": "rapid",
-   "accuracy": 56.068872449095075
+   "accuracy": 33.49150473296087
   },
   {
    "elo": 460,
    "speed": "rapid",
-   "accuracy": 66.4840907101882
+   "accuracy": 67.00502020517084
   },
   {
    "elo": 548,
    "speed": "rapid",
-   "accuracy": 75.25886243926661
-  },
-  {
-   "elo": 625,
-   "speed": "rapid",
-   "accuracy": 61.732845979583175
-  },
-  {
-   "elo": 627,
-   "speed": "rapid",
-   "accuracy": 71.02895671597818
-  },
-  {
-   "elo": 588,
-   "speed": "rapid",
-   "accuracy": 58.44702699865841
-  },
-  {
-   "elo": 596,
-   "speed": "rapid",
-   "accuracy": 60.64140182846433
-  },
-  {
-   "elo": 646,
-   "speed": "blitz",
-   "accuracy": 51.1479485263581
-  },
-  {
-   "elo": 632,
-   "speed": "blitz",
-   "accuracy": 53.741181503714735
-  },
-  {
-   "elo": 686,
-   "speed": "blitz",
-   "accuracy": 79.95954903706217
-  },
-  {
-   "elo": 648,
-   "speed": "blitz",
-   "accuracy": 88.32328743255417
-  },
-  {
-   "elo": 702,
-   "speed": "rapid",
-   "accuracy": 70.07507147243929
-  },
-  {
-   "elo": 625,
-   "speed": "rapid",
-   "accuracy": 72.89246488283447
-  },
-  {
-   "elo": 609,
-   "speed": "rapid",
-   "accuracy": 79.42741401065604
-  },
-  {
-   "elo": 687,
-   "speed": "rapid",
-   "accuracy": 53.16843845016962
-  },
-  {
-   "elo": 635,
-   "speed": "rapid",
-   "accuracy": 48.565287987775974
-  },
-  {
-   "elo": 691,
-   "speed": "rapid",
-   "accuracy": 69.31372470383367
-  },
-  {
-   "elo": 705,
-   "speed": "rapid",
-   "accuracy": 82.77991360571438
-  },
-  {
-   "elo": 632,
-   "speed": "rapid",
-   "accuracy": 89.55836204889746
+   "accuracy": 75.94974560784388
   },
   {
    "elo": 710,
    "speed": "rapid",
-   "accuracy": 58.30894869946083
+   "accuracy": 68.5818600004743
   },
   {
-   "elo": 593,
+   "elo": 578,
    "speed": "rapid",
-   "accuracy": 61.499503833519455
+   "accuracy": 58.4287705986593
+  },
+  {
+   "elo": 642,
+   "speed": "rapid",
+   "accuracy": 53.407472068658336
+  },
+  {
+   "elo": 594,
+   "speed": "rapid",
+   "accuracy": 49.531175696607384
+  },
+  {
+   "elo": 625,
+   "speed": "rapid",
+   "accuracy": 58.2875829255549
+  },
+  {
+   "elo": 627,
+   "speed": "rapid",
+   "accuracy": 68.75908216455954
+  },
+  {
+   "elo": 701,
+   "speed": "blitz",
+   "accuracy": 85.70265348960791
+  },
+  {
+   "elo": 684,
+   "speed": "blitz",
+   "accuracy": 61.96976028606544
+  },
+  {
+   "elo": 702,
+   "speed": "rapid",
+   "accuracy": 70.12123238467416
+  },
+  {
+   "elo": 625,
+   "speed": "rapid",
+   "accuracy": 72.78561262491165
+  },
+  {
+   "elo": 588,
+   "speed": "rapid",
+   "accuracy": 55.973829850424835
+  },
+  {
+   "elo": 596,
+   "speed": "rapid",
+   "accuracy": 59.529358894814976
+  },
+  {
+   "elo": 646,
+   "speed": "blitz",
+   "accuracy": 54.03454361334799
+  },
+  {
+   "elo": 632,
+   "speed": "blitz",
+   "accuracy": 53.998472964066366
+  },
+  {
+   "elo": 635,
+   "speed": "rapid",
+   "accuracy": 48.719437250789326
+  },
+  {
+   "elo": 691,
+   "speed": "rapid",
+   "accuracy": 68.80863865791248
+  },
+  {
+   "elo": 609,
+   "speed": "rapid",
+   "accuracy": 76.49773417861718
+  },
+  {
+   "elo": 687,
+   "speed": "rapid",
+   "accuracy": 52.953572034109044
   },
   {
    "elo": 528,
    "speed": "rapid",
-   "accuracy": 76.71132064920204
+   "accuracy": 76.12915122614322
   },
   {
    "elo": 604,
    "speed": "rapid",
-   "accuracy": 84.80532069986978
+   "accuracy": 83.60544122858217
   },
   {
    "elo": 620,
    "speed": "rapid",
-   "accuracy": 72.97321848629299
+   "accuracy": 73.01750687613021
   },
   {
    "elo": 716,
    "speed": "rapid",
-   "accuracy": 66.73989773792891
+   "accuracy": 67.26053792507838
   },
   {
-   "elo": 795,
-   "speed": "blitz",
-   "accuracy": 74.87096507843188
+   "elo": 734,
+   "speed": "rapid",
+   "accuracy": 37.030121791263085
   },
   {
-   "elo": 792,
+   "elo": 661,
+   "speed": "rapid",
+   "accuracy": 33.74826192531909
+  },
+  {
+   "elo": 727,
+   "speed": "rapid",
+   "accuracy": 59.56621404574113
+  },
+  {
+   "elo": 654,
+   "speed": "rapid",
+   "accuracy": 74.66584433378853
+  },
+  {
+   "elo": 655,
+   "speed": "rapid",
+   "accuracy": 90.97166555864194
+  },
+  {
+   "elo": 570,
+   "speed": "rapid",
+   "accuracy": 84.12188510583562
+  },
+  {
+   "elo": 710,
+   "speed": "rapid",
+   "accuracy": 59.292340736102396
+  },
+  {
+   "elo": 593,
+   "speed": "rapid",
+   "accuracy": 61.646945131585454
+  },
+  {
+   "elo": 705,
+   "speed": "rapid",
+   "accuracy": 82.90495354882927
+  },
+  {
+   "elo": 632,
+   "speed": "rapid",
+   "accuracy": 90.34009209200924
+  },
+  {
+   "elo": 625,
+   "speed": "rapid",
+   "accuracy": 85.44762285788414
+  },
+  {
+   "elo": 497,
+   "speed": "rapid",
+   "accuracy": 76.8110978926609
+  },
+  {
+   "elo": 658,
+   "speed": "rapid",
+   "accuracy": 81.42096928509224
+  },
+  {
+   "elo": 578,
+   "speed": "rapid",
+   "accuracy": 73.95516433910126
+  },
+  {
+   "elo": 686,
    "speed": "blitz",
-   "accuracy": 84.10515320403546
+   "accuracy": 80.62910079632033
+  },
+  {
+   "elo": 648,
+   "speed": "blitz",
+   "accuracy": 88.87409810302489
+  },
+  {
+   "elo": 652,
+   "speed": "rapid",
+   "accuracy": 49.242186920563014
+  },
+  {
+   "elo": 736,
+   "speed": "rapid",
+   "accuracy": 72.02808907604276
+  },
+  {
+   "elo": 674,
+   "speed": "rapid",
+   "accuracy": 66.27156478222415
+  },
+  {
+   "elo": 666,
+   "speed": "rapid",
+   "accuracy": 54.177434506281834
+  },
+  {
+   "elo": 640,
+   "speed": "rapid",
+   "accuracy": 91.95265163917219
+  },
+  {
+   "elo": 532,
+   "speed": "rapid",
+   "accuracy": 87.67292347411652
+  },
+  {
+   "elo": 663,
+   "speed": "blitz",
+   "accuracy": 90.20597008872551
+  },
+  {
+   "elo": 646,
+   "speed": "blitz",
+   "accuracy": 96.90928150735883
+  },
+  {
+   "elo": 605,
+   "speed": "rapid",
+   "accuracy": 77.93297579906562
+  },
+  {
+   "elo": 487,
+   "speed": "rapid",
+   "accuracy": 81.18633537067583
   },
   {
    "elo": 791,
    "speed": "blitz",
-   "accuracy": 71.43477317786554
+   "accuracy": 74.68853189978395
   },
   {
    "elo": 778,
    "speed": "blitz",
-   "accuracy": 64.75189978955001
+   "accuracy": 67.99724610467624
+  },
+  {
+   "elo": 453,
+   "speed": "rapid",
+   "accuracy": 63.375948543766945
+  },
+  {
+   "elo": 589,
+   "speed": "rapid",
+   "accuracy": 81.05687145376055
+  },
+  {
+   "elo": 795,
+   "speed": "blitz",
+   "accuracy": 73.7525279703512
+  },
+  {
+   "elo": 792,
+   "speed": "blitz",
+   "accuracy": 85.11148332051957
+  },
+  {
+   "elo": 669,
+   "speed": "rapid",
+   "accuracy": 55.517873492062584
+  },
+  {
+   "elo": 721,
+   "speed": "rapid",
+   "accuracy": 52.15488570299432
+  },
+  {
+   "elo": 616,
+   "speed": "rapid",
+   "accuracy": 97.3804307580406
+  },
+  {
+   "elo": 603,
+   "speed": "rapid",
+   "accuracy": 91.25191510795153
   },
   {
    "elo": 786,
    "speed": "blitz",
-   "accuracy": 69.43669351498255
+   "accuracy": 66.99073870562918
   },
   {
    "elo": 845,
    "speed": "blitz",
-   "accuracy": 67.01629847840422
-  },
-  {
-   "elo": 899,
-   "speed": "rapid",
-   "accuracy": 39.38841129611423
-  },
-  {
-   "elo": 877,
-   "speed": "rapid",
-   "accuracy": 42.80207538889234
+   "accuracy": 66.2926961559495
   },
   {
    "elo": 895,
    "speed": "rapid",
-   "accuracy": 80.35854919438253
+   "accuracy": 78.68249682096919
   },
   {
    "elo": 875,
    "speed": "rapid",
-   "accuracy": 57.72285223299104
+   "accuracy": 53.640708064708704
   },
   {
-   "elo": 752,
-   "speed": "blitz",
-   "accuracy": 80.91028686010657
-  },
-  {
-   "elo": 728,
-   "speed": "blitz",
-   "accuracy": 79.08376566054973
-  },
-  {
-   "elo": 784,
-   "speed": "blitz",
-   "accuracy": 73.60096618094349
-  },
-  {
-   "elo": 682,
-   "speed": "blitz",
-   "accuracy": 87.66883225972201
-  },
-  {
-   "elo": 907,
-   "speed": "blitz",
-   "accuracy": 72.99082224619355
-  },
-  {
-   "elo": 874,
-   "speed": "blitz",
-   "accuracy": 78.33637540172607
-  },
-  {
-   "elo": 890,
+   "elo": 899,
    "speed": "rapid",
-   "accuracy": 53.64151984936927
+   "accuracy": 39.71069551600986
   },
   {
-   "elo": 897,
+   "elo": 877,
    "speed": "rapid",
-   "accuracy": 50.05755822009817
+   "accuracy": 40.576139186893855
   },
   {
    "elo": 761,
    "speed": "blitz",
-   "accuracy": 75.74785655679244
+   "accuracy": 74.83070957467103
   },
   {
    "elo": 876,
    "speed": "blitz",
-   "accuracy": 88.47430859675129
+   "accuracy": 87.68683800237923
   },
   {
-   "elo": 825,
+   "elo": 752,
    "speed": "blitz",
-   "accuracy": 72.82305406569887
+   "accuracy": 80.10720778117067
   },
   {
-   "elo": 715,
+   "elo": 728,
    "speed": "blitz",
-   "accuracy": 60.730268012619234
+   "accuracy": 78.56236942381267
+  },
+  {
+   "elo": 907,
+   "speed": "blitz",
+   "accuracy": 72.45906880292313
+  },
+  {
+   "elo": 874,
+   "speed": "blitz",
+   "accuracy": 77.11569531278391
+  },
+  {
+   "elo": 784,
+   "speed": "blitz",
+   "accuracy": 72.80727723495195
+  },
+  {
+   "elo": 682,
+   "speed": "blitz",
+   "accuracy": 87.65649647261398
   },
   {
    "elo": 704,
    "speed": "rapid",
-   "accuracy": 75.95091368277345
+   "accuracy": 74.1961605034022
   },
   {
    "elo": 709,
    "speed": "rapid",
-   "accuracy": 83.63916730173129
+   "accuracy": 83.04711273039737
   },
   {
-   "elo": 851,
-   "speed": "rapid",
-   "accuracy": 76.51263486610907
-  },
-  {
-   "elo": 835,
-   "speed": "rapid",
-   "accuracy": 87.95908334048562
-  },
-  {
-   "elo": 786,
+   "elo": 825,
    "speed": "blitz",
-   "accuracy": 46.31960403027036
+   "accuracy": 73.42543863082726
   },
   {
-   "elo": 881,
+   "elo": 715,
    "speed": "blitz",
-   "accuracy": 47.55765217099981
+   "accuracy": 60.43768900322737
   },
   {
    "elo": 755,
    "speed": "blitz",
-   "accuracy": 88.5868364323683
+   "accuracy": 86.87606380283239
   },
   {
    "elo": 660,
    "speed": "blitz",
-   "accuracy": 78.03882306744256
+   "accuracy": 78.46359830438206
   },
   {
-   "elo": 707,
-   "speed": "blitz",
-   "accuracy": 95.76299003449955
-  },
-  {
-   "elo": 793,
-   "speed": "blitz",
-   "accuracy": 85.64781399911013
-  },
-  {
-   "elo": 833,
-   "speed": "blitz",
-   "accuracy": 48.566234713679805
-  },
-  {
-   "elo": 923,
-   "speed": "blitz",
-   "accuracy": 68.46221772954411
-  },
-  {
-   "elo": 788,
+   "elo": 851,
    "speed": "rapid",
-   "accuracy": 76.37385072528303
-  },
-  {
-   "elo": 821,
-   "speed": "rapid",
-   "accuracy": 82.44625341447023
-  },
-  {
-   "elo": 764,
-   "speed": "rapid",
-   "accuracy": 73.80884481471949
-  },
-  {
-   "elo": 809,
-   "speed": "rapid",
-   "accuracy": 84.70803335804635
-  },
-  {
-   "elo": 723,
-   "speed": "blitz",
-   "accuracy": 46.68463609422255
-  },
-  {
-   "elo": 846,
-   "speed": "blitz",
-   "accuracy": 73.62389658174192
-  },
-  {
-   "elo": 826,
-   "speed": "blitz",
-   "accuracy": 56.48837826280603
-  },
-  {
-   "elo": 765,
-   "speed": "blitz",
-   "accuracy": 54.23350900732303
-  },
-  {
-   "elo": 834,
-   "speed": "rapid",
-   "accuracy": 50.84322891220316
+   "accuracy": 75.8358805379485
   },
   {
    "elo": 835,
    "speed": "rapid",
-   "accuracy": 48.24090389791455
+   "accuracy": 86.50203842438324
+  },
+  {
+   "elo": 833,
+   "speed": "blitz",
+   "accuracy": 48.20259810872584
+  },
+  {
+   "elo": 923,
+   "speed": "blitz",
+   "accuracy": 65.3079612797283
+  },
+  {
+   "elo": 786,
+   "speed": "blitz",
+   "accuracy": 47.18090047147226
+  },
+  {
+   "elo": 881,
+   "speed": "blitz",
+   "accuracy": 48.17285427516147
+  },
+  {
+   "elo": 723,
+   "speed": "blitz",
+   "accuracy": 47.5738947468876
+  },
+  {
+   "elo": 846,
+   "speed": "blitz",
+   "accuracy": 73.04009499815507
+  },
+  {
+   "elo": 788,
+   "speed": "rapid",
+   "accuracy": 79.08928628982055
+  },
+  {
+   "elo": 821,
+   "speed": "rapid",
+   "accuracy": 85.21845435553777
+  },
+  {
+   "elo": 890,
+   "speed": "rapid",
+   "accuracy": 51.903781812603874
+  },
+  {
+   "elo": 897,
+   "speed": "rapid",
+   "accuracy": 50.48759289535111
+  },
+  {
+   "elo": 764,
+   "speed": "rapid",
+   "accuracy": 73.67369187413966
+  },
+  {
+   "elo": 809,
+   "speed": "rapid",
+   "accuracy": 84.51424989420781
+  },
+  {
+   "elo": 834,
+   "speed": "rapid",
+   "accuracy": 51.08297531747865
+  },
+  {
+   "elo": 835,
+   "speed": "rapid",
+   "accuracy": 48.2479918424459
+  },
+  {
+   "elo": 819,
+   "speed": "rapid",
+   "accuracy": 74.4117177330359
+  },
+  {
+   "elo": 806,
+   "speed": "rapid",
+   "accuracy": 65.44029303429767
+  },
+  {
+   "elo": 707,
+   "speed": "blitz",
+   "accuracy": 96.65514038936654
+  },
+  {
+   "elo": 793,
+   "speed": "blitz",
+   "accuracy": 86.7052792626018
   },
   {
    "elo": 880,
    "speed": "blitz",
-   "accuracy": 74.7045203815121
+   "accuracy": 77.7948552675915
   },
   {
    "elo": 872,
    "speed": "blitz",
-   "accuracy": 87.95436570145819
+   "accuracy": 88.79610833173362
   },
   {
-   "elo": 922,
+   "elo": 791,
    "speed": "blitz",
-   "accuracy": 82.22015296296456
+   "accuracy": 44.339620730127805
   },
   {
-   "elo": 911,
+   "elo": 749,
    "speed": "blitz",
-   "accuracy": 91.80401905260413
+   "accuracy": 57.090325727373646
   },
   {
-   "elo": 910,
+   "elo": 888,
    "speed": "blitz",
-   "accuracy": 90.79877013186801
+   "accuracy": 63.49264464625437
   },
   {
-   "elo": 963,
+   "elo": 896,
    "speed": "blitz",
-   "accuracy": 74.6258200819293
+   "accuracy": 68.88257893874098
   },
   {
-   "elo": 1050,
-   "speed": "rapid",
-   "accuracy": 43.52272584166282
-  },
-  {
-   "elo": 1037,
-   "speed": "rapid",
-   "accuracy": 46.71982217494445
-  },
-  {
-   "elo": 1059,
+   "elo": 826,
    "speed": "blitz",
-   "accuracy": 71.89172667324395
+   "accuracy": 54.191049029055705
   },
   {
-   "elo": 1069,
+   "elo": 765,
    "speed": "blitz",
-   "accuracy": 75.38928397599071
-  },
-  {
-   "elo": 914,
-   "speed": "blitz",
-   "accuracy": 78.81832836028258
-  },
-  {
-   "elo": 958,
-   "speed": "blitz",
-   "accuracy": 72.13106084335742
+   "accuracy": 52.46996509512107
   },
   {
    "elo": 782,
    "speed": "rapid",
-   "accuracy": 55.4005579151191
+   "accuracy": 54.80702597218277
   },
   {
    "elo": 745,
    "speed": "rapid",
-   "accuracy": 57.55195343616475
+   "accuracy": 56.59314191925813
   },
   {
-   "elo": 1035,
-   "speed": "blitz",
-   "accuracy": 85.77174326852372
+   "elo": 870,
+   "speed": "rapid",
+   "accuracy": 78.16525385368189
   },
   {
-   "elo": 1068,
+   "elo": 767,
+   "speed": "rapid",
+   "accuracy": 86.40177168852159
+  },
+  {
+   "elo": 850,
+   "speed": "rapid",
+   "accuracy": 57.05305585269757
+  },
+  {
+   "elo": 838,
+   "speed": "rapid",
+   "accuracy": 54.919384898905555
+  },
+  {
+   "elo": 759,
+   "speed": "rapid",
+   "accuracy": 50.22970147072398
+  },
+  {
+   "elo": 758,
+   "speed": "rapid",
+   "accuracy": 52.77549770758518
+  },
+  {
+   "elo": 723,
    "speed": "blitz",
-   "accuracy": 97.84858581546268
+   "accuracy": 46.63623845260309
+  },
+  {
+   "elo": 727,
+   "speed": "blitz",
+   "accuracy": 54.7695732667368
+  },
+  {
+   "elo": 919,
+   "speed": "blitz",
+   "accuracy": 84.36824627212314
+  },
+  {
+   "elo": 878,
+   "speed": "blitz",
+   "accuracy": 76.32278407081164
+  },
+  {
+   "elo": 922,
+   "speed": "blitz",
+   "accuracy": 82.45721721546704
+  },
+  {
+   "elo": 911,
+   "speed": "blitz",
+   "accuracy": 91.92434269742805
+  },
+  {
+   "elo": 731,
+   "speed": "rapid",
+   "accuracy": 84.97790827650795
+  },
+  {
+   "elo": 805,
+   "speed": "rapid",
+   "accuracy": 79.94638313920501
+  },
+  {
+   "elo": 746,
+   "speed": "rapid",
+   "accuracy": 75.0679811148793
+  },
+  {
+   "elo": 818,
+   "speed": "rapid",
+   "accuracy": 56.534105328897
+  },
+  {
+   "elo": 951,
+   "speed": "blitz",
+   "accuracy": 53.31723765026426
+  },
+  {
+   "elo": 820,
+   "speed": "blitz",
+   "accuracy": 58.65816404878744
+  },
+  {
+   "elo": 910,
+   "speed": "blitz",
+   "accuracy": 88.10482155173776
+  },
+  {
+   "elo": 963,
+   "speed": "blitz",
+   "accuracy": 73.21895599264742
   },
   {
    "elo": 949,
    "speed": "rapid",
-   "accuracy": 71.44828632755544
+   "accuracy": 71.30041307938619
   },
   {
    "elo": 1004,
    "speed": "rapid",
-   "accuracy": 77.29609990907235
+   "accuracy": 77.15573961275756
   },
   {
-   "elo": 942,
+   "elo": 914,
+   "speed": "blitz",
+   "accuracy": 80.83333767798749
+  },
+  {
+   "elo": 958,
+   "speed": "blitz",
+   "accuracy": 73.77544031691149
+  },
+  {
+   "elo": 1059,
+   "speed": "blitz",
+   "accuracy": 69.30125284230614
+  },
+  {
+   "elo": 1069,
+   "speed": "blitz",
+   "accuracy": 72.77452463524585
+  },
+  {
+   "elo": 1050,
    "speed": "rapid",
-   "accuracy": 86.90432512836585
-  },
-  {
-   "elo": 954,
-   "speed": "rapid",
-   "accuracy": 65.06402219581224
-  },
-  {
-   "elo": 1078,
-   "speed": "blitz",
-   "accuracy": 89.93773723737094
-  },
-  {
-   "elo": 1053,
-   "speed": "blitz",
-   "accuracy": 96.29960415031559
-  },
-  {
-   "elo": 1070,
-   "speed": "blitz",
-   "accuracy": 92.94802177051943
-  },
-  {
-   "elo": 955,
-   "speed": "blitz",
-   "accuracy": 89.20877536054576
+   "accuracy": 43.7785499112225
   },
   {
    "elo": 1037,
    "speed": "rapid",
-   "accuracy": 65.28957561498625
+   "accuracy": 46.85797762019245
   },
   {
-   "elo": 1065,
-   "speed": "rapid",
-   "accuracy": 55.224146019927474
-  },
-  {
-   "elo": 970,
-   "speed": "rapid",
-   "accuracy": 49.10796152565074
-  },
-  {
-   "elo": 995,
-   "speed": "rapid",
-   "accuracy": 73.04058700925111
-  },
-  {
-   "elo": 988,
-   "speed": "rapid",
-   "accuracy": 60.91062545349712
-  },
-  {
-   "elo": 1093,
-   "speed": "rapid",
-   "accuracy": 57.864784997451395
-  },
-  {
-   "elo": 1076,
-   "speed": "rapid",
-   "accuracy": 52.339892311308674
-  },
-  {
-   "elo": 1091,
-   "speed": "rapid",
-   "accuracy": 50.542956861308376
-  },
-  {
-   "elo": 1008,
-   "speed": "rapid",
-   "accuracy": 72.10457503606689
-  },
-  {
-   "elo": 917,
-   "speed": "rapid",
-   "accuracy": 65.30680855173783
-  },
-  {
-   "elo": 875,
-   "speed": "rapid",
-   "accuracy": 88.54781421247971
-  },
-  {
-   "elo": 927,
-   "speed": "rapid",
-   "accuracy": 82.68547385777828
-  },
-  {
-   "elo": 1008,
+   "elo": 1078,
    "speed": "blitz",
-   "accuracy": 78.64432610562898
+   "accuracy": 88.33398819446413
   },
   {
-   "elo": 1042,
+   "elo": 1053,
    "speed": "blitz",
-   "accuracy": 68.49968328614884
-  },
-  {
-   "elo": 947,
-   "speed": "blitz",
-   "accuracy": 74.89536703631416
-  },
-  {
-   "elo": 959,
-   "speed": "blitz",
-   "accuracy": 70.82567345558185
-  },
-  {
-   "elo": 900,
-   "speed": "blitz",
-   "accuracy": 87.14140861722063
-  },
-  {
-   "elo": 948,
-   "speed": "blitz",
-   "accuracy": 82.28274265196454
-  },
-  {
-   "elo": 1065,
-   "speed": "blitz",
-   "accuracy": 54.51839253164937
-  },
-  {
-   "elo": 1099,
-   "speed": "blitz",
-   "accuracy": 76.70868822934659
-  },
-  {
-   "elo": 988,
-   "speed": "blitz",
-   "accuracy": 58.63702623311438
-  },
-  {
-   "elo": 1031,
-   "speed": "blitz",
-   "accuracy": 47.763010441066804
+   "accuracy": 95.27934727493445
   },
   {
    "elo": 1035,
    "speed": "blitz",
-   "accuracy": 64.14038494887708
+   "accuracy": 85.45215112609864
   },
   {
-   "elo": 1002,
+   "elo": 1068,
    "speed": "blitz",
-   "accuracy": 87.20757202150162
+   "accuracy": 97.18130096687719
+  },
+  {
+   "elo": 1037,
+   "speed": "rapid",
+   "accuracy": 63.38380294511347
+  },
+  {
+   "elo": 1065,
+   "speed": "rapid",
+   "accuracy": 54.25941605663819
+  },
+  {
+   "elo": 970,
+   "speed": "rapid",
+   "accuracy": 49.47256676757847
+  },
+  {
+   "elo": 995,
+   "speed": "rapid",
+   "accuracy": 72.48758213170751
+  },
+  {
+   "elo": 1070,
+   "speed": "blitz",
+   "accuracy": 91.3873706383664
+  },
+  {
+   "elo": 955,
+   "speed": "blitz",
+   "accuracy": 87.40667442586224
+  },
+  {
+   "elo": 1008,
+   "speed": "rapid",
+   "accuracy": 73.90414855183406
+  },
+  {
+   "elo": 917,
+   "speed": "rapid",
+   "accuracy": 66.57062332834502
+  },
+  {
+   "elo": 947,
+   "speed": "blitz",
+   "accuracy": 74.6911459786541
+  },
+  {
+   "elo": 959,
+   "speed": "blitz",
+   "accuracy": 70.41528279318544
+  },
+  {
+   "elo": 942,
+   "speed": "rapid",
+   "accuracy": 82.57490659585781
+  },
+  {
+   "elo": 954,
+   "speed": "rapid",
+   "accuracy": 59.11830320612326
+  },
+  {
+   "elo": 1008,
+   "speed": "blitz",
+   "accuracy": 78.0565349743837
+  },
+  {
+   "elo": 1042,
+   "speed": "blitz",
+   "accuracy": 68.51529522916047
+  },
+  {
+   "elo": 1076,
+   "speed": "rapid",
+   "accuracy": 54.09206736981776
+  },
+  {
+   "elo": 1091,
+   "speed": "rapid",
+   "accuracy": 47.98518959833287
+  },
+  {
+   "elo": 988,
+   "speed": "rapid",
+   "accuracy": 62.54238823758472
+  },
+  {
+   "elo": 1093,
+   "speed": "rapid",
+   "accuracy": 58.60328433986617
+  },
+  {
+   "elo": 875,
+   "speed": "rapid",
+   "accuracy": 88.4791761131383
+  },
+  {
+   "elo": 927,
+   "speed": "rapid",
+   "accuracy": 80.19930923986593
   },
   {
    "elo": 1061,
    "speed": "blitz",
-   "accuracy": 95.47911547750262
+   "accuracy": 95.203219914221
   },
   {
    "elo": 1095,
    "speed": "blitz",
-   "accuracy": 87.27639108041276
+   "accuracy": 87.47620331444679
+  },
+  {
+   "elo": 900,
+   "speed": "blitz",
+   "accuracy": 87.71696631297657
+  },
+  {
+   "elo": 948,
+   "speed": "blitz",
+   "accuracy": 83.27480181880672
   },
   {
    "elo": 1010,
    "speed": "blitz",
-   "accuracy": 77.9676527347035
+   "accuracy": 78.72951972923119
   },
   {
    "elo": 1022,
    "speed": "blitz",
-   "accuracy": 92.63251093843647
+   "accuracy": 92.52725129780941
+  },
+  {
+   "elo": 988,
+   "speed": "blitz",
+   "accuracy": 58.68002383054785
+  },
+  {
+   "elo": 1031,
+   "speed": "blitz",
+   "accuracy": 47.881779116183694
+  },
+  {
+   "elo": 986,
+   "speed": "rapid",
+   "accuracy": 91.99062372337782
+  },
+  {
+   "elo": 983,
+   "speed": "rapid",
+   "accuracy": 86.1009336092526
+  },
+  {
+   "elo": 815,
+   "speed": "blitz",
+   "accuracy": 75.96760412441574
+  },
+  {
+   "elo": 817,
+   "speed": "blitz",
+   "accuracy": 90.04337237691007
+  },
+  {
+   "elo": 1035,
+   "speed": "blitz",
+   "accuracy": 61.16600144736227
+  },
+  {
+   "elo": 1002,
+   "speed": "blitz",
+   "accuracy": 86.92653205553464
+  },
+  {
+   "elo": 972,
+   "speed": "blitz",
+   "accuracy": 65.93502329660564
+  },
+  {
+   "elo": 1037,
+   "speed": "blitz",
+   "accuracy": 56.966686710459626
+  },
+  {
+   "elo": 1065,
+   "speed": "blitz",
+   "accuracy": 54.85071897620549
+  },
+  {
+   "elo": 1099,
+   "speed": "blitz",
+   "accuracy": 75.44979875532731
+  },
+  {
+   "elo": 959,
+   "speed": "rapid",
+   "accuracy": 64.79205777239365
+  },
+  {
+   "elo": 939,
+   "speed": "rapid",
+   "accuracy": 58.35985451072355
+  },
+  {
+   "elo": 1037,
+   "speed": "blitz",
+   "accuracy": 79.12222229783066
+  },
+  {
+   "elo": 1101,
+   "speed": "blitz",
+   "accuracy": 89.18856290076815
+  },
+  {
+   "elo": 1037,
+   "speed": "blitz",
+   "accuracy": 74.51867933360805
+  },
+  {
+   "elo": 1036,
+   "speed": "blitz",
+   "accuracy": 80.58971649646747
+  },
+  {
+   "elo": 1102,
+   "speed": "blitz",
+   "accuracy": 60.73380014655892
+  },
+  {
+   "elo": 1079,
+   "speed": "blitz",
+   "accuracy": 73.5809932545896
+  },
+  {
+   "elo": 1091,
+   "speed": "blitz",
+   "accuracy": 76.22203665187024
+  },
+  {
+   "elo": 1018,
+   "speed": "blitz",
+   "accuracy": 85.54170836341237
+  },
+  {
+   "elo": 945,
+   "speed": "rapid",
+   "accuracy": 74.90910848937531
+  },
+  {
+   "elo": 924,
+   "speed": "rapid",
+   "accuracy": 71.90558518640192
+  },
+  {
+   "elo": 1006,
+   "speed": "blitz",
+   "accuracy": 62.57602346625558
+  },
+  {
+   "elo": 929,
+   "speed": "blitz",
+   "accuracy": 52.998203800483516
+  },
+  {
+   "elo": 1073,
+   "speed": "rapid",
+   "accuracy": 72.02543492458541
+  },
+  {
+   "elo": 1120,
+   "speed": "rapid",
+   "accuracy": 85.57194010814389
+  },
+  {
+   "elo": 942,
+   "speed": "rapid",
+   "accuracy": 84.58943017763603
+  },
+  {
+   "elo": 941,
+   "speed": "rapid",
+   "accuracy": 91.87864905757085
+  },
+  {
+   "elo": 1062,
+   "speed": "rapid",
+   "accuracy": 90.05350051942239
+  },
+  {
+   "elo": 1089,
+   "speed": "rapid",
+   "accuracy": 86.17782719420327
   },
   {
    "elo": 1208,
    "speed": "blitz",
-   "accuracy": 97.65801552072557
+   "accuracy": 97.13991007279444
   },
   {
    "elo": 1206,
    "speed": "blitz",
-   "accuracy": 90.50163309421093
-  },
-  {
-   "elo": 1224,
-   "speed": "rapid",
-   "accuracy": 71.89290449345968
-  },
-  {
-   "elo": 1257,
-   "speed": "rapid",
-   "accuracy": 58.13472066971649
-  },
-  {
-   "elo": 1098,
-   "speed": "rapid",
-   "accuracy": 54.095201640938456
-  },
-  {
-   "elo": 1172,
-   "speed": "rapid",
-   "accuracy": 56.16951799389662
-  },
-  {
-   "elo": 1157,
-   "speed": "rapid",
-   "accuracy": 79.01632785521642
-  },
-  {
-   "elo": 1104,
-   "speed": "rapid",
-   "accuracy": 72.29443853798017
+   "accuracy": 89.99319660481532
   },
   {
    "elo": 1240,
    "speed": "blitz",
-   "accuracy": 72.65068916963244
+   "accuracy": 72.88786731422329
   },
   {
    "elo": 1231,
    "speed": "blitz",
-   "accuracy": 77.66410626034512
+   "accuracy": 78.48735316702394
+  },
+  {
+   "elo": 1224,
+   "speed": "rapid",
+   "accuracy": 69.2319433659191
+  },
+  {
+   "elo": 1257,
+   "speed": "rapid",
+   "accuracy": 57.82959487125347
+  },
+  {
+   "elo": 1157,
+   "speed": "rapid",
+   "accuracy": 79.21290390700216
+  },
+  {
+   "elo": 1104,
+   "speed": "rapid",
+   "accuracy": 72.1617918610059
   },
   {
    "elo": 1141,
    "speed": "blitz",
-   "accuracy": 65.72701824459891
+   "accuracy": 65.31398383417057
   },
   {
    "elo": 1176,
    "speed": "blitz",
-   "accuracy": 72.04574412542847
-  },
-  {
-   "elo": 1154,
-   "speed": "rapid",
-   "accuracy": 52.82667188471863
-  },
-  {
-   "elo": 1173,
-   "speed": "rapid",
-   "accuracy": 85.5191595343973
+   "accuracy": 72.68209427739788
   },
   {
    "elo": 1306,
    "speed": "blitz",
-   "accuracy": 82.89476619186456
+   "accuracy": 81.07561974812873
   },
   {
    "elo": 1269,
    "speed": "blitz",
-   "accuracy": 60.072737604921414
+   "accuracy": 63.17869123127572
   },
   {
    "elo": 1086,
    "speed": "blitz",
-   "accuracy": 87.09028207217105
+   "accuracy": 86.21844897392543
   },
   {
    "elo": 1126,
    "speed": "blitz",
-   "accuracy": 73.89048842158138
-  },
-  {
-   "elo": 1299,
-   "speed": "blitz",
-   "accuracy": 74.76072854798471
-  },
-  {
-   "elo": 1244,
-   "speed": "blitz",
-   "accuracy": 68.64729284618974
-  },
-  {
-   "elo": 1101,
-   "speed": "rapid",
-   "accuracy": 35.27505086401627
-  },
-  {
-   "elo": 1152,
-   "speed": "rapid",
-   "accuracy": 36.06569958425338
+   "accuracy": 76.0915084345789
   },
   {
    "elo": 1168,
    "speed": "blitz",
-   "accuracy": 79.91250613977051
+   "accuracy": 81.26689127906711
   },
   {
    "elo": 1208,
    "speed": "blitz",
-   "accuracy": 86.31688654494852
+   "accuracy": 88.38991045310723
   },
   {
-   "elo": 1255,
-   "speed": "rapid",
-   "accuracy": 73.65516996279783
-  },
-  {
-   "elo": 1231,
-   "speed": "rapid",
-   "accuracy": 63.44841211731439
-  },
-  {
-   "elo": 1303,
+   "elo": 1299,
    "speed": "blitz",
-   "accuracy": 49.480691617992505
-  },
-  {
-   "elo": 1278,
-   "speed": "blitz",
-   "accuracy": 64.0000765344365
-  },
-  {
-   "elo": 1210,
-   "speed": "rapid",
-   "accuracy": 75.49046880408979
-  },
-  {
-   "elo": 1232,
-   "speed": "rapid",
-   "accuracy": 82.24773573837712
-  },
-  {
-   "elo": 1105,
-   "speed": "blitz",
-   "accuracy": 77.82355046864144
-  },
-  {
-   "elo": 1170,
-   "speed": "blitz",
-   "accuracy": 78.5627000195682
-  },
-  {
-   "elo": 1232,
-   "speed": "blitz",
-   "accuracy": 82.19308009944223
-  },
-  {
-   "elo": 1154,
-   "speed": "blitz",
-   "accuracy": 70.76845598543511
-  },
-  {
-   "elo": 1247,
-   "speed": "blitz",
-   "accuracy": 87.55287810956912
-  },
-  {
-   "elo": 1326,
-   "speed": "blitz",
-   "accuracy": 93.23036788126163
-  },
-  {
-   "elo": 1264,
-   "speed": "blitz",
-   "accuracy": 95.2522623069286
-  },
-  {
-   "elo": 1284,
-   "speed": "blitz",
-   "accuracy": 87.45833178166905
-  },
-  {
-   "elo": 1296,
-   "speed": "blitz",
-   "accuracy": 58.94884900470039
-  },
-  {
-   "elo": 1236,
-   "speed": "blitz",
-   "accuracy": 76.00626859776597
-  },
-  {
-   "elo": 1094,
-   "speed": "rapid",
-   "accuracy": 92.80880802937233
-  },
-  {
-   "elo": 1134,
-   "speed": "rapid",
-   "accuracy": 85.05539254104292
-  },
-  {
-   "elo": 1157,
-   "speed": "blitz",
-   "accuracy": 78.9654079741319
-  },
-  {
-   "elo": 1188,
-   "speed": "blitz",
-   "accuracy": 70.37737420911756
-  },
-  {
-   "elo": 1144,
-   "speed": "blitz",
-   "accuracy": 80.72570910007485
-  },
-  {
-   "elo": 1111,
-   "speed": "blitz",
-   "accuracy": 72.0747856359105
-  },
-  {
-   "elo": 1461,
-   "speed": "rapid",
-   "accuracy": 86.56504670624895
-  },
-  {
-   "elo": 1436,
-   "speed": "rapid",
-   "accuracy": 74.44992670442687
-  },
-  {
-   "elo": 1306,
-   "speed": "rapid",
-   "accuracy": 83.58261594924465
-  },
-  {
-   "elo": 1341,
-   "speed": "rapid",
-   "accuracy": 93.55162604577394
-  },
-  {
-   "elo": 1174,
-   "speed": "rapid",
-   "accuracy": 68.67998763428393
-  },
-  {
-   "elo": 1162,
-   "speed": "rapid",
-   "accuracy": 78.92525954366269
-  },
-  {
-   "elo": 1321,
-   "speed": "blitz",
-   "accuracy": 66.0089308148734
-  },
-  {
-   "elo": 1319,
-   "speed": "blitz",
-   "accuracy": 81.25538525449565
-  },
-  {
-   "elo": 1313,
-   "speed": "blitz",
-   "accuracy": 88.41510834804058
-  },
-  {
-   "elo": 1315,
-   "speed": "blitz",
-   "accuracy": 81.75289390830272
-  },
-  {
-   "elo": 1360,
-   "speed": "blitz",
-   "accuracy": 89.75834189148779
-  },
-  {
-   "elo": 1475,
-   "speed": "blitz",
-   "accuracy": 68.51355954341352
-  },
-  {
-   "elo": 1545,
-   "speed": "blitz",
-   "accuracy": 92.5022031599895
-  },
-  {
-   "elo": 1427,
-   "speed": "blitz",
-   "accuracy": 88.46998283543124
-  },
-  {
-   "elo": 1401,
-   "speed": "blitz",
-   "accuracy": 92.00925063957385
-  },
-  {
-   "elo": 1347,
-   "speed": "blitz",
-   "accuracy": 69.06773878410478
-  },
-  {
-   "elo": 1406,
-   "speed": "blitz",
-   "accuracy": 93.41763813567366
-  },
-  {
-   "elo": 1433,
-   "speed": "blitz",
-   "accuracy": 85.1351910399023
-  },
-  {
-   "elo": 1462,
-   "speed": "blitz",
-   "accuracy": 80.53276693557848
-  },
-  {
-   "elo": 1427,
-   "speed": "blitz",
-   "accuracy": 76.386148071768
-  },
-  {
-   "elo": 1462,
-   "speed": "blitz",
-   "accuracy": 87.77805195291171
-  },
-  {
-   "elo": 1445,
-   "speed": "blitz",
-   "accuracy": 79.93078155412277
-  },
-  {
-   "elo": 1377,
-   "speed": "rapid",
-   "accuracy": 78.76965299873814
-  },
-  {
-   "elo": 1450,
-   "speed": "rapid",
-   "accuracy": 75.81158054499491
-  },
-  {
-   "elo": 1333,
-   "speed": "rapid",
-   "accuracy": 84.87141255955198
-  },
-  {
-   "elo": 1342,
-   "speed": "rapid",
-   "accuracy": 92.57638504196782
-  },
-  {
-   "elo": 1404,
-   "speed": "blitz",
-   "accuracy": 80.97899667453582
-  },
-  {
-   "elo": 1350,
-   "speed": "blitz",
-   "accuracy": 86.61581192210798
-  },
-  {
-   "elo": 1399,
-   "speed": "blitz",
-   "accuracy": 88.14185662933738
-  },
-  {
-   "elo": 1399,
-   "speed": "blitz",
-   "accuracy": 78.8347401897289
-  },
-  {
-   "elo": 1412,
-   "speed": "blitz",
-   "accuracy": 94.88571043880981
-  },
-  {
-   "elo": 1368,
-   "speed": "blitz",
-   "accuracy": 89.01645845939748
-  },
-  {
-   "elo": 1498,
-   "speed": "rapid",
-   "accuracy": 88.14235510686309
-  },
-  {
-   "elo": 1496,
-   "speed": "rapid",
-   "accuracy": 97.2918187122494
+   "accuracy": 73.80044038995743
   },
   {
    "elo": 1244,
    "speed": "blitz",
-   "accuracy": 69.09565885402516
+   "accuracy": 67.38033292925003
   },
   {
-   "elo": 1370,
+   "elo": 1303,
    "speed": "blitz",
-   "accuracy": 65.52225463924003
+   "accuracy": 46.78237886976958
   },
   {
-   "elo": 1358,
+   "elo": 1278,
    "speed": "blitz",
-   "accuracy": 58.257515104836216
+   "accuracy": 55.85049548980717
   },
   {
-   "elo": 1346,
-   "speed": "blitz",
-   "accuracy": 50.83973669234014
-  },
-  {
-   "elo": 1393,
-   "speed": "blitz",
-   "accuracy": 66.63359748762554
-  },
-  {
-   "elo": 1486,
-   "speed": "blitz",
-   "accuracy": 50.093682089625844
-  },
-  {
-   "elo": 1477,
+   "elo": 1101,
    "speed": "rapid",
-   "accuracy": 81.24620252706066
+   "accuracy": 34.476082053097
   },
   {
-   "elo": 1452,
+   "elo": 1152,
    "speed": "rapid",
-   "accuracy": 86.02472583135143
+   "accuracy": 35.433319053818664
   },
   {
-   "elo": 1293,
-   "speed": "blitz",
-   "accuracy": 91.55045933466947
+   "elo": 1154,
+   "speed": "rapid",
+   "accuracy": 53.416413291521664
   },
   {
-   "elo": 1352,
+   "elo": 1173,
+   "speed": "rapid",
+   "accuracy": 87.12073482646119
+  },
+  {
+   "elo": 1210,
+   "speed": "rapid",
+   "accuracy": 73.00272021843804
+  },
+  {
+   "elo": 1232,
+   "speed": "rapid",
+   "accuracy": 79.34390910852832
+  },
+  {
+   "elo": 1255,
+   "speed": "rapid",
+   "accuracy": 72.8017266923791
+  },
+  {
+   "elo": 1231,
+   "speed": "rapid",
+   "accuracy": 62.440501950384544
+  },
+  {
+   "elo": 1264,
    "speed": "blitz",
-   "accuracy": 82.26525000320979
+   "accuracy": 93.84865011495518
+  },
+  {
+   "elo": 1284,
+   "speed": "blitz",
+   "accuracy": 85.86133808286462
+  },
+  {
+   "elo": 1105,
+   "speed": "blitz",
+   "accuracy": 76.81278361239177
+  },
+  {
+   "elo": 1170,
+   "speed": "blitz",
+   "accuracy": 76.87998833822645
+  },
+  {
+   "elo": 1247,
+   "speed": "blitz",
+   "accuracy": 86.59524592668079
+  },
+  {
+   "elo": 1326,
+   "speed": "blitz",
+   "accuracy": 92.678128956089
+  },
+  {
+   "elo": 1094,
+   "speed": "rapid",
+   "accuracy": 93.44257885294587
+  },
+  {
+   "elo": 1134,
+   "speed": "rapid",
+   "accuracy": 84.42690242714825
+  },
+  {
+   "elo": 1098,
+   "speed": "rapid",
+   "accuracy": 55.03975093911362
+  },
+  {
+   "elo": 1172,
+   "speed": "rapid",
+   "accuracy": 57.34288567918241
+  },
+  {
+   "elo": 1174,
+   "speed": "rapid",
+   "accuracy": 63.49672215770327
+  },
+  {
+   "elo": 1162,
+   "speed": "rapid",
+   "accuracy": 75.64624759757285
+  },
+  {
+   "elo": 1157,
+   "speed": "blitz",
+   "accuracy": 75.89738128417522
+  },
+  {
+   "elo": 1188,
+   "speed": "blitz",
+   "accuracy": 65.34748949730364
+  },
+  {
+   "elo": 1144,
+   "speed": "blitz",
+   "accuracy": 76.77479483772245
+  },
+  {
+   "elo": 1111,
+   "speed": "blitz",
+   "accuracy": 68.55244096720838
+  },
+  {
+   "elo": 1232,
+   "speed": "blitz",
+   "accuracy": 82.9765055838869
+  },
+  {
+   "elo": 1154,
+   "speed": "blitz",
+   "accuracy": 68.91771435449444
+  },
+  {
+   "elo": 1186,
+   "speed": "rapid",
+   "accuracy": 87.20552766037503
+  },
+  {
+   "elo": 1098,
+   "speed": "rapid",
+   "accuracy": 81.34548972208249
+  },
+  {
+   "elo": 1296,
+   "speed": "blitz",
+   "accuracy": 56.97791485302787
+  },
+  {
+   "elo": 1236,
+   "speed": "blitz",
+   "accuracy": 74.64333561184398
+  },
+  {
+   "elo": 1316,
+   "speed": "blitz",
+   "accuracy": 52.59776117236234
+  },
+  {
+   "elo": 1268,
+   "speed": "blitz",
+   "accuracy": 72.51556258955443
+  },
+  {
+   "elo": 1258,
+   "speed": "blitz",
+   "accuracy": 83.33094411630123
+  },
+  {
+   "elo": 1275,
+   "speed": "blitz",
+   "accuracy": 53.19632725626275
+  },
+  {
+   "elo": 1125,
+   "speed": "blitz",
+   "accuracy": 46.36515983235124
+  },
+  {
+   "elo": 1177,
+   "speed": "blitz",
+   "accuracy": 63.14560463202703
+  },
+  {
+   "elo": 1258,
+   "speed": "rapid",
+   "accuracy": 50.390937731968805
+  },
+  {
+   "elo": 1156,
+   "speed": "rapid",
+   "accuracy": 53.40813663356579
+  },
+  {
+   "elo": 1193,
+   "speed": "blitz",
+   "accuracy": 84.87432694500143
+  },
+  {
+   "elo": 1220,
+   "speed": "blitz",
+   "accuracy": 58.37223360423273
+  },
+  {
+   "elo": 1231,
+   "speed": "rapid",
+   "accuracy": 88.60616574297276
+  },
+  {
+   "elo": 1166,
+   "speed": "rapid",
+   "accuracy": 74.42779569982594
+  },
+  {
+   "elo": 1187,
+   "speed": "rapid",
+   "accuracy": 78.02880291044548
+  },
+  {
+   "elo": 1184,
+   "speed": "rapid",
+   "accuracy": 70.75497524830752
+  },
+  {
+   "elo": 1252,
+   "speed": "blitz",
+   "accuracy": 70.35767650943166
+  },
+  {
+   "elo": 1299,
+   "speed": "blitz",
+   "accuracy": 58.231083918137955
+  },
+  {
+   "elo": 1173,
+   "speed": "blitz",
+   "accuracy": 82.54864177749943
+  },
+  {
+   "elo": 1195,
+   "speed": "blitz",
+   "accuracy": 75.76069907207383
+  },
+  {
+   "elo": 1191,
+   "speed": "blitz",
+   "accuracy": 61.981807410815364
+  },
+  {
+   "elo": 1214,
+   "speed": "blitz",
+   "accuracy": 88.12308238461517
+  },
+  {
+   "elo": 1461,
+   "speed": "rapid",
+   "accuracy": 84.22597422376799
   },
   {
    "elo": 1436,
    "speed": "rapid",
-   "accuracy": 81.45278736547198
+   "accuracy": 69.07964824330132
   },
   {
-   "elo": 1421,
-   "speed": "rapid",
-   "accuracy": 73.74080817385496
-  },
-  {
-   "elo": 1631,
+   "elo": 1271,
    "speed": "blitz",
-   "accuracy": 82.10962778917114
+   "accuracy": 71.84979434081335
   },
   {
-   "elo": 1707,
+   "elo": 1257,
    "speed": "blitz",
-   "accuracy": 87.69270079107102
+   "accuracy": 63.60122772317481
   },
   {
-   "elo": 1390,
+   "elo": 1321,
    "speed": "blitz",
-   "accuracy": 78.22459166573861
+   "accuracy": 66.19612539788531
   },
   {
-   "elo": 1400,
+   "elo": 1319,
    "speed": "blitz",
-   "accuracy": 79.5860039194786
+   "accuracy": 82.31654276966594
   },
   {
-   "elo": 1564,
+   "elo": 1401,
    "speed": "blitz",
-   "accuracy": 90.09385193703096
+   "accuracy": 91.26484752024231
+  },
+  {
+   "elo": 1347,
+   "speed": "blitz",
+   "accuracy": 64.53618987980342
+  },
+  {
+   "elo": 1360,
+   "speed": "blitz",
+   "accuracy": 86.5514527554965
   },
   {
    "elo": 1475,
    "speed": "blitz",
-   "accuracy": 80.89138049388357
+   "accuracy": 58.15020849372266
   },
   {
-   "elo": 1735,
+   "elo": 1406,
    "speed": "blitz",
-   "accuracy": 86.92491647520188
+   "accuracy": 93.77081318685185
   },
   {
-   "elo": 1664,
+   "elo": 1433,
    "speed": "blitz",
-   "accuracy": 87.205656800033
+   "accuracy": 85.3871270432066
   },
   {
-   "elo": 1382,
+   "elo": 1313,
    "speed": "blitz",
-   "accuracy": 75.63193784310539
+   "accuracy": 87.84245282754969
   },
   {
-   "elo": 1394,
+   "elo": 1315,
    "speed": "blitz",
-   "accuracy": 79.85660344459231
+   "accuracy": 80.92582970764455
   },
   {
-   "elo": 1557,
+   "elo": 1462,
    "speed": "blitz",
-   "accuracy": 71.3160247261876
+   "accuracy": 78.52242055904637
   },
   {
-   "elo": 1611,
+   "elo": 1427,
    "speed": "blitz",
-   "accuracy": 86.8906250754704
+   "accuracy": 74.78934415997443
   },
   {
-   "elo": 1666,
+   "elo": 1462,
    "speed": "blitz",
-   "accuracy": 92.94878330467819
+   "accuracy": 88.25572915511728
   },
   {
-   "elo": 1662,
+   "elo": 1445,
    "speed": "blitz",
-   "accuracy": 84.05155622750219
-  },
-  {
-   "elo": 1539,
-   "speed": "blitz",
-   "accuracy": 79.31927025858326
-  },
-  {
-   "elo": 1563,
-   "speed": "blitz",
-   "accuracy": 53.84008989221179
-  },
-  {
-   "elo": 1602,
-   "speed": "blitz",
-   "accuracy": 82.7777520758911
-  },
-  {
-   "elo": 1634,
-   "speed": "blitz",
-   "accuracy": 78.66489616253781
-  },
-  {
-   "elo": 1528,
-   "speed": "blitz",
-   "accuracy": 90.44519456708242
+   "accuracy": 80.1522311375786
   },
   {
    "elo": 1545,
    "speed": "blitz",
-   "accuracy": 79.8225260176339
+   "accuracy": 92.66097193286616
   },
   {
-   "elo": 1587,
+   "elo": 1427,
+   "speed": "blitz",
+   "accuracy": 90.55511429673912
+  },
+  {
+   "elo": 1377,
    "speed": "rapid",
-   "accuracy": 91.25731181655257
+   "accuracy": 79.52461987504802
   },
   {
-   "elo": 1702,
+   "elo": 1450,
    "speed": "rapid",
-   "accuracy": 86.37734411267034
+   "accuracy": 76.25184051415636
   },
   {
-   "elo": 1534,
+   "elo": 1404,
+   "speed": "blitz",
+   "accuracy": 77.75434317399962
+  },
+  {
+   "elo": 1350,
+   "speed": "blitz",
+   "accuracy": 85.70327221736902
+  },
+  {
+   "elo": 1333,
    "speed": "rapid",
-   "accuracy": 76.45802575133214
+   "accuracy": 83.2324493629107
   },
   {
-   "elo": 1495,
+   "elo": 1342,
    "speed": "rapid",
-   "accuracy": 91.17814362920359
+   "accuracy": 92.12279537308109
   },
   {
-   "elo": 1539,
+   "elo": 1399,
    "speed": "blitz",
-   "accuracy": 69.19256281946394
+   "accuracy": 85.71431443954947
   },
   {
-   "elo": 1553,
+   "elo": 1399,
    "speed": "blitz",
-   "accuracy": 53.5150116139879
+   "accuracy": 77.85878248539238
   },
   {
-   "elo": 1519,
+   "elo": 1393,
    "speed": "blitz",
-   "accuracy": 83.58905192018457
+   "accuracy": 60.45505535706192
   },
   {
-   "elo": 1496,
+   "elo": 1486,
    "speed": "blitz",
-   "accuracy": 65.32242953772409
+   "accuracy": 46.835131990542905
   },
   {
-   "elo": 1584,
+   "elo": 1412,
    "speed": "blitz",
-   "accuracy": 93.57899538330236
+   "accuracy": 94.5756441169608
+  },
+  {
+   "elo": 1368,
+   "speed": "blitz",
+   "accuracy": 88.99893412774102
+  },
+  {
+   "elo": 1306,
+   "speed": "rapid",
+   "accuracy": 85.19783444278625
+  },
+  {
+   "elo": 1341,
+   "speed": "rapid",
+   "accuracy": 94.48048016972538
+  },
+  {
+   "elo": 1244,
+   "speed": "blitz",
+   "accuracy": 67.56812734502634
+  },
+  {
+   "elo": 1370,
+   "speed": "blitz",
+   "accuracy": 64.28119885779017
+  },
+  {
+   "elo": 1477,
+   "speed": "rapid",
+   "accuracy": 79.18509403403411
+  },
+  {
+   "elo": 1452,
+   "speed": "rapid",
+   "accuracy": 83.79464801744521
+  },
+  {
+   "elo": 1358,
+   "speed": "blitz",
+   "accuracy": 57.54556458967655
+  },
+  {
+   "elo": 1346,
+   "speed": "blitz",
+   "accuracy": 50.6055477732509
+  },
+  {
+   "elo": 1293,
+   "speed": "blitz",
+   "accuracy": 92.13758073248826
+  },
+  {
+   "elo": 1352,
+   "speed": "blitz",
+   "accuracy": 83.51690166833757
+  },
+  {
+   "elo": 1474,
+   "speed": "blitz",
+   "accuracy": 91.25853540632762
+  },
+  {
+   "elo": 1392,
+   "speed": "blitz",
+   "accuracy": 81.27819133192438
+  },
+  {
+   "elo": 1436,
+   "speed": "rapid",
+   "accuracy": 81.26841667987298
+  },
+  {
+   "elo": 1421,
+   "speed": "rapid",
+   "accuracy": 73.65369830377612
+  },
+  {
+   "elo": 1390,
+   "speed": "blitz",
+   "accuracy": 77.16016349455569
+  },
+  {
+   "elo": 1400,
+   "speed": "blitz",
+   "accuracy": 79.16954547489425
+  },
+  {
+   "elo": 1373,
+   "speed": "rapid",
+   "accuracy": 52.373722901961976
+  },
+  {
+   "elo": 1401,
+   "speed": "rapid",
+   "accuracy": 50.09078565556421
+  },
+  {
+   "elo": 1309,
+   "speed": "blitz",
+   "accuracy": 89.1335564470694
+  },
+  {
+   "elo": 1359,
+   "speed": "blitz",
+   "accuracy": 81.99519854582938
+  },
+  {
+   "elo": 1338,
+   "speed": "blitz",
+   "accuracy": 80.08157653678293
+  },
+  {
+   "elo": 1295,
+   "speed": "blitz",
+   "accuracy": 61.63801596457806
+  },
+  {
+   "elo": 1450,
+   "speed": "rapid",
+   "accuracy": 73.98363744268124
+  },
+  {
+   "elo": 1450,
+   "speed": "rapid",
+   "accuracy": 80.66018389241057
+  },
+  {
+   "elo": 1445,
+   "speed": "blitz",
+   "accuracy": 85.99793905401026
+  },
+  {
+   "elo": 1440,
+   "speed": "blitz",
+   "accuracy": 80.39073137345838
+  },
+  {
+   "elo": 1396,
+   "speed": "rapid",
+   "accuracy": 88.78864900401499
+  },
+  {
+   "elo": 1300,
+   "speed": "rapid",
+   "accuracy": 84.06666022849141
+  },
+  {
+   "elo": 1506,
+   "speed": "blitz",
+   "accuracy": 78.14675759179832
+  },
+  {
+   "elo": 1479,
+   "speed": "blitz",
+   "accuracy": 78.84795497536254
+  },
+  {
+   "elo": 1382,
+   "speed": "blitz",
+   "accuracy": 73.31865298426345
+  },
+  {
+   "elo": 1394,
+   "speed": "blitz",
+   "accuracy": 74.68756226802256
+  },
+  {
+   "elo": 1422,
+   "speed": "rapid",
+   "accuracy": 75.43118329405718
+  },
+  {
+   "elo": 1407,
+   "speed": "rapid",
+   "accuracy": 77.36739150293214
   },
   {
    "elo": 1631,
    "speed": "blitz",
-   "accuracy": 89.90799925084264
+   "accuracy": 80.32336076529728
   },
   {
-   "elo": 1560,
+   "elo": 1707,
    "speed": "blitz",
-   "accuracy": 65.36165395636245
+   "accuracy": 86.97639753042971
   },
   {
-   "elo": 1546,
-   "speed": "blitz",
-   "accuracy": 92.550694800067
-  },
-  {
-   "elo": 1702,
-   "speed": "blitz",
-   "accuracy": 85.12377158154396
-  },
-  {
-   "elo": 1692,
-   "speed": "blitz",
-   "accuracy": 95.01301037075231
-  },
-  {
-   "elo": 1642,
-   "speed": "blitz",
-   "accuracy": 81.3874201754614
-  },
-  {
-   "elo": 1654,
-   "speed": "blitz",
-   "accuracy": 78.85667050185059
-  },
-  {
-   "elo": 1581,
-   "speed": "blitz",
-   "accuracy": 91.76894511558426
-  },
-  {
-   "elo": 1624,
-   "speed": "blitz",
-   "accuracy": 86.62517101370354
-  },
-  {
-   "elo": 1610,
-   "speed": "blitz",
-   "accuracy": 77.06299550542388
-  },
-  {
-   "elo": 1639,
-   "speed": "blitz",
-   "accuracy": 92.83470176575844
-  },
-  {
-   "elo": 1592,
-   "speed": "blitz",
-   "accuracy": 72.16674453540945
-  },
-  {
-   "elo": 1583,
-   "speed": "blitz",
-   "accuracy": 49.268144315061996
-  },
-  {
-   "elo": 1605,
-   "speed": "blitz",
-   "accuracy": 81.02550560617985
-  },
-  {
-   "elo": 1605,
-   "speed": "blitz",
-   "accuracy": 77.05610784408805
-  },
-  {
-   "elo": 1692,
+   "elo": 1392,
    "speed": "rapid",
-   "accuracy": 95.43054771484877
+   "accuracy": 83.6437451327887
   },
   {
-   "elo": 1621,
+   "elo": 1288,
    "speed": "rapid",
-   "accuracy": 77.56260354037673
+   "accuracy": 54.92625552758479
   },
   {
-   "elo": 1584,
-   "speed": "blitz",
-   "accuracy": 75.80788754350881
-  },
-  {
-   "elo": 1572,
-   "speed": "blitz",
-   "accuracy": 73.58692524481734
-  },
-  {
-   "elo": 1572,
+   "elo": 1436,
    "speed": "rapid",
-   "accuracy": 75.19151986394283
+   "accuracy": 85.66178618658253
   },
   {
-   "elo": 1584,
+   "elo": 1516,
    "speed": "rapid",
-   "accuracy": 82.03797920362621
-  },
-  {
-   "elo": 1523,
-   "speed": "rapid",
-   "accuracy": 76.27232907747887
-  },
-  {
-   "elo": 1492,
-   "speed": "rapid",
-   "accuracy": 83.13444423436512
-  },
-  {
-   "elo": 1775,
-   "speed": "blitz",
-   "accuracy": 90.85519536083167
-  },
-  {
-   "elo": 1841,
-   "speed": "blitz",
-   "accuracy": 95.67013099641736
-  },
-  {
-   "elo": 1768,
-   "speed": "blitz",
-   "accuracy": 89.23842841803904
-  },
-  {
-   "elo": 1746,
-   "speed": "blitz",
-   "accuracy": 81.68754723231302
-  },
-  {
-   "elo": 1822,
-   "speed": "blitz",
-   "accuracy": 85.21606566695401
-  },
-  {
-   "elo": 1853,
-   "speed": "blitz",
-   "accuracy": 87.90144392204454
-  },
-  {
-   "elo": 1823,
-   "speed": "rapid",
-   "accuracy": 85.98238661906052
-  },
-  {
-   "elo": 1758,
-   "speed": "rapid",
-   "accuracy": 69.63456645977408
-  },
-  {
-   "elo": 1769,
-   "speed": "rapid",
-   "accuracy": 88.51744516303646
-  },
-  {
-   "elo": 1740,
-   "speed": "rapid",
-   "accuracy": 87.39755379158171
-  },
-  {
-   "elo": 1851,
-   "speed": "rapid",
-   "accuracy": 45.52984892621726
-  },
-  {
-   "elo": 1848,
-   "speed": "rapid",
-   "accuracy": 51.00045264967059
-  },
-  {
-   "elo": 1687,
-   "speed": "blitz",
-   "accuracy": 90.77707984316473
-  },
-  {
-   "elo": 1771,
-   "speed": "blitz",
-   "accuracy": 84.05734467922991
-  },
-  {
-   "elo": 1868,
-   "speed": "rapid",
-   "accuracy": 87.06473333862148
-  },
-  {
-   "elo": 1884,
-   "speed": "rapid",
-   "accuracy": 95.64657168960721
-  },
-  {
-   "elo": 1827,
-   "speed": "blitz",
-   "accuracy": 50.485734884127936
-  },
-  {
-   "elo": 1835,
-   "speed": "blitz",
-   "accuracy": 83.1587565589943
-  },
-  {
-   "elo": 1822,
-   "speed": "rapid",
-   "accuracy": 76.7092883829549
-  },
-  {
-   "elo": 1736,
-   "speed": "rapid",
-   "accuracy": 81.23412519712556
-  },
-  {
-   "elo": 1732,
-   "speed": "blitz",
-   "accuracy": 81.09772605923109
-  },
-  {
-   "elo": 1705,
-   "speed": "blitz",
-   "accuracy": 70.63197523322124
-  },
-  {
-   "elo": 1857,
-   "speed": "blitz",
-   "accuracy": 67.98262018130004
-  },
-  {
-   "elo": 1908,
-   "speed": "blitz",
-   "accuracy": 73.30039723512263
-  },
-  {
-   "elo": 1696,
-   "speed": "blitz",
-   "accuracy": 79.2051706338629
-  },
-  {
-   "elo": 1734,
-   "speed": "blitz",
-   "accuracy": 75.9840391724369
-  },
-  {
-   "elo": 1864,
-   "speed": "rapid",
-   "accuracy": 78.25483186937042
-  },
-  {
-   "elo": 1862,
-   "speed": "rapid",
-   "accuracy": 81.20564252201879
-  },
-  {
-   "elo": 1841,
-   "speed": "blitz",
-   "accuracy": 89.79538881971982
-  },
-  {
-   "elo": 1850,
-   "speed": "blitz",
-   "accuracy": 84.72594313302596
-  },
-  {
-   "elo": 1810,
-   "speed": "blitz",
-   "accuracy": 76.09455957465967
-  },
-  {
-   "elo": 1826,
-   "speed": "blitz",
-   "accuracy": 78.02674747270899
+   "accuracy": 81.19977864455711
   },
   {
    "elo": 1735,
    "speed": "blitz",
-   "accuracy": 86.96283460296041
+   "accuracy": 86.04194383988245
+  },
+  {
+   "elo": 1664,
+   "speed": "blitz",
+   "accuracy": 85.91369869065142
+  },
+  {
+   "elo": 1557,
+   "speed": "blitz",
+   "accuracy": 67.18093393671425
+  },
+  {
+   "elo": 1611,
+   "speed": "blitz",
+   "accuracy": 86.64914316812295
+  },
+  {
+   "elo": 1528,
+   "speed": "blitz",
+   "accuracy": 86.80315471303624
+  },
+  {
+   "elo": 1545,
+   "speed": "blitz",
+   "accuracy": 76.53608943796978
+  },
+  {
+   "elo": 1666,
+   "speed": "blitz",
+   "accuracy": 92.63422936774259
+  },
+  {
+   "elo": 1662,
+   "speed": "blitz",
+   "accuracy": 83.86529757224139
+  },
+  {
+   "elo": 1539,
+   "speed": "blitz",
+   "accuracy": 78.19097064506255
+  },
+  {
+   "elo": 1563,
+   "speed": "blitz",
+   "accuracy": 53.85578226331778
+  },
+  {
+   "elo": 1602,
+   "speed": "blitz",
+   "accuracy": 80.35413573823342
+  },
+  {
+   "elo": 1634,
+   "speed": "blitz",
+   "accuracy": 76.32064719982233
+  },
+  {
+   "elo": 1430,
+   "speed": "rapid",
+   "accuracy": 85.11702767272838
+  },
+  {
+   "elo": 1513,
+   "speed": "rapid",
+   "accuracy": 88.69527307276975
+  },
+  {
+   "elo": 1564,
+   "speed": "blitz",
+   "accuracy": 91.23119962752828
+  },
+  {
+   "elo": 1475,
+   "speed": "blitz",
+   "accuracy": 81.58804788683668
+  },
+  {
+   "elo": 1534,
+   "speed": "rapid",
+   "accuracy": 77.3141993337234
+  },
+  {
+   "elo": 1495,
+   "speed": "rapid",
+   "accuracy": 89.83111708084948
+  },
+  {
+   "elo": 1587,
+   "speed": "rapid",
+   "accuracy": 90.7046122858761
+  },
+  {
+   "elo": 1702,
+   "speed": "rapid",
+   "accuracy": 86.76300866610748
+  },
+  {
+   "elo": 1539,
+   "speed": "blitz",
+   "accuracy": 70.19651949650851
+  },
+  {
+   "elo": 1553,
+   "speed": "blitz",
+   "accuracy": 54.52105934791881
+  },
+  {
+   "elo": 1519,
+   "speed": "blitz",
+   "accuracy": 83.45150847485533
+  },
+  {
+   "elo": 1496,
+   "speed": "blitz",
+   "accuracy": 65.42424687956026
+  },
+  {
+   "elo": 1584,
+   "speed": "blitz",
+   "accuracy": 94.38698975273199
+  },
+  {
+   "elo": 1631,
+   "speed": "blitz",
+   "accuracy": 91.22631644254575
+  },
+  {
+   "elo": 1610,
+   "speed": "blitz",
+   "accuracy": 74.25255877386672
+  },
+  {
+   "elo": 1639,
+   "speed": "blitz",
+   "accuracy": 92.64558680164569
+  },
+  {
+   "elo": 1592,
+   "speed": "blitz",
+   "accuracy": 73.57079989333167
+  },
+  {
+   "elo": 1583,
+   "speed": "blitz",
+   "accuracy": 53.216227047309594
+  },
+  {
+   "elo": 1581,
+   "speed": "blitz",
+   "accuracy": 91.83297427393397
+  },
+  {
+   "elo": 1624,
+   "speed": "blitz",
+   "accuracy": 86.59897590798352
+  },
+  {
+   "elo": 1560,
+   "speed": "blitz",
+   "accuracy": 65.1917709282363
+  },
+  {
+   "elo": 1546,
+   "speed": "blitz",
+   "accuracy": 84.7614065653151
+  },
+  {
+   "elo": 1642,
+   "speed": "blitz",
+   "accuracy": 79.97464492067083
+  },
+  {
+   "elo": 1654,
+   "speed": "blitz",
+   "accuracy": 76.10794255103501
+  },
+  {
+   "elo": 1692,
+   "speed": "rapid",
+   "accuracy": 95.7351388124622
+  },
+  {
+   "elo": 1621,
+   "speed": "rapid",
+   "accuracy": 78.33230524974766
+  },
+  {
+   "elo": 1702,
+   "speed": "blitz",
+   "accuracy": 84.98010722367121
+  },
+  {
+   "elo": 1692,
+   "speed": "blitz",
+   "accuracy": 95.20580688766711
+  },
+  {
+   "elo": 1523,
+   "speed": "rapid",
+   "accuracy": 73.52561510087403
+  },
+  {
+   "elo": 1492,
+   "speed": "rapid",
+   "accuracy": 81.02774583581342
+  },
+  {
+   "elo": 1584,
+   "speed": "blitz",
+   "accuracy": 75.87287607881026
+  },
+  {
+   "elo": 1572,
+   "speed": "blitz",
+   "accuracy": 70.97810458383158
+  },
+  {
+   "elo": 1572,
+   "speed": "rapid",
+   "accuracy": 77.212801915244
+  },
+  {
+   "elo": 1584,
+   "speed": "rapid",
+   "accuracy": 82.14918479855984
+  },
+  {
+   "elo": 1562,
+   "speed": "blitz",
+   "accuracy": 96.29711785248861
+  },
+  {
+   "elo": 1498,
+   "speed": "blitz",
+   "accuracy": 82.26032265609865
+  },
+  {
+   "elo": 1660,
+   "speed": "blitz",
+   "accuracy": 52.13394836163319
+  },
+  {
+   "elo": 1646,
+   "speed": "blitz",
+   "accuracy": 80.67642788629011
+  },
+  {
+   "elo": 1531,
+   "speed": "rapid",
+   "accuracy": 74.71156914908806
+  },
+  {
+   "elo": 1535,
+   "speed": "rapid",
+   "accuracy": 85.3492973523042
+  },
+  {
+   "elo": 1605,
+   "speed": "blitz",
+   "accuracy": 79.8858152849144
+  },
+  {
+   "elo": 1605,
+   "speed": "blitz",
+   "accuracy": 74.45245709903884
+  },
+  {
+   "elo": 1596,
+   "speed": "rapid",
+   "accuracy": 78.45450755492868
+  },
+  {
+   "elo": 1635,
+   "speed": "rapid",
+   "accuracy": 52.88255115294498
+  },
+  {
+   "elo": 1663,
+   "speed": "blitz",
+   "accuracy": 85.83673961015973
+  },
+  {
+   "elo": 1687,
+   "speed": "blitz",
+   "accuracy": 91.13517477745197
+  },
+  {
+   "elo": 1634,
+   "speed": "blitz",
+   "accuracy": 69.50936249629314
+  },
+  {
+   "elo": 1673,
+   "speed": "blitz",
+   "accuracy": 73.96479032548919
+  },
+  {
+   "elo": 1591,
+   "speed": "blitz",
+   "accuracy": 87.20061439150061
+  },
+  {
+   "elo": 1633,
+   "speed": "blitz",
+   "accuracy": 91.41530876746822
+  },
+  {
+   "elo": 1656,
+   "speed": "rapid",
+   "accuracy": 78.62642010374363
+  },
+  {
+   "elo": 1637,
+   "speed": "rapid",
+   "accuracy": 72.4342580266663
+  },
+  {
+   "elo": 1627,
+   "speed": "blitz",
+   "accuracy": 49.39441984642267
+  },
+  {
+   "elo": 1525,
+   "speed": "blitz",
+   "accuracy": 51.460064371231375
+  },
+  {
+   "elo": 1688,
+   "speed": "blitz",
+   "accuracy": 76.2669945415055
+  },
+  {
+   "elo": 1648,
+   "speed": "blitz",
+   "accuracy": 77.50935129313604
+  },
+  {
+   "elo": 1768,
+   "speed": "blitz",
+   "accuracy": 88.85676756704159
+  },
+  {
+   "elo": 1746,
+   "speed": "blitz",
+   "accuracy": 80.92361658426607
+  },
+  {
+   "elo": 1526,
+   "speed": "rapid",
+   "accuracy": 90.27031463051247
+  },
+  {
+   "elo": 1527,
+   "speed": "rapid",
+   "accuracy": 83.53603498498654
+  },
+  {
+   "elo": 1822,
+   "speed": "blitz",
+   "accuracy": 83.07712877097003
+  },
+  {
+   "elo": 1853,
+   "speed": "blitz",
+   "accuracy": 87.20219443688886
+  },
+  {
+   "elo": 1823,
+   "speed": "rapid",
+   "accuracy": 83.32580424931193
+  },
+  {
+   "elo": 1758,
+   "speed": "rapid",
+   "accuracy": 58.887509961258594
+  },
+  {
+   "elo": 1775,
+   "speed": "blitz",
+   "accuracy": 91.07019306021283
+  },
+  {
+   "elo": 1841,
+   "speed": "blitz",
+   "accuracy": 96.75375936600038
+  },
+  {
+   "elo": 1769,
+   "speed": "rapid",
+   "accuracy": 86.61389247062797
   },
   {
    "elo": 1740,
-   "speed": "blitz",
-   "accuracy": 81.07169507245573
+   "speed": "rapid",
+   "accuracy": 85.9230925896522
   },
   {
-   "elo": 1879,
+   "elo": 1687,
    "speed": "blitz",
-   "accuracy": 67.7451975195586
-  },
-  {
-   "elo": 1882,
-   "speed": "blitz",
-   "accuracy": 88.38270018366434
-  },
-  {
-   "elo": 1759,
-   "speed": "blitz",
-   "accuracy": 91.99979036094658
+   "accuracy": 90.35861577123741
   },
   {
    "elo": 1771,
    "speed": "blitz",
-   "accuracy": 86.05134534474587
+   "accuracy": 83.08241801036326
   },
   {
-   "elo": 1817,
-   "speed": "blitz",
-   "accuracy": 79.20997075360947
-  },
-  {
-   "elo": 1834,
-   "speed": "blitz",
-   "accuracy": 68.02008873179507
-  },
-  {
-   "elo": 1821,
-   "speed": "blitz",
-   "accuracy": 88.51274815863006
-  },
-  {
-   "elo": 1838,
-   "speed": "blitz",
-   "accuracy": 89.29134328505049
-  },
-  {
-   "elo": 1810,
-   "speed": "blitz",
-   "accuracy": 83.58160959996883
-  },
-  {
-   "elo": 1806,
-   "speed": "blitz",
-   "accuracy": 86.88388851974118
-  },
-  {
-   "elo": 1842,
+   "elo": 1868,
    "speed": "rapid",
-   "accuracy": 87.36743554742706
+   "accuracy": 85.00715518945512
   },
   {
-   "elo": 1830,
+   "elo": 1884,
    "speed": "rapid",
-   "accuracy": 91.09929089701714
-  },
-  {
-   "elo": 1914,
-   "speed": "rapid",
-   "accuracy": 91.54881476413084
-  },
-  {
-   "elo": 1894,
-   "speed": "rapid",
-   "accuracy": 77.441455680554
-  },
-  {
-   "elo": 1991,
-   "speed": "blitz",
-   "accuracy": 88.98369001561554
-  },
-  {
-   "elo": 2045,
-   "speed": "blitz",
-   "accuracy": 70.02820908487259
-  },
-  {
-   "elo": 1904,
-   "speed": "blitz",
-   "accuracy": 79.23516545401345
-  },
-  {
-   "elo": 1878,
-   "speed": "blitz",
-   "accuracy": 76.39675925871214
-  },
-  {
-   "elo": 1858,
-   "speed": "rapid",
-   "accuracy": 89.32539964948128
-  },
-  {
-   "elo": 1988,
-   "speed": "rapid",
-   "accuracy": 93.72740901982095
-  },
-  {
-   "elo": 1955,
-   "speed": "rapid",
-   "accuracy": 93.45354395228105
-  },
-  {
-   "elo": 1998,
-   "speed": "rapid",
-   "accuracy": 96.36888674332559
-  },
-  {
-   "elo": 1866,
-   "speed": "blitz",
-   "accuracy": 83.92392227856601
-  },
-  {
-   "elo": 1958,
-   "speed": "blitz",
-   "accuracy": 94.85391910837255
-  },
-  {
-   "elo": 1937,
-   "speed": "blitz",
-   "accuracy": 91.09505840072927
-  },
-  {
-   "elo": 1915,
-   "speed": "blitz",
-   "accuracy": 85.40949838723779
-  },
-  {
-   "elo": 1981,
-   "speed": "rapid",
-   "accuracy": 84.69805593520715
-  },
-  {
-   "elo": 1919,
-   "speed": "rapid",
-   "accuracy": 92.25541472583811
-  },
-  {
-   "elo": 2080,
-   "speed": "blitz",
-   "accuracy": 92.43738073149787
-  },
-  {
-   "elo": 2019,
-   "speed": "blitz",
-   "accuracy": 98.29552868941491
-  },
-  {
-   "elo": 1898,
-   "speed": "blitz",
-   "accuracy": 89.32796975461528
-  },
-  {
-   "elo": 1909,
-   "speed": "blitz",
-   "accuracy": 95.11586050325866
-  },
-  {
-   "elo": 1999,
-   "speed": "blitz",
-   "accuracy": 93.07036556616474
-  },
-  {
-   "elo": 1995,
-   "speed": "blitz",
-   "accuracy": 90.83370728828719
-  },
-  {
-   "elo": 1951,
-   "speed": "blitz",
-   "accuracy": 80.50723067974563
-  },
-  {
-   "elo": 1932,
-   "speed": "blitz",
-   "accuracy": 90.37441857888868
-  },
-  {
-   "elo": 2037,
-   "speed": "blitz",
-   "accuracy": 94.98013699259423
-  },
-  {
-   "elo": 2123,
-   "speed": "blitz",
-   "accuracy": 92.89460940075989
-  },
-  {
-   "elo": 2059,
-   "speed": "blitz",
-   "accuracy": 90.72007877498817
-  },
-  {
-   "elo": 2060,
-   "speed": "blitz",
-   "accuracy": 81.63201811843884
-  },
-  {
-   "elo": 2014,
-   "speed": "blitz",
-   "accuracy": 96.80144668295765
-  },
-  {
-   "elo": 2013,
-   "speed": "blitz",
-   "accuracy": 90.44635999908527
+   "accuracy": 93.84008658293976
   },
   {
    "elo": 1851,
    "speed": "rapid",
-   "accuracy": 94.89884734710762
+   "accuracy": 45.04240155663215
   },
   {
-   "elo": 1969,
+   "elo": 1848,
    "speed": "rapid",
-   "accuracy": 87.84673637060439
+   "accuracy": 49.894609719665304
   },
   {
-   "elo": 1918,
+   "elo": 1827,
    "speed": "blitz",
-   "accuracy": 90.24290874300314
+   "accuracy": 51.84321757013552
   },
   {
-   "elo": 1905,
+   "elo": 1835,
    "speed": "blitz",
-   "accuracy": 86.78954967398784
+   "accuracy": 85.01995364042564
   },
   {
-   "elo": 2025,
+   "elo": 1732,
    "speed": "blitz",
-   "accuracy": 94.16631783082565
+   "accuracy": 79.68713354985336
+  },
+  {
+   "elo": 1705,
+   "speed": "blitz",
+   "accuracy": 70.3565734048918
+  },
+  {
+   "elo": 1564,
+   "speed": "blitz",
+   "accuracy": 87.19231050125711
+  },
+  {
+   "elo": 1634,
+   "speed": "blitz",
+   "accuracy": 88.01000195274395
+  },
+  {
+   "elo": 1498,
+   "speed": "rapid",
+   "accuracy": 90.17789316512442
+  },
+  {
+   "elo": 1496,
+   "speed": "rapid",
+   "accuracy": 99.61863817724046
+  },
+  {
+   "elo": 1822,
+   "speed": "rapid",
+   "accuracy": 75.12564987376797
+  },
+  {
+   "elo": 1736,
+   "speed": "rapid",
+   "accuracy": 80.87199811711379
+  },
+  {
+   "elo": 1857,
+   "speed": "blitz",
+   "accuracy": 65.03270948466391
+  },
+  {
+   "elo": 1908,
+   "speed": "blitz",
+   "accuracy": 72.07717314405994
+  },
+  {
+   "elo": 1841,
+   "speed": "blitz",
+   "accuracy": 90.11418437147844
+  },
+  {
+   "elo": 1850,
+   "speed": "blitz",
+   "accuracy": 84.73377629696026
+  },
+  {
+   "elo": 1696,
+   "speed": "blitz",
+   "accuracy": 77.2372194868474
+  },
+  {
+   "elo": 1734,
+   "speed": "blitz",
+   "accuracy": 74.46261536139116
+  },
+  {
+   "elo": 1864,
+   "speed": "rapid",
+   "accuracy": 77.49353840282461
+  },
+  {
+   "elo": 1862,
+   "speed": "rapid",
+   "accuracy": 80.86189021480402
+  },
+  {
+   "elo": 1735,
+   "speed": "blitz",
+   "accuracy": 87.25609703236933
+  },
+  {
+   "elo": 1740,
+   "speed": "blitz",
+   "accuracy": 80.45145495140815
+  },
+  {
+   "elo": 1821,
+   "speed": "blitz",
+   "accuracy": 82.31257653847348
+  },
+  {
+   "elo": 1838,
+   "speed": "blitz",
+   "accuracy": 82.64121006416363
+  },
+  {
+   "elo": 1879,
+   "speed": "blitz",
+   "accuracy": 60.325579724837006
+  },
+  {
+   "elo": 1882,
+   "speed": "blitz",
+   "accuracy": 87.73893814538597
+  },
+  {
+   "elo": 1810,
+   "speed": "blitz",
+   "accuracy": 71.86992530890814
+  },
+  {
+   "elo": 1826,
+   "speed": "blitz",
+   "accuracy": 77.6972174299124
+  },
+  {
+   "elo": 1817,
+   "speed": "blitz",
+   "accuracy": 78.93136737270038
+  },
+  {
+   "elo": 1834,
+   "speed": "blitz",
+   "accuracy": 68.79345391028338
+  },
+  {
+   "elo": 1810,
+   "speed": "blitz",
+   "accuracy": 79.25353683888899
+  },
+  {
+   "elo": 1806,
+   "speed": "blitz",
+   "accuracy": 83.37771635667399
+  },
+  {
+   "elo": 1759,
+   "speed": "blitz",
+   "accuracy": 94.54613082400513
+  },
+  {
+   "elo": 1771,
+   "speed": "blitz",
+   "accuracy": 89.02519008865016
+  },
+  {
+   "elo": 1831,
+   "speed": "rapid",
+   "accuracy": 88.22266390499689
+  },
+  {
+   "elo": 1877,
+   "speed": "rapid",
+   "accuracy": 80.85140016017525
+  },
+  {
+   "elo": 1842,
+   "speed": "rapid",
+   "accuracy": 89.18345661025323
+  },
+  {
+   "elo": 1830,
+   "speed": "rapid",
+   "accuracy": 93.39805619327356
+  },
+  {
+   "elo": 1729,
+   "speed": "rapid",
+   "accuracy": 82.47771859778965
+  },
+  {
+   "elo": 1755,
+   "speed": "rapid",
+   "accuracy": 53.65454631367082
+  },
+  {
+   "elo": 1693,
+   "speed": "rapid",
+   "accuracy": 84.34582850816824
+  },
+  {
+   "elo": 1765,
+   "speed": "rapid",
+   "accuracy": 91.32702659246867
+  },
+  {
+   "elo": 1805,
+   "speed": "rapid",
+   "accuracy": 85.44739382337887
+  },
+  {
+   "elo": 1782,
+   "speed": "rapid",
+   "accuracy": 90.51840096653856
+  },
+  {
+   "elo": 1777,
+   "speed": "rapid",
+   "accuracy": 46.62371108274212
+  },
+  {
+   "elo": 1765,
+   "speed": "rapid",
+   "accuracy": 43.94468938312883
+  },
+  {
+   "elo": 1729,
+   "speed": "blitz",
+   "accuracy": 94.42715158895294
+  },
+  {
+   "elo": 1734,
+   "speed": "blitz",
+   "accuracy": 97.17890019514346
+  },
+  {
+   "elo": 1904,
+   "speed": "blitz",
+   "accuracy": 77.39693144268375
+  },
+  {
+   "elo": 1878,
+   "speed": "blitz",
+   "accuracy": 75.85977480788748
+  },
+  {
+   "elo": 1778,
+   "speed": "rapid",
+   "accuracy": 55.995074909896495
+  },
+  {
+   "elo": 1700,
+   "speed": "rapid",
+   "accuracy": 84.1241227463209
+  },
+  {
+   "elo": 1773,
+   "speed": "blitz",
+   "accuracy": 80.70607871786825
+  },
+  {
+   "elo": 1652,
+   "speed": "blitz",
+   "accuracy": 76.95575644961207
+  },
+  {
+   "elo": 1831,
+   "speed": "blitz",
+   "accuracy": 57.67172185167458
+  },
+  {
+   "elo": 1848,
+   "speed": "blitz",
+   "accuracy": 51.57718439464699
+  },
+  {
+   "elo": 1914,
+   "speed": "rapid",
+   "accuracy": 91.17736981154873
+  },
+  {
+   "elo": 1894,
+   "speed": "rapid",
+   "accuracy": 76.87555075173933
+  },
+  {
+   "elo": 1904,
+   "speed": "blitz",
+   "accuracy": 79.71293220206336
+  },
+  {
+   "elo": 1885,
+   "speed": "blitz",
+   "accuracy": 85.07482588668412
+  },
+  {
+   "elo": 1722,
+   "speed": "blitz",
+   "accuracy": 79.33486135612176
+  },
+  {
+   "elo": 1728,
+   "speed": "blitz",
+   "accuracy": 85.7670498970144
+  },
+  {
+   "elo": 1758,
+   "speed": "blitz",
+   "accuracy": 62.704987891761405
+  },
+  {
+   "elo": 1791,
+   "speed": "blitz",
+   "accuracy": 58.68499278427853
+  },
+  {
+   "elo": 1866,
+   "speed": "blitz",
+   "accuracy": 85.39169192362623
+  },
+  {
+   "elo": 1958,
+   "speed": "blitz",
+   "accuracy": 96.46492883458492
+  },
+  {
+   "elo": 1858,
+   "speed": "rapid",
+   "accuracy": 88.60037197445135
+  },
+  {
+   "elo": 1988,
+   "speed": "rapid",
+   "accuracy": 93.04569827007609
+  },
+  {
+   "elo": 1937,
+   "speed": "blitz",
+   "accuracy": 91.21598871999727
+  },
+  {
+   "elo": 1915,
+   "speed": "blitz",
+   "accuracy": 84.76776778115979
+  },
+  {
+   "elo": 1991,
+   "speed": "blitz",
+   "accuracy": 88.70434298407585
   },
   {
    "elo": 2045,
    "speed": "blitz",
-   "accuracy": 95.72893425252599
+   "accuracy": 69.7781699020178
+  },
+  {
+   "elo": 2080,
+   "speed": "blitz",
+   "accuracy": 91.454616941772
+  },
+  {
+   "elo": 2019,
+   "speed": "blitz",
+   "accuracy": 97.77409003240814
+  },
+  {
+   "elo": 1981,
+   "speed": "rapid",
+   "accuracy": 83.38219812886962
+  },
+  {
+   "elo": 1919,
+   "speed": "rapid",
+   "accuracy": 91.55907416284518
+  },
+  {
+   "elo": 1955,
+   "speed": "rapid",
+   "accuracy": 93.53599820104375
+  },
+  {
+   "elo": 1998,
+   "speed": "rapid",
+   "accuracy": 97.3277920123185
+  },
+  {
+   "elo": 2059,
+   "speed": "blitz",
+   "accuracy": 89.36397959910681
+  },
+  {
+   "elo": 2060,
+   "speed": "blitz",
+   "accuracy": 79.99050221455838
+  },
+  {
+   "elo": 1898,
+   "speed": "blitz",
+   "accuracy": 88.88561997899987
+  },
+  {
+   "elo": 1909,
+   "speed": "blitz",
+   "accuracy": 94.72414725012294
+  },
+  {
+   "elo": 1951,
+   "speed": "blitz",
+   "accuracy": 81.95963281786244
+  },
+  {
+   "elo": 1932,
+   "speed": "blitz",
+   "accuracy": 92.702621740344
+  },
+  {
+   "elo": 1999,
+   "speed": "blitz",
+   "accuracy": 92.31876009418714
+  },
+  {
+   "elo": 1995,
+   "speed": "blitz",
+   "accuracy": 89.81719477579821
+  },
+  {
+   "elo": 2025,
+   "speed": "blitz",
+   "accuracy": 92.33574071211251
+  },
+  {
+   "elo": 2045,
+   "speed": "blitz",
+   "accuracy": 92.43782902352098
+  },
+  {
+   "elo": 2014,
+   "speed": "blitz",
+   "accuracy": 96.69335185676653
+  },
+  {
+   "elo": 2013,
+   "speed": "blitz",
+   "accuracy": 90.53082186749467
+  },
+  {
+   "elo": 1851,
+   "speed": "rapid",
+   "accuracy": 96.27180397287566
+  },
+  {
+   "elo": 1969,
+   "speed": "rapid",
+   "accuracy": 88.85692657553705
+  },
+  {
+   "elo": 1918,
+   "speed": "blitz",
+   "accuracy": 90.46271122019623
+  },
+  {
+   "elo": 1905,
+   "speed": "blitz",
+   "accuracy": 86.59520742337821
   },
   {
    "elo": 1922,
    "speed": "blitz",
-   "accuracy": 79.01705567103474
+   "accuracy": 78.85015858281452
   },
   {
    "elo": 1916,
    "speed": "blitz",
-   "accuracy": 53.890179225856464
+   "accuracy": 50.5227467471442
   },
   {
    "elo": 1924,
    "speed": "blitz",
-   "accuracy": 78.97125858655272
+   "accuracy": 82.59970899170699
   },
   {
    "elo": 1985,
    "speed": "blitz",
-   "accuracy": 85.96281275762642
-  },
-  {
-   "elo": 1896,
-   "speed": "blitz",
-   "accuracy": 87.07200553555074
-  },
-  {
-   "elo": 1940,
-   "speed": "blitz",
-   "accuracy": 91.22623450446717
+   "accuracy": 88.66327279278998
   },
   {
    "elo": 2088,
    "speed": "blitz",
-   "accuracy": 80.22694433263513
+   "accuracy": 80.53118350685838
   },
   {
    "elo": 2095,
    "speed": "blitz",
-   "accuracy": 85.43316633332958
+   "accuracy": 86.67575941912335
   },
   {
-   "elo": 1963,
+   "elo": 1896,
    "speed": "blitz",
-   "accuracy": 89.55722747163114
+   "accuracy": 84.05808638559364
   },
   {
-   "elo": 1941,
+   "elo": 1940,
    "speed": "blitz",
-   "accuracy": 85.98688539230974
+   "accuracy": 89.64631363668482
   },
   {
    "elo": 1901,
    "speed": "blitz",
-   "accuracy": 77.08695653266685
+   "accuracy": 75.64580504551265
   },
   {
    "elo": 1969,
    "speed": "blitz",
-   "accuracy": 86.84877646149158
+   "accuracy": 87.82911234977249
+  },
+  {
+   "elo": 1963,
+   "speed": "blitz",
+   "accuracy": 86.97743095248103
+  },
+  {
+   "elo": 1941,
+   "speed": "blitz",
+   "accuracy": 84.44221927143478
+  },
+  {
+   "elo": 1953,
+   "speed": "blitz",
+   "accuracy": 87.6422259694054
+  },
+  {
+   "elo": 2014,
+   "speed": "blitz",
+   "accuracy": 93.33986504671046
   },
   {
    "elo": 2016,
    "speed": "blitz",
-   "accuracy": 61.951053144648014
+   "accuracy": 60.455626362932726
   },
   {
    "elo": 2007,
    "speed": "blitz",
-   "accuracy": 68.64400302311081
+   "accuracy": 66.41924863247466
   },
   {
-   "elo": 2063,
+   "elo": 2045,
    "speed": "blitz",
-   "accuracy": 87.21833240966849
+   "accuracy": 73.4003915677052
   },
   {
-   "elo": 2147,
+   "elo": 1959,
    "speed": "blitz",
-   "accuracy": 95.27403142791054
+   "accuracy": 85.7321651847912
+  },
+  {
+   "elo": 1986,
+   "speed": "blitz",
+   "accuracy": 79.8555927301138
+  },
+  {
+   "elo": 1986,
+   "speed": "blitz",
+   "accuracy": 86.28574786237536
+  },
+  {
+   "elo": 1891,
+   "speed": "blitz",
+   "accuracy": 90.6601040333056
+  },
+  {
+   "elo": 1919,
+   "speed": "blitz",
+   "accuracy": 80.05838322713802
+  },
+  {
+   "elo": 2048,
+   "speed": "rapid",
+   "accuracy": 86.9021801802309
+  },
+  {
+   "elo": 1972,
+   "speed": "rapid",
+   "accuracy": 87.94032718270608
+  },
+  {
+   "elo": 1900,
+   "speed": "blitz",
+   "accuracy": 84.74680597937883
+  },
+  {
+   "elo": 1913,
+   "speed": "blitz",
+   "accuracy": 74.40984274736786
+  },
+  {
+   "elo": 2086,
+   "speed": "blitz",
+   "accuracy": 96.09211364539016
+  },
+  {
+   "elo": 2071,
+   "speed": "blitz",
+   "accuracy": 90.45921337365996
+  },
+  {
+   "elo": 2093,
+   "speed": "blitz",
+   "accuracy": 84.60865098953494
+  },
+  {
+   "elo": 2102,
+   "speed": "blitz",
+   "accuracy": 89.50564003490719
+  },
+  {
+   "elo": 2000,
+   "speed": "blitz",
+   "accuracy": 72.37510267427417
+  },
+  {
+   "elo": 2046,
+   "speed": "blitz",
+   "accuracy": 89.09043062357895
+  },
+  {
+   "elo": 2022,
+   "speed": "rapid",
+   "accuracy": 79.36155443839237
+  },
+  {
+   "elo": 1972,
+   "speed": "rapid",
+   "accuracy": 88.4030666613562
+  },
+  {
+   "elo": 1902,
+   "speed": "blitz",
+   "accuracy": 78.01908410152096
+  },
+  {
+   "elo": 1910,
+   "speed": "blitz",
+   "accuracy": 70.42330868235676
+  },
+  {
+   "elo": 2059,
+   "speed": "blitz",
+   "accuracy": 73.16964459161332
+  },
+  {
+   "elo": 2098,
+   "speed": "blitz",
+   "accuracy": 63.20256391229037
   },
   {
    "elo": 2262,
    "speed": "blitz",
-   "accuracy": 86.3392388159622
+   "accuracy": 86.28796463943213
   },
   {
    "elo": 2229,
    "speed": "blitz",
-   "accuracy": 90.94320255379907
-  },
-  {
-   "elo": 2142,
-   "speed": "blitz",
-   "accuracy": 81.63609120948965
-  },
-  {
-   "elo": 2203,
-   "speed": "blitz",
-   "accuracy": 94.73254615815057
-  },
-  {
-   "elo": 2189,
-   "speed": "rapid",
-   "accuracy": 87.71657432091567
-  },
-  {
-   "elo": 2082,
-   "speed": "rapid",
-   "accuracy": 82.63558034137219
+   "accuracy": 90.78321527608773
   },
   {
    "elo": 2272,
    "speed": "blitz",
-   "accuracy": 84.97389760423339
+   "accuracy": 85.30730501361721
   },
   {
    "elo": 2316,
    "speed": "blitz",
-   "accuracy": 89.78003354816727
+   "accuracy": 90.24790708276609
   },
   {
-   "elo": 2192,
-   "speed": "blitz",
-   "accuracy": 90.84443166672335
+   "elo": 2189,
+   "speed": "rapid",
+   "accuracy": 85.35789594725907
   },
   {
-   "elo": 2148,
-   "speed": "blitz",
-   "accuracy": 88.00244522339099
-  },
-  {
-   "elo": 2193,
-   "speed": "blitz",
-   "accuracy": 93.70902031713113
-  },
-  {
-   "elo": 2134,
-   "speed": "blitz",
-   "accuracy": 77.14923893114671
-  },
-  {
-   "elo": 2157,
-   "speed": "blitz",
-   "accuracy": 72.69893816933529
-  },
-  {
-   "elo": 2087,
-   "speed": "blitz",
-   "accuracy": 87.42412736667143
-  },
-  {
-   "elo": 2208,
-   "speed": "blitz",
-   "accuracy": 79.36466595092409
-  },
-  {
-   "elo": 2277,
-   "speed": "blitz",
-   "accuracy": 88.64205362055883
-  },
-  {
-   "elo": 2149,
-   "speed": "blitz",
-   "accuracy": 84.0053961955939
-  },
-  {
-   "elo": 2078,
-   "speed": "blitz",
-   "accuracy": 87.14087147796097
-  },
-  {
-   "elo": 2203,
-   "speed": "blitz",
-   "accuracy": 85.54189543436448
-  },
-  {
-   "elo": 2215,
-   "speed": "blitz",
-   "accuracy": 89.36184294286554
-  },
-  {
-   "elo": 2087,
-   "speed": "blitz",
-   "accuracy": 95.60916007779727
-  },
-  {
-   "elo": 2138,
-   "speed": "blitz",
-   "accuracy": 90.58736827254481
+   "elo": 2082,
+   "speed": "rapid",
+   "accuracy": 80.08118330628294
   },
   {
    "elo": 2142,
    "speed": "blitz",
-   "accuracy": 87.92988021736127
+   "accuracy": 75.68369595615516
   },
   {
-   "elo": 2158,
+   "elo": 2203,
    "speed": "blitz",
-   "accuracy": 93.418658382551
+   "accuracy": 91.07073577051378
   },
   {
-   "elo": 2100,
+   "elo": 2063,
    "speed": "blitz",
-   "accuracy": 88.50715175659826
+   "accuracy": 88.82431448982965
   },
   {
-   "elo": 2163,
+   "elo": 2147,
    "speed": "blitz",
-   "accuracy": 79.4935590783356
+   "accuracy": 95.77540740901384
   },
   {
-   "elo": 2124,
+   "elo": 2193,
    "speed": "blitz",
-   "accuracy": 94.86445547182375
-  },
-  {
-   "elo": 2083,
-   "speed": "blitz",
-   "accuracy": 88.59568246342687
-  },
-  {
-   "elo": 2208,
-   "speed": "blitz",
-   "accuracy": 87.19928634341963
-  },
-  {
-   "elo": 2273,
-   "speed": "blitz",
-   "accuracy": 90.55822486418364
-  },
-  {
-   "elo": 2124,
-   "speed": "rapid",
-   "accuracy": 86.09460004092092
-  },
-  {
-   "elo": 2191,
-   "speed": "rapid",
-   "accuracy": 78.62361654476736
-  },
-  {
-   "elo": 2117,
-   "speed": "blitz",
-   "accuracy": 80.11558763945487
-  },
-  {
-   "elo": 2225,
-   "speed": "blitz",
-   "accuracy": 84.52679108852288
+   "accuracy": 95.00770149165317
   },
   {
    "elo": 2134,
    "speed": "blitz",
-   "accuracy": 87.50025190982866
+   "accuracy": 77.57767294847281
+  },
+  {
+   "elo": 2192,
+   "speed": "blitz",
+   "accuracy": 89.25414736958484
+  },
+  {
+   "elo": 2148,
+   "speed": "blitz",
+   "accuracy": 86.55731653008377
+  },
+  {
+   "elo": 2208,
+   "speed": "blitz",
+   "accuracy": 76.43797307325127
+  },
+  {
+   "elo": 2277,
+   "speed": "blitz",
+   "accuracy": 84.61732695507308
+  },
+  {
+   "elo": 2203,
+   "speed": "blitz",
+   "accuracy": 86.14218561485745
+  },
+  {
+   "elo": 2215,
+   "speed": "blitz",
+   "accuracy": 88.9427646286448
+  },
+  {
+   "elo": 2157,
+   "speed": "blitz",
+   "accuracy": 69.2795617204232
+  },
+  {
+   "elo": 2087,
+   "speed": "blitz",
+   "accuracy": 87.06629881519683
+  },
+  {
+   "elo": 2100,
+   "speed": "blitz",
+   "accuracy": 89.98066362871091
+  },
+  {
+   "elo": 2163,
+   "speed": "blitz",
+   "accuracy": 81.9458505391404
+  },
+  {
+   "elo": 2149,
+   "speed": "blitz",
+   "accuracy": 84.63280058378123
+  },
+  {
+   "elo": 2078,
+   "speed": "blitz",
+   "accuracy": 87.95044637630266
+  },
+  {
+   "elo": 2124,
+   "speed": "blitz",
+   "accuracy": 96.31364413178827
+  },
+  {
+   "elo": 2083,
+   "speed": "blitz",
+   "accuracy": 90.00231688974885
+  },
+  {
+   "elo": 2087,
+   "speed": "blitz",
+   "accuracy": 95.94770295115009
+  },
+  {
+   "elo": 2138,
+   "speed": "blitz",
+   "accuracy": 91.20408432404804
+  },
+  {
+   "elo": 2208,
+   "speed": "blitz",
+   "accuracy": 87.96122511601655
+  },
+  {
+   "elo": 2273,
+   "speed": "blitz",
+   "accuracy": 91.69624771696976
+  },
+  {
+   "elo": 2124,
+   "speed": "rapid",
+   "accuracy": 83.64786991596705
+  },
+  {
+   "elo": 2191,
+   "speed": "rapid",
+   "accuracy": 76.9917598646523
+  },
+  {
+   "elo": 2134,
+   "speed": "blitz",
+   "accuracy": 85.8286630219396
   },
   {
    "elo": 2123,
    "speed": "blitz",
-   "accuracy": 82.09884977399183
+   "accuracy": 79.60103622427727
+  },
+  {
+   "elo": 2117,
+   "speed": "blitz",
+   "accuracy": 78.38109294970855
+  },
+  {
+   "elo": 2225,
+   "speed": "blitz",
+   "accuracy": 82.92593104156973
   },
   {
    "elo": 2145,
    "speed": "blitz",
-   "accuracy": 90.56172401234716
+   "accuracy": 87.70099271522426
   },
   {
    "elo": 2153,
    "speed": "blitz",
-   "accuracy": 89.55740836405252
+   "accuracy": 87.7643419264448
   },
   {
    "elo": 2230,
    "speed": "blitz",
-   "accuracy": 91.73543249025323
+   "accuracy": 93.07277109812266
   },
   {
    "elo": 2216,
    "speed": "blitz",
-   "accuracy": 88.01096812187292
+   "accuracy": 89.10088329749948
   },
   {
    "elo": 2159,
    "speed": "blitz",
-   "accuracy": 83.93078261133945
+   "accuracy": 83.81830404743195
   },
   {
    "elo": 2091,
    "speed": "blitz",
-   "accuracy": 91.35131724825555
-  },
-  {
-   "elo": 2437,
-   "speed": "blitz",
-   "accuracy": 97.39110979430072
-  },
-  {
-   "elo": 2321,
-   "speed": "blitz",
-   "accuracy": 93.5138484761255
+   "accuracy": 90.92762004260021
   },
   {
    "elo": 2176,
    "speed": "blitz",
-   "accuracy": 83.43889973594375
+   "accuracy": 81.29512113356856
   },
   {
    "elo": 2224,
    "speed": "blitz",
-   "accuracy": 87.94540457967861
+   "accuracy": 85.82185350914843
+  },
+  {
+   "elo": 2217,
+   "speed": "blitz",
+   "accuracy": 93.22456606386677
+  },
+  {
+   "elo": 2194,
+   "speed": "blitz",
+   "accuracy": 88.32751830990334
   },
   {
    "elo": 2090,
    "speed": "blitz",
-   "accuracy": 90.19120888331713
+   "accuracy": 90.35664746934529
   },
   {
    "elo": 2111,
    "speed": "blitz",
-   "accuracy": 86.62214433696303
+   "accuracy": 86.67212043871098
+  },
+  {
+   "elo": 2261,
+   "speed": "blitz",
+   "accuracy": 89.12778575498669
+  },
+  {
+   "elo": 2203,
+   "speed": "blitz",
+   "accuracy": 93.22533369493064
+  },
+  {
+   "elo": 2170,
+   "speed": "blitz",
+   "accuracy": 56.344365927896035
+  },
+  {
+   "elo": 2072,
+   "speed": "blitz",
+   "accuracy": 80.20323391763044
+  },
+  {
+   "elo": 2128,
+   "speed": "blitz",
+   "accuracy": 89.0419181667155
+  },
+  {
+   "elo": 2124,
+   "speed": "blitz",
+   "accuracy": 95.37704008311817
+  },
+  {
+   "elo": 2085,
+   "speed": "blitz",
+   "accuracy": 87.27171927927209
+  },
+  {
+   "elo": 2160,
+   "speed": "blitz",
+   "accuracy": 85.54723121258483
+  },
+  {
+   "elo": 2218,
+   "speed": "blitz",
+   "accuracy": 67.86347105334971
+  },
+  {
+   "elo": 2193,
+   "speed": "blitz",
+   "accuracy": 72.53423350160602
+  },
+  {
+   "elo": 2139,
+   "speed": "blitz",
+   "accuracy": 80.1963832778592
+  },
+  {
+   "elo": 2115,
+   "speed": "blitz",
+   "accuracy": 56.000038807361335
+  },
+  {
+   "elo": 2135,
+   "speed": "blitz",
+   "accuracy": 89.48358139854835
+  },
+  {
+   "elo": 2120,
+   "speed": "blitz",
+   "accuracy": 86.32571414884366
+  },
+  {
+   "elo": 2107,
+   "speed": "blitz",
+   "accuracy": 94.43276770514473
+  },
+  {
+   "elo": 2150,
+   "speed": "blitz",
+   "accuracy": 84.03121673339606
+  },
+  {
+   "elo": 2223,
+   "speed": "blitz",
+   "accuracy": 85.3887136400414
+  },
+  {
+   "elo": 2316,
+   "speed": "blitz",
+   "accuracy": 90.53326741284472
+  },
+  {
+   "elo": 2437,
+   "speed": "blitz",
+   "accuracy": 96.37521619594244
+  },
+  {
+   "elo": 2321,
+   "speed": "blitz",
+   "accuracy": 92.43031466599939
+  },
+  {
+   "elo": 2142,
+   "speed": "blitz",
+   "accuracy": 87.12219919420986
+  },
+  {
+   "elo": 2158,
+   "speed": "blitz",
+   "accuracy": 92.60604838559311
+  },
+  {
+   "elo": 2124,
+   "speed": "blitz",
+   "accuracy": 94.79186458710805
+  },
+  {
+   "elo": 2218,
+   "speed": "blitz",
+   "accuracy": 89.17167177814011
+  },
+  {
+   "elo": 2173,
+   "speed": "blitz",
+   "accuracy": 85.24443076966871
+  },
+  {
+   "elo": 2185,
+   "speed": "blitz",
+   "accuracy": 86.21796785987466
   },
   {
    "elo": 2484,
    "speed": "blitz",
-   "accuracy": 87.7415953666264
+   "accuracy": 89.112363376162
   },
   {
    "elo": 2395,
    "speed": "blitz",
-   "accuracy": 92.92383076649543
-  },
-  {
-   "elo": 2419,
-   "speed": "blitz",
-   "accuracy": 85.19833682015441
-  },
-  {
-   "elo": 2383,
-   "speed": "blitz",
-   "accuracy": 87.68350350917731
+   "accuracy": 93.85639181247089
   },
   {
    "elo": 2387,
    "speed": "blitz",
-   "accuracy": 85.9788245829585
+   "accuracy": 85.5957912855685
   },
   {
    "elo": 2308,
    "speed": "blitz",
-   "accuracy": 81.17752157971302
+   "accuracy": 80.93261204040124
   },
   {
-   "elo": 2361,
-   "speed": "rapid",
-   "accuracy": 89.27619942245337
-  },
-  {
-   "elo": 2324,
-   "speed": "rapid",
-   "accuracy": 86.46023101811251
-  },
-  {
-   "elo": 2412,
+   "elo": 2037,
    "speed": "blitz",
-   "accuracy": 93.9943453917934
+   "accuracy": 96.3457182298248
   },
   {
-   "elo": 2359,
+   "elo": 2123,
    "speed": "blitz",
-   "accuracy": 90.45227520156426
+   "accuracy": 94.25743590804952
   },
   {
-   "elo": 2316,
+   "elo": 2419,
    "speed": "blitz",
-   "accuracy": 89.18424309983561
+   "accuracy": 84.28594729029703
   },
   {
-   "elo": 2313,
+   "elo": 2383,
    "speed": "blitz",
-   "accuracy": 87.17010748916806
-  },
-  {
-   "elo": 2361,
-   "speed": "blitz",
-   "accuracy": 86.23294493496101
-  },
-  {
-   "elo": 2359,
-   "speed": "blitz",
-   "accuracy": 92.54249736586227
+   "accuracy": 87.27584413309111
   },
   {
    "elo": 2477,
    "speed": "blitz",
-   "accuracy": 96.56025952805334
+   "accuracy": 97.54670594044049
   },
   {
    "elo": 2472,
    "speed": "blitz",
-   "accuracy": 96.26288695000719
+   "accuracy": 96.69080738609934
+  },
+  {
+   "elo": 2361,
+   "speed": "rapid",
+   "accuracy": 89.94357695284313
+  },
+  {
+   "elo": 2324,
+   "speed": "rapid",
+   "accuracy": 85.6596433997216
+  },
+  {
+   "elo": 2361,
+   "speed": "blitz",
+   "accuracy": 87.01491622930463
+  },
+  {
+   "elo": 2359,
+   "speed": "blitz",
+   "accuracy": 91.7447409496441
   },
   {
    "elo": 2526,
    "speed": "blitz",
-   "accuracy": 69.39926082929374
+   "accuracy": 63.12163980353675
   },
   {
    "elo": 2463,
    "speed": "blitz",
-   "accuracy": 87.82054967697522
+   "accuracy": 86.32494628380451
   },
   {
-   "elo": 2379,
+   "elo": 2412,
    "speed": "blitz",
-   "accuracy": 95.54098096984416
+   "accuracy": 94.93188713463601
+  },
+  {
+   "elo": 2359,
+   "speed": "blitz",
+   "accuracy": 90.38499335001529
+  },
+  {
+   "elo": 2367,
+   "speed": "blitz",
+   "accuracy": 80.7856957892547
   },
   {
    "elo": 2377,
    "speed": "blitz",
-   "accuracy": 92.59242962836021
+   "accuracy": 92.04223416695109
   },
   {
    "elo": 2458,
    "speed": "blitz",
-   "accuracy": 88.54208585381173
+   "accuracy": 92.1275128666463
   },
   {
    "elo": 2435,
    "speed": "blitz",
-   "accuracy": 80.88292735873605
+   "accuracy": 84.04701893684455
   },
   {
-   "elo": 2367,
+   "elo": 2379,
    "speed": "blitz",
-   "accuracy": 81.63410852968818
+   "accuracy": 94.06506635101266
   },
   {
    "elo": 2377,
    "speed": "blitz",
-   "accuracy": 92.38631090454398
+   "accuracy": 91.29277509301934
   },
   {
-   "elo": 2485,
+   "elo": 2316,
    "speed": "blitz",
-   "accuracy": 94.48774238248944
-  },
-  {
-   "elo": 2491,
-   "speed": "blitz",
-   "accuracy": 88.82879087308172
+   "accuracy": 88.1197028412827
   },
   {
    "elo": 2313,
    "speed": "blitz",
-   "accuracy": 89.21956282560438
+   "accuracy": 85.37998019214535
+  },
+  {
+   "elo": 2313,
+   "speed": "blitz",
+   "accuracy": 89.36710142943267
   },
   {
    "elo": 2301,
    "speed": "blitz",
-   "accuracy": 82.32587589483745
+   "accuracy": 82.34405773080414
   },
   {
-   "elo": 2367,
+   "elo": 2485,
    "speed": "blitz",
-   "accuracy": 85.73240577715681
-  },
-  {
-   "elo": 2265,
-   "speed": "blitz",
-   "accuracy": 83.74904302779115
-  },
-  {
-   "elo": 2464,
-   "speed": "blitz",
-   "accuracy": 96.12842005860387
-  },
-  {
-   "elo": 2519,
-   "speed": "blitz",
-   "accuracy": 96.81345586562874
-  },
-  {
-   "elo": 2390,
-   "speed": "blitz",
-   "accuracy": 98.64814906067768
-  },
-  {
-   "elo": 2520,
-   "speed": "blitz",
-   "accuracy": 90.00268308178633
-  },
-  {
-   "elo": 2349,
-   "speed": "blitz",
-   "accuracy": 94.97654605590589
-  },
-  {
-   "elo": 2331,
-   "speed": "blitz",
-   "accuracy": 87.75202251267126
-  },
-  {
-   "elo": 2389,
-   "speed": "rapid",
-   "accuracy": 85.30092633302459
-  },
-  {
-   "elo": 2390,
-   "speed": "rapid",
-   "accuracy": 92.9981528741103
-  },
-  {
-   "elo": 2433,
-   "speed": "blitz",
-   "accuracy": 94.4676088749825
-  },
-  {
-   "elo": 2438,
-   "speed": "blitz",
-   "accuracy": 91.26017087303714
-  },
-  {
-   "elo": 2610,
-   "speed": "blitz",
-   "accuracy": 97.58645134849506
-  },
-  {
-   "elo": 2621,
-   "speed": "blitz",
-   "accuracy": 88.18540615662029
-  },
-  {
-   "elo": 2378,
-   "speed": "rapid",
-   "accuracy": 93.90620902929388
-  },
-  {
-   "elo": 2351,
-   "speed": "rapid",
-   "accuracy": 97.75317029144425
-  },
-  {
-   "elo": 2391,
-   "speed": "blitz",
-   "accuracy": 92.09189239534443
-  },
-  {
-   "elo": 2357,
-   "speed": "blitz",
-   "accuracy": 90.4386648777521
-  },
-  {
-   "elo": 2316,
-   "speed": "rapid",
-   "accuracy": 93.15271682897361
-  },
-  {
-   "elo": 2319,
-   "speed": "rapid",
-   "accuracy": 96.41366058262258
-  },
-  {
-   "elo": 2693,
-   "speed": "blitz",
-   "accuracy": 91.74170550287505
-  },
-  {
-   "elo": 2579,
-   "speed": "blitz",
-   "accuracy": 85.92737919899673
-  },
-  {
-   "elo": 2555,
-   "speed": "blitz",
-   "accuracy": 90.15069033535437
-  },
-  {
-   "elo": 2459,
-   "speed": "blitz",
-   "accuracy": 80.37432306390454
-  },
-  {
-   "elo": 2615,
-   "speed": "blitz",
-   "accuracy": 89.69187538701973
-  },
-  {
-   "elo": 2707,
-   "speed": "blitz",
-   "accuracy": 95.7992611933542
-  },
-  {
-   "elo": 2574,
-   "speed": "blitz",
-   "accuracy": 88.40538374952293
-  },
-  {
-   "elo": 2615,
-   "speed": "blitz",
-   "accuracy": 93.88394872362113
-  },
-  {
-   "elo": 2539,
-   "speed": "blitz",
-   "accuracy": 84.94674955797984
-  },
-  {
-   "elo": 2473,
-   "speed": "blitz",
-   "accuracy": 91.05479605615207
-  },
-  {
-   "elo": 2518,
-   "speed": "blitz",
-   "accuracy": 84.0500665084545
-  },
-  {
-   "elo": 2506,
-   "speed": "blitz",
-   "accuracy": 77.83692231146983
-  },
-  {
-   "elo": 2527,
-   "speed": "blitz",
-   "accuracy": 89.71762509300012
-  },
-  {
-   "elo": 2548,
-   "speed": "blitz",
-   "accuracy": 91.48416615598705
-  },
-  {
-   "elo": 2512,
-   "speed": "blitz",
-   "accuracy": 90.28968488118707
-  },
-  {
-   "elo": 2503,
-   "speed": "blitz",
-   "accuracy": 86.57214539824281
-  },
-  {
-   "elo": 2569,
-   "speed": "blitz",
-   "accuracy": 93.977303167745
-  },
-  {
-   "elo": 2561,
-   "speed": "blitz",
-   "accuracy": 88.51581930522401
-  },
-  {
-   "elo": 2620,
-   "speed": "blitz",
-   "accuracy": 97.94663872275743
-  },
-  {
-   "elo": 2504,
-   "speed": "blitz",
-   "accuracy": 88.71413463949885
-  },
-  {
-   "elo": 2497,
-   "speed": "blitz",
-   "accuracy": 86.34030149443771
-  },
-  {
-   "elo": 2575,
-   "speed": "blitz",
-   "accuracy": 80.27741028420762
-  },
-  {
-   "elo": 2568,
-   "speed": "blitz",
-   "accuracy": 87.30430933525798
-  },
-  {
-   "elo": 2574,
-   "speed": "blitz",
-   "accuracy": 93.15238342818685
-  },
-  {
-   "elo": 2621,
-   "speed": "blitz",
-   "accuracy": 91.8835300926556
-  },
-  {
-   "elo": 2522,
-   "speed": "blitz",
-   "accuracy": 95.01402583137587
-  },
-  {
-   "elo": 2650,
-   "speed": "blitz",
-   "accuracy": 89.49918441701458
-  },
-  {
-   "elo": 2556,
-   "speed": "blitz",
-   "accuracy": 93.84886013252691
-  },
-  {
-   "elo": 2563,
-   "speed": "blitz",
-   "accuracy": 79.08519181040634
-  },
-  {
-   "elo": 2524,
-   "speed": "blitz",
-   "accuracy": 82.7696913679456
-  },
-  {
-   "elo": 2545,
-   "speed": "rapid",
-   "accuracy": 89.10298025586386
-  },
-  {
-   "elo": 2513,
-   "speed": "rapid",
-   "accuracy": 85.9490523048494
+   "accuracy": 95.43874874583332
   },
   {
    "elo": 2491,
    "speed": "blitz",
-   "accuracy": 94.7825458684787
+   "accuracy": 89.25443333876797
   },
   {
-   "elo": 2589,
+   "elo": 2464,
    "speed": "blitz",
-   "accuracy": 95.98333090207777
-  },
-  {
-   "elo": 2484,
-   "speed": "blitz",
-   "accuracy": 87.67664249432077
+   "accuracy": 95.75772320603167
   },
   {
    "elo": 2519,
    "speed": "blitz",
-   "accuracy": 96.72352867203381
+   "accuracy": 95.98947807514446
   },
   {
-   "elo": 2517,
+   "elo": 2390,
    "speed": "blitz",
-   "accuracy": 82.06290293896268
+   "accuracy": 97.66549679665803
   },
   {
-   "elo": 2528,
+   "elo": 2520,
    "speed": "blitz",
-   "accuracy": 75.83972100865657
+   "accuracy": 89.64078537035917
   },
   {
-   "elo": 2523,
+   "elo": 2389,
+   "speed": "rapid",
+   "accuracy": 84.02384616655411
+  },
+  {
+   "elo": 2390,
+   "speed": "rapid",
+   "accuracy": 91.26198659044864
+  },
+  {
+   "elo": 2367,
    "speed": "blitz",
-   "accuracy": 83.8456087598298
+   "accuracy": 84.40686846207379
+  },
+  {
+   "elo": 2265,
+   "speed": "blitz",
+   "accuracy": 81.74908377629617
+  },
+  {
+   "elo": 2349,
+   "speed": "blitz",
+   "accuracy": 95.65875833482289
+  },
+  {
+   "elo": 2331,
+   "speed": "blitz",
+   "accuracy": 88.89044256293998
+  },
+  {
+   "elo": 2433,
+   "speed": "blitz",
+   "accuracy": 93.94388161199505
+  },
+  {
+   "elo": 2438,
+   "speed": "blitz",
+   "accuracy": 90.91311122928167
+  },
+  {
+   "elo": 2391,
+   "speed": "blitz",
+   "accuracy": 91.30449383552975
+  },
+  {
+   "elo": 2357,
+   "speed": "blitz",
+   "accuracy": 90.65488665883217
+  },
+  {
+   "elo": 2378,
+   "speed": "rapid",
+   "accuracy": 93.55231440975089
+  },
+  {
+   "elo": 2351,
+   "speed": "rapid",
+   "accuracy": 98.06093131730144
+  },
+  {
+   "elo": 2316,
+   "speed": "rapid",
+   "accuracy": 91.89006103873083
+  },
+  {
+   "elo": 2319,
+   "speed": "rapid",
+   "accuracy": 95.99795881208667
+  },
+  {
+   "elo": 2397,
+   "speed": "blitz",
+   "accuracy": 97.9984753342891
+  },
+  {
+   "elo": 2478,
+   "speed": "blitz",
+   "accuracy": 91.84350234924264
+  },
+  {
+   "elo": 2409,
+   "speed": "blitz",
+   "accuracy": 63.83493383157969
+  },
+  {
+   "elo": 2437,
+   "speed": "blitz",
+   "accuracy": 62.20985477132915
+  },
+  {
+   "elo": 2379,
+   "speed": "blitz",
+   "accuracy": 90.44709379540043
+  },
+  {
+   "elo": 2323,
+   "speed": "blitz",
+   "accuracy": 81.7086256527455
+  },
+  {
+   "elo": 2402,
+   "speed": "blitz",
+   "accuracy": 93.94540755305232
+  },
+  {
+   "elo": 2396,
+   "speed": "blitz",
+   "accuracy": 90.53956356141546
+  },
+  {
+   "elo": 2450,
+   "speed": "blitz",
+   "accuracy": 87.85461603928539
+  },
+  {
+   "elo": 2396,
+   "speed": "blitz",
+   "accuracy": 70.51945592540262
+  },
+  {
+   "elo": 2312,
+   "speed": "blitz",
+   "accuracy": 86.49825728509938
+  },
+  {
+   "elo": 2339,
+   "speed": "blitz",
+   "accuracy": 89.85275951544224
+  },
+  {
+   "elo": 2339,
+   "speed": "blitz",
+   "accuracy": 79.92082331803053
+  },
+  {
+   "elo": 2285,
+   "speed": "blitz",
+   "accuracy": 84.24236485576424
+  },
+  {
+   "elo": 2426,
+   "speed": "blitz",
+   "accuracy": 78.54058683363661
+  },
+  {
+   "elo": 2444,
+   "speed": "blitz",
+   "accuracy": 85.35645275019883
+  },
+  {
+   "elo": 2280,
+   "speed": "blitz",
+   "accuracy": 78.40885201085241
+  },
+  {
+   "elo": 2329,
+   "speed": "blitz",
+   "accuracy": 85.78600895264839
+  },
+  {
+   "elo": 2423,
+   "speed": "blitz",
+   "accuracy": 94.50692759525367
+  },
+  {
+   "elo": 2321,
+   "speed": "blitz",
+   "accuracy": 89.17241700311745
+  },
+  {
+   "elo": 2518,
+   "speed": "blitz",
+   "accuracy": 94.38968622672635
+  },
+  {
+   "elo": 2391,
+   "speed": "blitz",
+   "accuracy": 89.32080805926779
+  },
+  {
+   "elo": 2610,
+   "speed": "blitz",
+   "accuracy": 98.72537655869593
+  },
+  {
+   "elo": 2621,
+   "speed": "blitz",
+   "accuracy": 89.44284305221987
+  },
+  {
+   "elo": 2693,
+   "speed": "blitz",
+   "accuracy": 91.76629712083968
+  },
+  {
+   "elo": 2579,
+   "speed": "blitz",
+   "accuracy": 83.9315993954003
+  },
+  {
+   "elo": 2615,
+   "speed": "blitz",
+   "accuracy": 89.01194193208876
+  },
+  {
+   "elo": 2707,
+   "speed": "blitz",
+   "accuracy": 95.98901463018308
+  },
+  {
+   "elo": 2555,
+   "speed": "blitz",
+   "accuracy": 92.06562593975491
+  },
+  {
+   "elo": 2459,
+   "speed": "blitz",
+   "accuracy": 82.339170401826
+  },
+  {
+   "elo": 2518,
+   "speed": "blitz",
+   "accuracy": 84.16242526710573
+  },
+  {
+   "elo": 2506,
+   "speed": "blitz",
+   "accuracy": 78.74939329410984
+  },
+  {
+   "elo": 2539,
+   "speed": "blitz",
+   "accuracy": 83.12236337958757
+  },
+  {
+   "elo": 2473,
+   "speed": "blitz",
+   "accuracy": 88.96219632779545
+  },
+  {
+   "elo": 2385,
+   "speed": "blitz",
+   "accuracy": 93.35957207766486
+  },
+  {
+   "elo": 2366,
+   "speed": "blitz",
+   "accuracy": 88.93580079697311
+  },
+  {
+   "elo": 2574,
+   "speed": "blitz",
+   "accuracy": 90.17863455454662
+  },
+  {
+   "elo": 2615,
+   "speed": "blitz",
+   "accuracy": 94.28253101608573
+  },
+  {
+   "elo": 2620,
+   "speed": "blitz",
+   "accuracy": 97.1565452768726
+  },
+  {
+   "elo": 2504,
+   "speed": "blitz",
+   "accuracy": 88.29524839737134
+  },
+  {
+   "elo": 2569,
+   "speed": "blitz",
+   "accuracy": 95.6457394840083
+  },
+  {
+   "elo": 2561,
+   "speed": "blitz",
+   "accuracy": 89.92051712460835
+  },
+  {
+   "elo": 2512,
+   "speed": "blitz",
+   "accuracy": 86.63478285859118
+  },
+  {
+   "elo": 2503,
+   "speed": "blitz",
+   "accuracy": 83.02651274181909
+  },
+  {
+   "elo": 2568,
+   "speed": "blitz",
+   "accuracy": 87.3592045320272
+  },
+  {
+   "elo": 2574,
+   "speed": "blitz",
+   "accuracy": 93.78438380253726
+  },
+  {
+   "elo": 2497,
+   "speed": "blitz",
+   "accuracy": 86.22702416628495
+  },
+  {
+   "elo": 2575,
+   "speed": "blitz",
+   "accuracy": 80.2088530312163
+  },
+  {
+   "elo": 2650,
+   "speed": "blitz",
+   "accuracy": 89.00798225363019
   },
   {
    "elo": 2556,
    "speed": "blitz",
-   "accuracy": 92.84444910687188
+   "accuracy": 93.27567132835108
+  },
+  {
+   "elo": 2563,
+   "speed": "blitz",
+   "accuracy": 79.79092516324283
+  },
+  {
+   "elo": 2524,
+   "speed": "blitz",
+   "accuracy": 84.18567172439137
+  },
+  {
+   "elo": 2545,
+   "speed": "rapid",
+   "accuracy": 89.52969540172981
+  },
+  {
+   "elo": 2513,
+   "speed": "rapid",
+   "accuracy": 86.07186672659188
+  },
+  {
+   "elo": 2527,
+   "speed": "blitz",
+   "accuracy": 87.83445546697808
+  },
+  {
+   "elo": 2548,
+   "speed": "blitz",
+   "accuracy": 91.42063608616328
+  },
+  {
+   "elo": 2621,
+   "speed": "blitz",
+   "accuracy": 91.1727874245514
+  },
+  {
+   "elo": 2522,
+   "speed": "blitz",
+   "accuracy": 94.28914999655169
+  },
+  {
+   "elo": 2517,
+   "speed": "blitz",
+   "accuracy": 79.27665621224207
+  },
+  {
+   "elo": 2528,
+   "speed": "blitz",
+   "accuracy": 72.00987349663271
+  },
+  {
+   "elo": 2484,
+   "speed": "blitz",
+   "accuracy": 86.63574571840365
+  },
+  {
+   "elo": 2519,
+   "speed": "blitz",
+   "accuracy": 95.07831136148073
   },
   {
    "elo": 2529,
    "speed": "blitz",
-   "accuracy": 93.67567196046687
+   "accuracy": 93.54592782348138
   },
   {
    "elo": 2553,
    "speed": "blitz",
-   "accuracy": 89.43248909895121
+   "accuracy": 88.56600799684833
   },
   {
-   "elo": 2547,
+   "elo": 2616,
    "speed": "blitz",
-   "accuracy": 94.36018651045066
+   "accuracy": 82.78173580374899
   },
   {
-   "elo": 2456,
+   "elo": 2658,
    "speed": "blitz",
-   "accuracy": 95.06848231983292
+   "accuracy": 91.62604297606262
   },
   {
    "elo": 2619,
    "speed": "blitz",
-   "accuracy": 88.19392813573303
+   "accuracy": 87.47687410364708
   },
   {
    "elo": 2674,
    "speed": "blitz",
-   "accuracy": 87.8469309580185
+   "accuracy": 87.08042961269167
+  },
+  {
+   "elo": 2547,
+   "speed": "blitz",
+   "accuracy": 93.10380881878898
+  },
+  {
+   "elo": 2456,
+   "speed": "blitz",
+   "accuracy": 93.66065295879352
+  },
+  {
+   "elo": 2523,
+   "speed": "blitz",
+   "accuracy": 85.57147952302475
+  },
+  {
+   "elo": 2556,
+   "speed": "blitz",
+   "accuracy": 93.9430926623046
+  },
+  {
+   "elo": 2519,
+   "speed": "blitz",
+   "accuracy": 87.23057355580832
+  },
+  {
+   "elo": 2506,
+   "speed": "blitz",
+   "accuracy": 84.84787714181984
+  },
+  {
+   "elo": 2667,
+   "speed": "blitz",
+   "accuracy": 92.08251274369174
+  },
+  {
+   "elo": 2692,
+   "speed": "blitz",
+   "accuracy": 88.47364913776082
+  },
+  {
+   "elo": 2627,
+   "speed": "blitz",
+   "accuracy": 94.4436392355788
+  },
+  {
+   "elo": 2506,
+   "speed": "blitz",
+   "accuracy": 90.05359684716842
+  },
+  {
+   "elo": 2733,
+   "speed": "blitz",
+   "accuracy": 90.21443087627696
+  },
+  {
+   "elo": 2662,
+   "speed": "blitz",
+   "accuracy": 85.05637544671724
+  },
+  {
+   "elo": 2666,
+   "speed": "blitz",
+   "accuracy": 82.26247974369642
+  },
+  {
+   "elo": 2524,
+   "speed": "blitz",
+   "accuracy": 87.3086867805059
+  },
+  {
+   "elo": 2504,
+   "speed": "blitz",
+   "accuracy": 87.3326199201607
+  },
+  {
+   "elo": 2532,
+   "speed": "blitz",
+   "accuracy": 92.19226452269692
+  },
+  {
+   "elo": 2610,
+   "speed": "blitz",
+   "accuracy": 93.47128808667534
+  },
+  {
+   "elo": 2572,
+   "speed": "blitz",
+   "accuracy": 85.81573464786919
+  },
+  {
+   "elo": 2503,
+   "speed": "blitz",
+   "accuracy": 66.25042330791038
+  },
+  {
+   "elo": 2521,
+   "speed": "blitz",
+   "accuracy": 82.27207354909133
+  },
+  {
+   "elo": 2449,
+   "speed": "blitz",
+   "accuracy": 87.56088887388012
+  },
+  {
+   "elo": 2575,
+   "speed": "blitz",
+   "accuracy": 61.91402372113173
+  },
+  {
+   "elo": 2525,
+   "speed": "blitz",
+   "accuracy": 94.86614700246272
+  },
+  {
+   "elo": 2630,
+   "speed": "blitz",
+   "accuracy": 91.45604612612397
+  },
+  {
+   "elo": 2470,
+   "speed": "blitz",
+   "accuracy": 89.81072486325492
+  },
+  {
+   "elo": 2559,
+   "speed": "blitz",
+   "accuracy": 87.97251505510415
+  },
+  {
+   "elo": 2491,
+   "speed": "blitz",
+   "accuracy": 93.82053957222962
+  },
+  {
+   "elo": 2589,
+   "speed": "blitz",
+   "accuracy": 95.20304641587691
   }
  ]
 }

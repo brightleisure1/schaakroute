@@ -2,10 +2,11 @@
 // IJkt de "partijrating" van de partij-analyse: welke nauwkeurigheid hoort bij welke rating?
 // Neemt een steekproef van volledige rated partijen uit de openbare Lichess-database (CC0),
 // laat Stockfish iedere stelling beoordelen (net als de app) en berekent per speler de nauwkeurigheid
-// met dezelfde formules als src/lib/review.ts. Per ratinggroep komt de mediane nauwkeurigheid in
-// scripts/out/game-rating-calibration.json; die tabel staat (afgerond) in src/lib/review.ts.
+// met dezelfde formules en dezelfde Stockfish-instelling (diepte 14, MultiPV 2) als src/lib/review.ts.
+// Uitkomst: per nauwkeurigheidsgroep de mediane rating van wie zo speelde (oplopend gemaakt), in
+// scripts/out/game-rating-calibration.json. Die curve staat (afgerond) in src/lib/review.ts als RATING_CURVE.
 //
-// Gebruik: node scripts/calibrate-game-rating.mjs [maand=2026-09] [partijen-per-groep=24] [diepte=12]
+// Gebruik: node scripts/calibrate-game-rating.mjs [maand=2026-09] [partijen-per-groep=36] [diepte=14]
 
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -14,8 +15,8 @@ import { join } from 'node:path'
 import { Chess } from 'chess.js'
 
 const month = process.argv[2] ?? '2026-09'
-const perBucket = Number(process.argv[3] ?? 24)
-const depth = Number(process.argv[4] ?? 12)
+const perBucket = Number(process.argv[3] ?? 36)
+const depth = Number(process.argv[4] ?? 14)
 const url = `https://database.lichess.org/standard/lichess_db_standard_rated_${month}.pgn.zst`
 const MAGIC = Buffer.from([0x28, 0xb5, 0x2f, 0xfd])
 const BUCKETS = Array.from({ length: 11 }, (_, i) => 600 + i * 200) // 600–2600
@@ -89,13 +90,13 @@ function engine() {
   const send = s => sf.stdin.write(s + '\n')
   const until = prefix => new Promise(r => { waiter = l => { if (l.startsWith(prefix)) r(l) } })
   return {
-    async init() { send('uci'); await until('uciok') },
+    async init() { send('uci'); await until('uciok'); send('setoption name MultiPV value 2') },
     async evalFen(fen) {
       const c = new Chess(fen)
       if (c.isCheckmate()) return { cp: c.turn() === 'w' ? -10000 : 10000 }
       if (c.isStalemate() || c.isInsufficientMaterial()) return { cp: 0 }
       let last = null
-      const p = new Promise(r => { waiter = l => { if (l.startsWith('info') && l.includes(' pv ')) last = l; else if (l.startsWith('bestmove')) r() } })
+      const p = new Promise(r => { waiter = l => { if (l.startsWith('info') && l.includes(' multipv 1 ') && l.includes(' pv ')) last = l; else if (l.startsWith('bestmove')) r() } })
       send(`position fen ${fen}`); send(`go depth ${depth}`)
       await p
       const stm = c.turn() === 'w' ? 1 : -1
@@ -157,7 +158,7 @@ async function worker() {
   }
   sf.kill()
 }
-await Promise.all([worker(), worker(), worker(), worker()])
+await Promise.all(Array.from({ length: 8 }, worker))
 
 const median = xs => { const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
 const table = BUCKETS.map(b => {
@@ -165,5 +166,27 @@ const table = BUCKETS.map(b => {
   return { rating: b, n: xs.length, median: Number(median(xs).toFixed(2)) }
 })
 console.table(table)
+
+// Omgekeerd: welke rating hoort typisch bij een nauwkeurigheid? Groepen met even veel spelers,
+// per groep de mediane nauwkeurigheid en mediane rating, daarna oplopend gemaakt (pool adjacent violators).
+const sorted = [...samples].sort((a, b) => a.accuracy - b.accuracy)
+const GROUPS = 12
+let curve = Array.from({ length: GROUPS }, (_, i) => {
+  const part = sorted.slice(Math.floor((i * sorted.length) / GROUPS), Math.floor(((i + 1) * sorted.length) / GROUPS))
+  return { accuracy: median(part.map(s => s.accuracy)), rating: median(part.map(s => s.elo)), n: part.length }
+})
+for (let changed = true; changed;) {
+  changed = false
+  for (let i = 0; i + 1 < curve.length; i++) {
+    if (curve[i].rating > curve[i + 1].rating) {
+      const a = curve[i], b = curve[i + 1], n = a.n + b.n
+      curve.splice(i, 2, { accuracy: (a.accuracy * a.n + b.accuracy * b.n) / n, rating: (a.rating * a.n + b.rating * b.n) / n, n })
+      changed = true
+      break
+    }
+  }
+}
+curve = curve.map(c => ({ accuracy: Number(c.accuracy.toFixed(1)), rating: Math.round(c.rating / 10) * 10, n: c.n }))
+console.table(curve)
 mkdirSync('scripts/out', { recursive: true })
-writeFileSync('scripts/out/game-rating-calibration.json', JSON.stringify({ source: url, depth, perBucket, createdAt: new Date().toISOString(), table, samples }, null, 1))
+writeFileSync('scripts/out/game-rating-calibration.json', JSON.stringify({ source: url, depth, multipv: 2, perBucket, createdAt: new Date().toISOString(), table, curve, samples }, null, 1))
