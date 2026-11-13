@@ -8,7 +8,7 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, bookInfo, estimateRating, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board } from '../components/Board'
@@ -22,7 +22,8 @@ const DEPTH = 14
 const SPEED: Record<string, string> = {
   ultraBullet: 'Bullet', bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', classical: 'Klassiek', daily: 'Per dag', correspondence: 'Per dag',
 }
-const SOURCE_NAME = { lichess: 'Lichess', chesscom: 'Chess.com' } as const
+const SOURCE_NAME = { lichess: 'Lichess', chesscom: 'Chess.com', pgn: 'PGN' } as const
+const scaleOf = (s: ReviewGame['source']) => (s === 'chesscom' ? 'chesscom' : 'lichess')
 const SOURCE_KEY = 'schaakroute.analyseBron'
 
 const fmtPct = (v: number) => v.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
@@ -107,6 +108,44 @@ export function GameReviewList() {
     navigate(`/analyse/${encodeURIComponent(g.id)}`)
   }
 
+  // Eén partij via een link of een geplakte PGN
+  const [paste, setPaste] = useState('')
+  const [pasteBusy, setPasteBusy] = useState(false)
+  const [pasteErr, setPasteErr] = useState<string | null>(null)
+  const [botLink, setBotLink] = useState<string | null>(null)
+  const myNames = [settings?.lichessUser, settings?.chesscomUser].filter((n): n is string => !!n)
+
+  async function openPasted(e: FormEvent) {
+    e.preventDefault()
+    const text = paste.trim()
+    if (!text) return
+    setPasteBusy(true); setPasteErr(null); setBotLink(null)
+    try {
+      const link = parseGameLink(text)
+      let game: ReviewGame | null = null
+      if (link?.kind === 'lichess') game = await fetchLichessGame(link.id, myNames)
+      else if (link?.kind === 'chesscom') {
+        if (link.type === 'computer') {
+          setBotLink(`https://www.chess.com/game/computer/${link.id}`)
+          throw new Error('Partijen tegen een bot haalt Chess.com niet op voor andere apps. Kopieer de PGN op Chess.com en plak die hier: open de partij, tik op Delen (het pijltje) → PGN → Kopiëren.')
+        }
+        const known = await db.reviews.get('cc:' + link.id)
+        game = known?.game ?? games?.find(g => g.id === 'cc:' + link.id) ?? null
+        if (!game && settings?.chesscomUser) game = await findChesscomGame(settings.chesscomUser, link.id)
+        if (!game) throw new Error(settings?.chesscomUser
+          ? `Deze partij staat niet in de partijen van ${settings.chesscomUser}. Kopieer op Chess.com de PGN (Delen → PGN) en plak die hier.`
+          : 'Chess.com-partijen zoek ik op via je gebruikersnaam. Haal eerst je Chess.com-partijen op hierboven, of plak de PGN (Delen → PGN op Chess.com).')
+      } else if (/^\s*(\[|1\.)/.test(text)) game = gameFromPgn(text, myNames)
+      else throw new Error('Dit herken ik niet. Plak een link naar een partij op Lichess of Chess.com, of een PGN.')
+      setPaste('')
+      await open(game)
+    } catch (e) {
+      setPasteErr(e instanceof TypeError ? 'Kon de partij niet ophalen. Controleer je internetverbinding.' : (e as Error).message)
+    } finally {
+      setPasteBusy(false)
+    }
+  }
+
   const earlier = saved.filter(r => !games?.some(g => g.id === r.id))
 
   return (
@@ -121,6 +160,18 @@ export function GameReviewList() {
           <button className="btn btn-primary" disabled={busy || !username}>Partijen ophalen</button>
         </div>
         <p className="text-xs text-muted">Je laatste 30 partijen. Stockfish rekent alles op je eigen apparaat; er wordt niets naar ons gestuurd.</p>
+      </form>
+
+      <form className="card space-y-2 p-4" onSubmit={openPasted}>
+        <label htmlFor="review-paste" className="font-semibold">Of analyseer één partij</label>
+        <textarea id="review-paste" className="input min-h-20 font-mono text-sm" rows={3} spellCheck={false} autoCapitalize="none"
+          placeholder="Plak een link (Lichess of Chess.com) of een PGN" value={paste} onChange={e => setPaste(e.target.value)} />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted">Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.</p>
+          <button className="btn btn-primary" disabled={pasteBusy || !paste.trim()}>{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
+        </div>
+        {pasteErr && <ErrorBox error={pasteErr} />}
+        {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
       </form>
 
       {busy && <Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} />}
@@ -139,7 +190,7 @@ export function GameReviewList() {
 
 /** Chess.com geeft alleen een URL-naam ("Kings Indian Attack"); de namenlijst van Lichess is netter en geeft ook de theorielengte */
 function withOpening(g: ReviewGame, names?: Record<string, [string, string, string]>): ReviewGame {
-  if (!names || g.source !== 'chesscom') return g
+  if (!names || (g.source === 'lichess' && g.bookPly !== undefined)) return g
   const b = bookInfo(g.san, names)
   return { ...g, opening: b.name ?? g.opening, bookPly: b.ply }
 }
@@ -159,7 +210,7 @@ function GameList({ title, games, saved, onOpen, action }: { title: string; game
           const acc = saved.get(g.id)?.accuracy?.[g.myColor]
           // Altijd met de huidige formule rekenen, ook voor eerder opgeslagen analyses
           const rec = saved.get(g.id)
-          const est = rec?.rating?.[g.myColor] != null && rec.accuracy ? estimateRating(rec.accuracy[g.myColor], g.source) : null
+          const est = rec?.rating?.[g.myColor] != null && rec.accuracy ? estimateRating(rec.accuracy[g.myColor], scaleOf(g.source)) : null
           return (
             <li key={g.id}>
               <button className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
@@ -311,7 +362,7 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
     <div className="space-y-4">
       <PageHeader back="/analyse" title={<>{game.white.name} <span className="text-muted">–</span> {game.black.name}</>}
         subtitle={<>{[game.result === '*' ? 'Nog bezig' : game.result.replace('1/2-1/2', '½-½'), game.ending, book.name, fmtDate(game.playedAt)].filter(Boolean).join(' · ')}
-          {' · '}<a className="inline-flex items-center gap-1 underline hover:text-ink" href={game.url} target="_blank" rel="noreferrer">{SOURCE_NAME[game.source]}<ExternalLink size={13} aria-hidden /></a></>} />
+          {game.url && <>{' · '}<a className="inline-flex items-center gap-1 underline hover:text-ink" href={game.url} target="_blank" rel="noreferrer">{SOURCE_NAME[game.source]}<ExternalLink size={13} aria-hidden /></a></>}</>} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         <div className="-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,640px)] lg:max-w-[min(680px,calc(100dvh-200px))]">
@@ -416,6 +467,7 @@ function MoveComment({ move, evalAfter, ply, ready, compact }: { move?: Reviewed
         </div>
         <span className="shrink-0 rounded-lg bg-surface-2 px-2 py-1 font-mono text-sm font-bold tabular-nums">{formatScore(evalAfter)}</span>
       </div>
+      {move.missedBrilliant && !compact && <p className="mt-2 flex items-center gap-2 text-sm font-semibold" style={{ color: CLASS_INFO.brilliant.color }}><MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zet: {move.bestSan}</p>}
       {showLine && <p className="mt-2 text-sm text-muted">Beste lijn: <span className="font-mono">{formatLine(move.bestLine, move.ply)}</span></p>}
     </div>
   )
@@ -448,7 +500,7 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
       </div>
       <p className="mt-2 text-center text-xs text-muted">{w.rating === null || b.rating === null
         ? `Een partijrating komt er vanaf ${MIN_RATED_MOVES} eigen zetten na de theorie.`
-        : `Partijrating (${SOURCE_NAME[game.source]}-schaal): de rating die typisch hoort bij deze nauwkeurigheid. Eén partij zegt niet alles.`}</p>
+        : `Partijrating (${game.source === 'chesscom' ? 'Chess.com' : 'Lichess'}-schaal): de rating die typisch hoort bij deze nauwkeurigheid. Eén partij zegt niet alles.`}</p>
       <table className="mt-3 w-full text-sm">
         <caption className="sr-only">Aantal zetten per beoordeling, wit en zwart</caption>
         <tbody>
@@ -461,7 +513,12 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
           ))}
         </tbody>
       </table>
+      {(w.missedBrilliants > 0 || b.missedBrilliants > 0) && (
+        <p className="mt-2 flex items-center justify-center gap-2 text-sm"><MoveClassIcon cls="brilliant" size={18} />
+          Gemiste briljante zetten: <b>{w.missedBrilliants}</b> wit, <b>{b.missedBrilliants}</b> zwart</p>
+      )}
       {myErrors > 0 && <button className="btn btn-primary mt-3 w-full" onClick={onNextError}><SkipForward size={18} aria-hidden />Naar je volgende fout <span className="font-normal opacity-80">({myErrors})</span></button>}
+      <p className="mt-3 text-center text-xs text-muted">{ENGINE_NAME} · diepte {DEPTH} · op je eigen apparaat</p>
     </div>
   )
 }

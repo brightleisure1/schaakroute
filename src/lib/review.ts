@@ -10,8 +10,9 @@ export interface ReviewPlayer { name: string; rating?: number }
 
 export interface ReviewGame {
   id: string
-  source: 'lichess' | 'chesscom'
-  url: string
+  source: 'lichess' | 'chesscom' | 'pgn'
+  /** Link naar de partij op het platform (niet bij een geplakte PGN zonder link) */
+  url?: string
   white: ReviewPlayer
   black: ReviewPlayer
   myColor: Side
@@ -72,6 +73,8 @@ export interface ReviewedMove {
   bestSan?: string
   /** Hoofdlijn vanaf de stelling vóór de zet, in SAN */
   bestLine: string[]
+  /** De beste zet was een briljant offer, maar werd niet gespeeld */
+  missedBrilliant?: boolean
 }
 
 export interface SideSummary {
@@ -79,6 +82,8 @@ export interface SideSummary {
   counts: Record<MoveClass, number>
   /** Geschatte partijrating, of null als er te weinig eigen zetten buiten de theorie waren */
   rating: number | null
+  /** Briljante zetten die er waren maar niet gespeeld werden */
+  missedBrilliants: number
 }
 
 // ---------------- Winstkans en nauwkeurigheid ----------------
@@ -112,8 +117,9 @@ export function gameAccuracy(accs: number[]): number {
 // ---------------- Offers herkennen ----------------
 
 /**
- * Laat de gespeelde zet een stuk (geen pion) staan dat de tegenstander met winst kan slaan?
- * Een eenvoudige ruilberekening op het doelveld: slaan met het goedkoopste stuk en terugslaan.
+ * Offert de gespeelde zet materiaal? Dat is zo als de tegenstander daarna een stuk (geen pion) met winst kan slaan:
+ * het stuk dat net zette, of een ander stuk dat je bewust laat staan. Een eenvoudige ruilberekening per veld:
+ * slaan met het goedkoopste stuk, en terugslaan als het veld gedekt is.
  */
 export function isSacrifice(fenBefore: string, uci: string): boolean {
   const c = new Chess(fenBefore)
@@ -123,16 +129,21 @@ export function isSacrifice(fenBefore: string, uci: string): boolean {
   } catch {
     return false
   }
-  const value = PIECE_VALUE[move.promotion ?? move.piece]
-  if (value < 3) return false
   const gained = move.captured ? PIECE_VALUE[move.captured] : 0
-  const takers = c.moves({ verbose: true }).filter(m => m.to === move.to && m.captured)
-  if (!takers.length) return false
-  const cheapest = Math.min(...takers.map(m => PIECE_VALUE[m.piece]))
-  const defended = c.attackers(move.to as Square, move.color).length > 0
-  // Een koning kan alleen slaan op een onverdedigd veld; die zet staat dan al niet tussen de legale zetten
-  const net = defended ? gained - value + cheapest : gained - value
-  return net <= -2
+  const replies = c.moves({ verbose: true }).filter(m => m.captured && m.captured !== 'p')
+  const squares = new Set(replies.map(m => m.to))
+  for (const sq of squares) {
+    const piece = c.get(sq as Square)
+    if (!piece || piece.color !== move.color) continue
+    const value = PIECE_VALUE[piece.type]
+    if (value < 3) continue
+    const cheapest = Math.min(...replies.filter(m => m.to === sq).map(m => PIECE_VALUE[m.piece] || 100))
+    const defended = c.attackers(sq as Square, move.color).length > 0
+    // Een koning kan alleen slaan op een onverdedigd veld; die zet staat dan al niet tussen de legale zetten
+    const net = defended ? gained - value + cheapest : gained - value
+    if (net <= -2) return true
+  }
+  return false
 }
 
 // ---------------- Zetten beoordelen ----------------
@@ -181,8 +192,10 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
       const prev = out[ply - 1]
       // Gemist: de tegenstander gaf iets weg en jij profiteerde niet
       if ((cls === 'inaccuracy' || cls === 'mistake') && loss > 7 && prev && (prev.cls === 'mistake' || prev.cls === 'blunder' || prev.cls === 'miss')) cls = 'miss'
-      if ((cls === 'best' || cls === 'excellent') && forSide(wpAfter, side) >= 50) {
-        if (isSacrifice(fen, uci) && forSide(wpBefore, side) < 98) cls = 'brilliant'
+      if ((cls === 'best' || cls === 'excellent') && forSide(wpAfter, side) >= 45) {
+        // Offer in een nog niet beslissende stelling, of een offer dat tot mat leidt
+        const matingSac = isBest && after.mate !== undefined && (side === 'white' ? after.mate > 0 : after.mate < 0)
+        if ((forSide(wpBefore, side) < 98 || matingSac) && isSacrifice(fen, uci)) cls = 'brilliant'
         else if (isBest && legal > 1 && (before.cp2 !== undefined || before.mate2 !== undefined)) {
           // Enige goede zet: de op één na beste zet is veel slechter en de stelling was nog niet beslist
           const second = forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side)
@@ -192,8 +205,11 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
       }
     }
 
+    // Gemiste briljante zet: de beste zet was een offer en jij speelde iets duidelijk slechters
+    const missedBrilliant = cls !== 'book' && !isBest && loss >= 5 && !!before.best && forSide(wpBefore, side) >= 45 && forSide(wpBefore, side) < 98 && isSacrifice(fen, before.best)
     const bestLine = before.pv?.length ? sanLine(fen, before.pv.slice(0, 6)) : []
     out.push({
+      missedBrilliant,
       ply, san: m.san, uci, side, cls, loss,
       accuracy: cls === 'book' ? 100 : moveAccuracy(loss),
       wpBefore, wpAfter,
@@ -204,13 +220,14 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
   return out
 }
 
-export function summarize(moves: ReviewedMove[], side: Side, scale: RatingScale = 'lichess'): SideSummary {
+export function summarize(moves: ReviewedMove[], side: Side, source: ReviewGame['source'] = 'lichess'): SideSummary {
+  const scale: RatingScale = source === 'chesscom' ? 'chesscom' : 'lichess'
   const own = moves.filter(m => m.side === side)
   const counts = Object.fromEntries(CLASS_ORDER.map(k => [k, 0])) as Record<MoveClass, number>
   for (const m of own) counts[m.cls]++
   const accuracy = gameAccuracy(own.map(m => m.accuracy))
   const played = own.filter(m => m.cls !== 'book').length
-  return { accuracy, counts, rating: played >= MIN_RATED_MOVES ? estimateRating(accuracy, scale) : null }
+  return { accuracy, counts, rating: played >= MIN_RATED_MOVES ? estimateRating(accuracy, scale) : null, missedBrilliants: own.filter(m => m.missedBrilliant).length }
 }
 
 // ---------------- Partijrating ----------------
@@ -250,6 +267,11 @@ export function estimateRating(accuracy: number, scale: RatingScale = 'lichess')
 
 /** Korte uitleg bij een zet, in gewone taal */
 export function explainMove(m: ReviewedMove): string {
+  const text = explainClass(m)
+  return m.missedBrilliant && m.bestSan ? `${text} Er was een briljante zet: ${m.bestSan}!` : text
+}
+
+function explainClass(m: ReviewedMove): string {
   const best = m.bestSan && m.bestUci !== m.uci ? m.bestSan : null
   switch (m.cls) {
     case 'brilliant': return `${m.san} is briljant: je offert materiaal en het is de beste zet.`
@@ -275,6 +297,9 @@ export function formatScore(e: PosEval | undefined): string {
   return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1)
 }
 
+/** Welke engine de analyse doet (zie public/engine/SOURCE.md) */
+export const ENGINE_NAME = 'Stockfish 19 (lite, NNUE)'
+
 // ---------------- Partijen ophalen ----------------
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
@@ -291,24 +316,33 @@ export async function fetchLichessRecent(username: string, max = 30): Promise<Re
   if (res.status === 429) throw new Error('Lichess vraagt even te wachten. Probeer het over een minuut opnieuw.')
   if (!res.ok) throw new Error(`Lichess gaf foutcode ${res.status}`)
   const text = await res.text()
-  const lower = username.toLowerCase()
-  const out: ReviewGame[] = []
-  for (const line of text.split('\n')) {
-    if (!line.trim()) continue
-    const g = JSON.parse(line)
-    if (g.variant !== 'standard' || !g.moves || g.initialFen) continue
-    const name = (p: { user?: { name?: string }; aiLevel?: number } | undefined) => p?.user?.name ?? (p?.aiLevel ? `Stockfish niveau ${p.aiLevel}` : 'Anoniem')
-    const white = { name: name(g.players?.white), rating: g.players?.white?.rating }
-    const black = { name: name(g.players?.black), rating: g.players?.black?.rating }
-    out.push({
-      id: 'li:' + g.id, source: 'lichess', url: `https://lichess.org/${g.id}`,
-      white, black, myColor: black.name.toLowerCase() === lower ? 'black' : 'white',
-      result: g.winner === 'white' ? '1-0' : g.winner === 'black' ? '0-1' : g.status === 'started' ? '*' : '1/2-1/2',
-      ending: LICHESS_ENDING[g.status] ?? g.status, speed: g.speed, playedAt: g.createdAt,
-      opening: g.opening?.name, bookPly: g.opening?.ply, san: String(g.moves).split(' ').filter(Boolean),
-    })
+  return text.split('\n').filter(l => l.trim()).map(l => lichessGame(JSON.parse(l), [username])).filter((g): g is ReviewGame => !!g)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function lichessGame(g: any, myNames: string[]): ReviewGame | null {
+  if (g.variant !== 'standard' || !g.moves || g.initialFen) return null
+  const name = (p: { user?: { name?: string }; aiLevel?: number } | undefined) => p?.user?.name ?? (p?.aiLevel ? `Stockfish niveau ${p.aiLevel}` : 'Anoniem')
+  const white = { name: name(g.players?.white), rating: g.players?.white?.rating }
+  const black = { name: name(g.players?.black), rating: g.players?.black?.rating }
+  const mine = myNames.map(n => n.toLowerCase())
+  return {
+    id: 'li:' + g.id, source: 'lichess', url: `https://lichess.org/${g.id}`,
+    white, black, myColor: mine.includes(black.name.toLowerCase()) && !mine.includes(white.name.toLowerCase()) ? 'black' : 'white',
+    result: g.winner === 'white' ? '1-0' : g.winner === 'black' ? '0-1' : g.status === 'started' ? '*' : '1/2-1/2',
+    ending: LICHESS_ENDING[g.status] ?? g.status, speed: g.speed, playedAt: g.createdAt,
+    opening: g.opening?.name, bookPly: g.opening?.ply, san: String(g.moves).split(' ').filter(Boolean),
   }
-  return out
+}
+
+/** Eén Lichess-partij ophalen op ID (8 tekens) */
+export async function fetchLichessGame(id: string, myNames: string[]): Promise<ReviewGame> {
+  const res = await fetch(`https://lichess.org/game/export/${id}?moves=true&opening=true&clocks=false&evals=false`, { headers: { Accept: 'application/json' } })
+  if (res.status === 404) throw new Error('Deze Lichess-partij bestaat niet (meer).')
+  if (!res.ok) throw new Error(`Lichess gaf foutcode ${res.status}`)
+  const g = lichessGame(await res.json(), myNames)
+  if (!g) throw new Error('Dit is geen gewone schaakpartij vanaf de beginstelling.')
+  return g
 }
 
 interface ChesscomGame {
@@ -344,6 +378,66 @@ export function chesscomGame(g: ChesscomGame, username: string): ReviewGame | nu
     white: { name: g.white.username, rating: g.white.rating }, black: { name: g.black.username, rating: g.black.rating },
     myColor, result, ending: CHESSCOM_ENDING[loserResult] ?? loserResult, speed: g.time_class,
     playedAt: g.end_time * 1000, opening, san,
+  }
+}
+
+/** Zoekt een Chess.com-partij op ID in de archieven van een speler (hooguit de laatste 6 maanden) */
+export async function findChesscomGame(username: string, id: string): Promise<ReviewGame | null> {
+  const res = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username.toLowerCase())}/games/archives`)
+  if (!res.ok) return null
+  const { archives } = (await res.json()) as { archives: string[] }
+  for (const url of archives.slice(-6).reverse()) {
+    const r = await fetch(url)
+    if (!r.ok) continue
+    const { games } = (await r.json()) as { games: ChesscomGame[] }
+    const g = games.find(g => g.url.split('/').pop() === id)
+    if (g) return chesscomGame(g, username)
+    await sleep(300)
+  }
+  return null
+}
+
+export type GameLink = { kind: 'lichess'; id: string } | { kind: 'chesscom'; type: 'live' | 'daily' | 'computer'; id: string }
+
+/** Herkent een link naar een partij op Lichess of Chess.com */
+export function parseGameLink(text: string): GameLink | null {
+  const t = text.trim()
+  const li = t.match(/lichess\.org\/(?:embed\/)?(?:game\/export\/)?([a-zA-Z0-9]{8})(?:[a-zA-Z0-9]{4})?(?:[/?#]|$)/)
+  if (li && !/^(training|study|analysis|tv|games|editor|practice|learn|streamer|broadcast|tournament|swiss|simul|team|forum|blog|player|paste|account)$/.test(li[1])) return { kind: 'lichess', id: li[1] }
+  const cc = t.match(/chess\.com\/(?:analysis\/)?game\/(live|daily|computer)\/(\d+)/) ?? t.match(/chess\.com\/(live|daily)\/game\/(\d+)/)
+  if (cc) return { kind: 'chesscom', type: cc[1] as 'live' | 'daily' | 'computer', id: cc[2] }
+  return null
+}
+
+const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36) }
+
+/** Zet een geplakte PGN om; `myNames` zijn je gebruikersnamen om je kleur te herkennen */
+export function gameFromPgn(pgn: string, myNames: string[]): ReviewGame {
+  const c = new Chess()
+  try {
+    c.loadPgn(pgn.trim())
+  } catch {
+    throw new Error('Dit lijkt geen geldige PGN. Kopieer de hele PGN, inclusief de regels tussen [ ].')
+  }
+  const h = c.getHeaders()
+  if (h.SetUp === '1' || (h.FEN && !h.FEN.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'))) throw new Error('Alleen partijen vanaf de beginstelling kunnen geanalyseerd worden.')
+  const san = c.history()
+  if (!san.length) throw new Error('Deze PGN bevat geen zetten.')
+  const site = h.Link ?? h.Site ?? ''
+  const source: ReviewGame['source'] = /chess\.com/i.test(site) ? 'chesscom' : /lichess\.org/i.test(site) ? 'lichess' : 'pgn'
+  const white = { name: h.White && h.White !== '?' ? h.White : 'Wit', rating: Number(h.WhiteElo) || undefined }
+  const black = { name: h.Black && h.Black !== '?' ? h.Black : 'Zwart', rating: Number(h.BlackElo) || undefined }
+  const mine = myNames.map(n => n.toLowerCase())
+  const myColor: Side = mine.includes(black.name.toLowerCase()) && !mine.includes(white.name.toLowerCase()) ? 'black' : 'white'
+  const date = (h.UTCDate ?? h.Date ?? '').replace(/\./g, '-')
+  const playedAt = Date.parse(`${date}T${h.UTCTime ?? '12:00:00'}Z`) || Date.now()
+  const result = h.Result === '1-0' || h.Result === '0-1' || h.Result === '1/2-1/2' ? h.Result : '*'
+  const ccId = site.match(/chess\.com\/game\/(?:live|daily|computer)\/(\d+)/)?.[1]
+  const liId = site.match(/lichess\.org\/([a-zA-Z0-9]{8})/)?.[1]
+  return {
+    id: ccId ? 'cc:' + ccId : liId ? 'li:' + liId : 'pgn:' + hash(`${h.White}|${h.Black}|${date}|${san.join(' ')}`),
+    source, url: /^https?:/.test(site) ? site : undefined, white, black, myColor, result,
+    ending: san[san.length - 1].endsWith('#') ? 'mat' : undefined, playedAt, opening: h.Opening, san,
   }
 }
 

@@ -139,6 +139,20 @@ function RouteMemory() {
   return null
 }
 
+/**
+ * Vraagt de browser je gegevens blijvend te bewaren. Zonder die toestemming mag een browser de opslag van
+ * een website opruimen (bij ruimtegebrek, of bij Safari na een tijd niet gebruiken), en dan zijn je
+ * openingskeuzes, voortgang en analyses weg. Pas vragen als er iets te bewaren is.
+ */
+function PersistStorage() {
+  const active = !!useSettings()?.onboarded
+  useEffect(() => {
+    if (!active || !navigator.storage?.persist) return
+    navigator.storage.persisted().then(p => (p ? true : navigator.storage.persist())).catch(() => {})
+  }, [active])
+  return null
+}
+
 function Shell() {
   const settings = useSettings()
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
@@ -295,6 +309,7 @@ export default function App() {
   return (
     <HashRouter>
       <ThemeSync />
+      <PersistStorage />
       <RouteMemory />
       <ScrollTop />
       <Shell />

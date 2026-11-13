@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, estimateRating, explainMove, formatScore, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, estimateRating, explainMove, formatScore, gameFromPgn, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -105,5 +105,40 @@ describe('partijrating', () => {
     const san = ['e4', 'e5', 'Nf3', 'Nc6']
     const e: PosEval[] = Array.from({ length: 5 }, () => ({ cp: 20 }))
     expect(summarize(classifyGame(san, e), 'white').rating).toBeNull()
+  })
+})
+
+describe('briljant, links en PGN', () => {
+  it('een stuk laten staan voor een sterkere zet telt als offer (Légal: 5.Pxe5 en de dame staat aan)', () => {
+    // 1.e4 e5 2.Nf3 d6 3.Bc4 Bg4 4.Nc3 g6 — wit speelt 5.Nxe5 en laat de dame op d1 slaan
+    const fen = 'rn1qkbnr/ppp2p1p/3p2p1/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 5'
+    expect(isSacrifice(fen, 'f3e5')).toBe(true)
+  })
+  it('herkent links naar partijen', () => {
+    expect(parseGameLink('https://lichess.org/iVshKPMF')).toEqual({ kind: 'lichess', id: 'iVshKPMF' })
+    expect(parseGameLink('https://lichess.org/iVshKPMFabcd/black#12')).toEqual({ kind: 'lichess', id: 'iVshKPMF' })
+    expect(parseGameLink('https://www.chess.com/game/computer/2635491810')).toEqual({ kind: 'chesscom', type: 'computer', id: '2635491810' })
+    expect(parseGameLink('https://www.chess.com/game/live/187092403126')).toEqual({ kind: 'chesscom', type: 'live', id: '187092403126' })
+    expect(parseGameLink('https://lichess.org/training/abc12345')).toBeNull()
+    expect(parseGameLink('1. e4 e5')).toBeNull()
+  })
+  it('zet een geplakte PGN van een botpartij om', () => {
+    const g = gameFromPgn('[Site "Chess.com"]\n[White "Bot Nelson"]\n[Black "devin"]\n[Result "0-1"]\n[Link "https://www.chess.com/game/computer/2635491810"]\n\n1. f3 e5 2. g4 Qh4# 0-1', ['Devin'])
+    expect(g).toMatchObject({ id: 'cc:2635491810', source: 'chesscom', myColor: 'black', result: '0-1', ending: 'mat' })
+    expect(() => gameFromPgn('geen pgn', [])).toThrow()
+  })
+})
+
+describe('briljant bij een matcombinatie', () => {
+  it('16.Db8+ in de Opera-partij is briljant, ook al stond wit al gewonnen', () => {
+    const san = '1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 cxb5 11.Bxb5+ Nbd7 12.O-O-O Rd8 13.Rxd7 Rxd7 14.Rd1 Qe6 15.Bxd7+ Nxd7 16.Qb8+ Nxb8 17.Rd8#'
+      .replace(/\d+\./g, '').split(/\s+/).filter(Boolean)
+    const evals: PosEval[] = san.map((_, i) => (i < 30 ? { cp: i % 2 ? 300 : 320 } : i === 30 ? { mate: 2, best: 'b3b8' } : { mate: 1, best: 'd1d8' }))
+    evals.push({ cp: 10000 })
+    evals[31] = { mate: 1, best: 'b8b8' } // na 16.Db8+ (zwart aan zet): wit geeft mat in 1
+    evals[32] = { mate: 1, best: 'd1d8' }
+    const moves = classifyGame(san, evals)
+    expect(moves[30].san).toBe('Qb8+')
+    expect(moves[30].cls).toBe('brilliant')
   })
 })
