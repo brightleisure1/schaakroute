@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BookMarked, ChartColumn, ChessKnight, Download, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { BookMarked, ChartColumn, ChessKnight, Download, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -23,6 +23,8 @@ const RepertoireEditor = lazy(() => import('./pages/Repertoire').then(m => ({ de
 const RepertoireTrain = lazy(() => import('./pages/Repertoire').then(m => ({ default: m.RepertoireTrain })))
 const Statistics = lazy(() => import('./pages/Statistics').then(m => ({ default: m.Statistics })))
 const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ default: m.ImportGames })))
+const GameReviewList = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewList })))
+const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
 
@@ -44,6 +46,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
       { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat er gespeeld wordt en wat scoort' },
       { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen samenstellen' },
+      { to: '/analyse', label: 'Partij-analyse', icon: Microscope, desc: 'Je partijen zet voor zet laten beoordelen' },
       { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Je partijen van Lichess of Chess.com' },
     ],
   },
@@ -59,7 +62,7 @@ interface NavItem { to: string; label: string; short?: string; icon: LucideIcon;
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
-const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train)/
+const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/)/
 
 /**
  * Zet --bottom-nav op de pagina: de ruimte die de tabbalk inneemt. Vastgeplakte knoppen blijven erboven
@@ -205,6 +208,8 @@ function Shell() {
               <Route path="/repertoire/:id/train" element={<RepertoireTrain />} />
               <Route path="/statistieken" element={<Statistics />} />
               <Route path="/import" element={<ImportGames />} />
+              <Route path="/analyse" element={<GameReviewList />} />
+              <Route path="/analyse/:id" element={<GameReviewView />} />
               <Route path="/instellingen" element={<Settings />} />
               <Route path="/bronnen" element={<Sources />} />
               <Route path="*" element={<Navigate to="/" replace />} />

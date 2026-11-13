@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Side } from './types'
 import type { SrsState } from './srs'
+import type { PosEval, ReviewGame } from './review'
 
 // Lokale database (IndexedDB via Dexie). Gebruikersgegevens staan los van de dataset-cache,
 // zodat een nieuwe datasetversie nooit voortgang wist.
@@ -137,6 +138,18 @@ export interface ImportedGame {
   opening?: string
 }
 
+/** Een partij uit de partij-analyse, met het (eventueel nog onvolledige) engine-oordeel per stelling */
+export interface GameReviewRecord {
+  id: string
+  game: ReviewGame
+  evals: PosEval[]
+  depth: number
+  savedAt: number
+  analysedAt?: number
+  /** Nauwkeurigheid van wit en zwart, als de analyse klaar is */
+  accuracy?: { white: number; black: number }
+}
+
 export interface Badge {
   id: string
   earnedAt: number
@@ -167,6 +180,7 @@ export class SchaakDB extends Dexie {
   badges!: EntityTable<Badge, 'id'>
   meta!: EntityTable<Meta, 'key'>
   datasets!: EntityTable<DatasetCache, 'key'>
+  reviews!: EntityTable<GameReviewRecord, 'id'>
 
   constructor(name = 'schaakroute') {
     super(name)
@@ -185,6 +199,7 @@ export class SchaakDB extends Dexie {
       meta: 'key',
       datasets: 'key',
     })
+    this.version(2).stores({ reviews: 'id, savedAt' })
   }
 }
 
