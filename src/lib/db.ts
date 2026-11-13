@@ -148,6 +148,8 @@ export interface GameReviewRecord {
   analysedAt?: number
   /** Nauwkeurigheid van wit en zwart, als de analyse klaar is */
   accuracy?: { white: number; black: number }
+  /** Geschatte partijrating van wit en zwart (null: te kort voor een schatting) */
+  rating?: { white: number | null; black: number | null }
 }
 
 export interface Badge {

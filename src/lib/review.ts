@@ -74,7 +74,12 @@ export interface ReviewedMove {
   bestLine: string[]
 }
 
-export interface SideSummary { accuracy: number; counts: Record<MoveClass, number> }
+export interface SideSummary {
+  accuracy: number
+  counts: Record<MoveClass, number>
+  /** Geschatte partijrating, of null als er te weinig eigen zetten buiten de theorie waren */
+  rating: number | null
+}
 
 // ---------------- Winstkans en nauwkeurigheid ----------------
 
@@ -203,7 +208,28 @@ export function summarize(moves: ReviewedMove[], side: Side): SideSummary {
   const own = moves.filter(m => m.side === side)
   const counts = Object.fromEntries(CLASS_ORDER.map(k => [k, 0])) as Record<MoveClass, number>
   for (const m of own) counts[m.cls]++
-  return { accuracy: gameAccuracy(own.map(m => m.accuracy)), counts }
+  const accuracy = gameAccuracy(own.map(m => m.accuracy))
+  const played = own.filter(m => m.cls !== 'book').length
+  return { accuracy, counts, rating: played >= MIN_RATED_MOVES ? estimateRating(accuracy) : null }
+}
+
+// ---------------- Partijrating ----------------
+
+/** Zoveel eigen zetten buiten de theorie zijn nodig voor een schatting */
+export const MIN_RATED_MOVES = 10
+
+/**
+ * Verband tussen rating en nauwkeurigheid, geijkt met scripts/calibrate-game-rating.mjs op 264 rated
+ * blitz- en rapidpartijen van Lichess (september 2026, ratings 600–2600, Stockfish diepte 12):
+ * nauwkeurigheid ≈ 60,66 + 1,21 per 100 ratingpunten.
+ */
+export const ACCURACY_AT_ZERO = 60.66
+export const ACCURACY_PER_100 = 1.21
+
+/** Op welke rating iemand in deze partij speelde, geschat uit de nauwkeurigheid (afgerond op 10) */
+export function estimateRating(accuracy: number): number {
+  const r = ((accuracy - ACCURACY_AT_ZERO) / ACCURACY_PER_100) * 100
+  return Math.round(Math.max(100, Math.min(3200, r)) / 10) * 10
 }
 
 /** Korte uitleg bij een zet, in gewone taal */

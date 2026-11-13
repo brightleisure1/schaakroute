@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, explainMove, formatScore, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, estimateRating, explainMove, formatScore, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -86,5 +86,19 @@ describe('theorie en Chess.com', () => {
       white: { username: 'Anna', rating: 1200, result: 'checkmated' }, black: { username: 'Bob', rating: 1250, result: 'win' },
     }, 'bob')
     expect(g).toMatchObject({ id: 'cc:123', myColor: 'black', result: '0-1', ending: 'mat', san: ['f3', 'e5', 'g4', 'Qh4#'] })
+  })
+})
+
+describe('partijrating', () => {
+  it('hogere nauwkeurigheid geeft een hogere rating, binnen 100–3200', () => {
+    expect(estimateRating(80)).toBe(1600)
+    expect(estimateRating(90)).toBeGreaterThan(estimateRating(85))
+    expect(estimateRating(30)).toBe(100)
+    expect(estimateRating(100)).toBe(3200)
+  })
+  it('geen schatting bij te weinig eigen zetten buiten de theorie', () => {
+    const san = ['e4', 'e5', 'Nf3', 'Nc6']
+    const e: PosEval[] = Array.from({ length: 5 }, () => ({ cp: 20 }))
+    expect(summarize(classifyGame(san, e), 'white').rating).toBeNull()
   })
 })

@@ -8,7 +8,7 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, bookInfo, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, bookInfo, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board } from '../components/Board'
@@ -156,6 +156,7 @@ function GameList({ title, games, saved, onOpen, action }: { title: string; game
           const opp = g.myColor === 'white' ? g.black : g.white
           const o = OUTCOME[outcome(g)]
           const acc = saved.get(g.id)?.accuracy?.[g.myColor]
+          const est = saved.get(g.id)?.rating?.[g.myColor]
           return (
             <li key={g.id}>
               <button className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
@@ -170,7 +171,7 @@ function GameList({ title, games, saved, onOpen, action }: { title: string; game
                   </span>
                 </span>
                 {acc !== undefined
-                  ? <span className="shrink-0 text-right"><span className="block text-lg font-bold tabular-nums">{fmtPct(acc)}</span><span className="block text-xs text-muted">nauwkeurig</span></span>
+                  ? <span className="shrink-0 text-right"><span className="block text-lg font-bold tabular-nums">{est ?? fmtPct(acc)}</span><span className="block text-xs text-muted">{est ? 'partijrating' : 'nauwkeurig'}</span></span>
                   : <ChevronRight size={20} className="shrink-0 text-muted" aria-hidden />}
               </button>
             </li>
@@ -265,8 +266,13 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
   // Nauwkeurigheid bewaren voor de partijlijst, met dezelfde theorielengte als hier
   useEffect(() => {
     if (!ready || !names.data || !moves.length) return
-    const accuracy = { white: summarize(moves, 'white').accuracy, black: summarize(moves, 'black').accuracy }
-    if (record.accuracy?.white !== accuracy.white || record.accuracy?.black !== accuracy.black) db.reviews.update(record.id, { accuracy })
+    const w = summarize(moves, 'white')
+    const b = summarize(moves, 'black')
+    const accuracy = { white: w.accuracy, black: b.accuracy }
+    const rating = { white: w.rating, black: b.rating }
+    if (record.accuracy?.white !== accuracy.white || record.accuracy?.black !== accuracy.black || record.rating?.white !== rating.white || record.rating?.black !== rating.black) {
+      db.reviews.update(record.id, { accuracy, rating })
+    }
   }, [ready, names.data, moves]) // eslint-disable-line react-hooks/exhaustive-deps
   const [ply, setPly] = useState(0)
   const [orientation, setOrientation] = useState<Side>(game.myColor)
@@ -440,7 +446,16 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
         <div><div className="truncate text-sm text-muted">{game.white.name}</div><div className="text-3xl font-extrabold tabular-nums">{fmtPct(w.accuracy)}</div></div>
         <div className="pb-1.5 text-xs text-muted">nauw&shy;keurig&shy;heid</div>
         <div><div className="truncate text-sm text-muted">{game.black.name}</div><div className="text-3xl font-extrabold tabular-nums">{fmtPct(b.accuracy)}</div></div>
+        <div className="text-xl font-bold tabular-nums">{w.rating ?? '–'}</div>
+        <div className="pb-0.5 text-xs text-muted">partij&shy;rating</div>
+        <div className="text-xl font-bold tabular-nums">{b.rating ?? '–'}</div>
+        <div className="-mt-2 text-xs text-muted">{game.white.rating ? `rating ${game.white.rating}` : ''}</div>
+        <div />
+        <div className="-mt-2 text-xs text-muted">{game.black.rating ? `rating ${game.black.rating}` : ''}</div>
       </div>
+      <p className="mt-2 text-center text-xs text-muted">{w.rating === null || b.rating === null
+        ? `Een partijrating komt er vanaf ${MIN_RATED_MOVES} eigen zetten na de theorie.`
+        : 'Partijrating: op welk niveau er in deze partij gespeeld werd, geschat uit de nauwkeurigheid. Eén partij zegt niet alles.'}</p>
       <table className="mt-3 w-full text-sm">
         <caption className="sr-only">Aantal zetten per beoordeling, wit en zwart</caption>
         <tbody>
