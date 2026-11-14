@@ -24,6 +24,7 @@ const RepertoireTrain = lazy(() => import('./pages/Repertoire').then(m => ({ def
 const Statistics = lazy(() => import('./pages/Statistics').then(m => ({ default: m.Statistics })))
 const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ default: m.ImportGames })))
 const GameReviewList = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewList })))
+const MistakeTrainerView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.MistakeTrainerView })))
 const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
@@ -224,6 +225,7 @@ function Shell() {
               <Route path="/import" element={<ImportGames />} />
               <Route path="/analyse" element={<GameReviewList />} />
               <Route path="/analyse/:id" element={<GameReviewView />} />
+              <Route path="/analyse/:id/fouten" element={<MistakeTrainerView />} />
               <Route path="/instellingen" element={<Settings />} />
               <Route path="/bronnen" element={<Sources />} />
               <Route path="*" element={<Navigate to="/" replace />} />

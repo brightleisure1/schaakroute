@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, FlipVertical2, SkipForward } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Dumbbell, ExternalLink, FlipVertical2, SkipForward } from 'lucide-react'
 import { db, saveSettings, type GameReviewRecord } from '../lib/db'
 import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
@@ -12,8 +12,9 @@ import {
   type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board } from '../components/Board'
+import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
-import { Empty, ErrorBox, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
+import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 
 /** Rekendiepte van Stockfish per stelling: een paar seconden per partij op een gewone laptop of telefoon */
@@ -482,6 +483,7 @@ function formatLine(san: string[], startPly: number): string {
 }
 
 function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: ReviewGame; onNextError: () => void }) {
+  const navigate = useNavigate()
   const w = summarize(moves, 'white', game.source)
   const b = summarize(moves, 'black', game.source)
   const myErrors = moves.filter(m => m.side === game.myColor && ERRORS.includes(m.cls)).length
@@ -517,7 +519,12 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
         <p className="mt-2 flex items-center justify-center gap-2 text-sm"><MoveClassIcon cls="brilliant" size={18} />
           Gemiste briljante zetten: <b>{w.missedBrilliants}</b> wit, <b>{b.missedBrilliants}</b> zwart</p>
       )}
-      {myErrors > 0 && <button className="btn btn-primary mt-3 w-full" onClick={onNextError}><SkipForward size={18} aria-hidden />Naar je volgende fout <span className="font-normal opacity-80">({myErrors})</span></button>}
+      {myErrors > 0 && (
+        <div className="mt-3 grid gap-2">
+          <button className="btn btn-primary min-h-12 w-full" onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}><Dumbbell size={18} aria-hidden />Train je fouten <span className="font-normal opacity-80">({myErrors})</span></button>
+          <button className="btn btn-ghost w-full" onClick={onNextError}><SkipForward size={18} aria-hidden />Naar je volgende fout</button>
+        </div>
+      )}
       <p className="mt-3 text-center text-xs text-muted">{ENGINE_NAME} · diepte {DEPTH} · op je eigen apparaat</p>
     </div>
   )
@@ -585,3 +592,201 @@ function MoveList({ san, moves, ply, onPick }: { san: string[]; moves: ReviewedM
   )
 }
 
+
+// ---------------- Fouten-trainer ----------------
+
+export function MistakeTrainerView() {
+  const { id = '' } = useParams()
+  const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
+  // Eén keer vastleggen: tussentijdse updates van het record (nauwkeurigheid) mogen de trainer niet herstarten
+  const [snapshot, setSnapshot] = useState<GameReviewRecord | null>(null)
+  useEffect(() => { if (record && !snapshot) setSnapshot(record) }, [record, snapshot])
+  if (record === null || (record && !snapshot)) return <Spinner label="Partij laden…" />
+  if (!record || !snapshot) return <Navigate to="/analyse" replace />
+  return <MistakeTrainer record={snapshot} />
+}
+
+function MistakeTrainer({ record }: { record: GameReviewRecord }) {
+  const game = record.game
+  const navigate = useNavigate()
+  const back = `/analyse/${encodeURIComponent(game.id)}`
+  const names = useAsync(() => loadNames(), [])
+  const fens = useMemo(() => fensOf(game.san), [game.san])
+  const analysed = record.depth === DEPTH && record.evals.length >= fens.length
+  const items = useMemo(() => {
+    if (!names.data || !analysed) return null
+    const ply = Math.max(bookInfo(game.san, names.data).ply, game.bookPly ?? 0)
+    return mistakeItems(classifyGame(game.san, record.evals, ply), game.myColor, fens)
+  }, [names.data, analysed, game, record.evals, fens])
+  const [round, setRound] = useState(0)
+  const [queue, setQueue] = useState<number[] | null>(null)
+  const [pos, setPos] = useState(0)
+  const [solved, setSolved] = useState<Map<number, boolean>>(new Map())
+  const [added, setAdded] = useState<number | null>(null)
+  useEffect(() => { if (items && !queue) setQueue(items.map((_, i) => i)) }, [items, queue])
+
+  if (!analysed) return <Empty title="Deze partij is nog niet geanalyseerd" action={<Link className="btn btn-primary" to={back}>Naar de analyse</Link>}>Laat Stockfish eerst de partij beoordelen.</Empty>
+  if (!items || !queue) return <Spinner label="Fouten zoeken…" />
+  if (!items.length) return <Empty title="Geen fouten om te trainen" action={<Link className="btn btn-primary" to={back}>Terug naar de analyse</Link>}>In deze partij maakte je geen onnauwkeurigheden, fouten of blunders. Knap!</Empty>
+
+  const close = () => navigate(back)
+  if (pos >= queue.length) {
+    const firstTry = items.filter(it => solved.get(it.ply)).length
+    const failed = items.map((it, i) => (solved.get(it.ply) ? -1 : i)).filter(i => i >= 0)
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        <FocusBar value={1} count={`${items.length} / ${items.length}`} sub="Fouten-trainer" onClose={close} closeLabel="Terug naar de analyse" />
+        <div className="card p-5 text-center">
+          <h1 className="text-2xl font-bold">{firstTry === items.length ? 'Alles in één keer goed!' : 'Klaar met je fouten'}</h1>
+          <p className="mt-1 text-muted">{firstTry} van {plural(items.length, 'stelling', 'stellingen')} goed, zonder hint en in één keer.</p>
+          <ul className="mt-4 divide-y divide-line text-left text-sm">
+            {items.map(it => (
+              <li key={it.ply} className="flex items-center gap-2 py-2">
+                <MoveClassIcon cls={it.played.cls} size={20} />
+                <span className="font-mono">{formatLine([it.played.san], it.ply)}</span>
+                <span className="text-muted">→ {it.bestSan}</span>
+                <span className={`ml-auto font-semibold ${solved.get(it.ply) ? 'text-brand-strong' : 'text-danger-ink'}`}>{solved.get(it.ply) ? 'goed' : 'nog oefenen'}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 grid gap-2">
+            {added === null
+              ? <button className="btn btn-primary min-h-12" onClick={async () => setAdded(await saveMistakeCards(items, p => !!solved.get(p), game.myColor))}>Zet deze stellingen in Herhalen</button>
+              : <p className="rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong">{added ? `${plural(added, 'stelling', 'stellingen')} toegevoegd aan Herhalen.` : 'Deze stellingen staan al in Herhalen.'} Wat je nog moet oefenen komt meteen terug.</p>}
+            {failed.length > 0 && <button className="btn btn-ghost min-h-12" onClick={() => { setQueue(failed); setPos(0); setRound(r => r + 1) }}>Mislukte opnieuw ({failed.length})</button>}
+            <Link className="btn btn-quiet min-h-12" to={back}>Terug naar de analyse</Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const item = items[queue[pos]]
+  return (
+    <div>
+      <FocusBar value={pos / queue.length} count={`${pos + 1} / ${queue.length}`} sub={round ? 'Fouten-trainer · herkansing' : 'Fouten-trainer'} onClose={close} closeLabel="Stoppen, terug naar de analyse" />
+      <MistakeStep key={`${round}-${item.ply}`} item={item} game={game} fens={fens} evals={record.evals}
+        onDone={ok => { if (round === 0) setSolved(m => new Map(m).set(item.ply, ok)); else if (ok) setSolved(m => new Map(m).set(item.ply, true)) }}
+        onNext={() => setPos(p => p + 1)} last={pos + 1 >= queue.length} />
+    </div>
+  )
+}
+
+/** Zoveel halve zetten vóór de fout worden voorgespeeld */
+const TRAIN_CONTEXT = 4
+
+function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
+  item: MistakeItem; game: ReviewGame; fens: string[]; evals: PosEval[]; onDone: (solved: boolean) => void; onNext: () => void; last: boolean
+}) {
+  const me = game.myColor
+  const start = Math.max(0, item.ply - TRAIN_CONTEXT)
+  const [shown, setShown] = useState(start) // ply die op het bord staat tijdens het voorspelen
+  const [phase, setPhase] = useState<'preview' | 'solve' | 'checking' | 'done'>(start < item.ply ? 'preview' : 'solve')
+  const [board, setBoard] = useState<{ fen: string; last: [string, string] | null }>({ fen: fens[start], last: null })
+  const [tries, setTries] = useState(0)
+  const [hint, setHint] = useState(false)
+  const [solution, setSolution] = useState(false)
+  const [feedback, setFeedback] = useState<{ kind: 'good' | 'bad' | 'info'; text: string } | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  // Voorspelen: de zetten voor de fout, één voor één
+  useEffect(() => {
+    if (phase !== 'preview') return
+    timer.current = setTimeout(() => {
+      const next = shown + 1
+      const u = uciAt(fens[shown], game.san[shown])
+      setBoard({ fen: fens[next], last: [u.slice(0, 2), u.slice(2, 4)] })
+      setShown(next)
+      if (next >= item.ply) setPhase('solve')
+    }, shown === start ? 700 : 600)
+    return () => clearTimeout(timer.current)
+  }, [phase, shown]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const forMe = (wpWhite: number) => (me === 'white' ? wpWhite : 100 - wpWhite)
+  function finish(ok: boolean, text: string, kind: 'good' | 'info' = 'good') {
+    setFeedback({ kind, text })
+    setPhase('done')
+    onDone(ok)
+  }
+  function wrong(text: string) {
+    const n = tries + 1
+    setTries(n)
+    setFeedback({ kind: 'bad', text })
+    timer.current = setTimeout(() => {
+      setBoard({ fen: item.fen, last: null })
+      if (n >= 2) showSolution()
+      else setPhase('solve')
+    }, 1100)
+  }
+  function showSolution() {
+    setSolution(true)
+    setBoard({ fen: item.fen, last: null })
+    finish(false, `De beste zet was ${item.bestSan}.`, 'info')
+  }
+
+  async function onMove(from: string, to: string, promotion?: string) {
+    if (phase !== 'solve') return false
+    const c = new Chess(item.fen)
+    let m
+    try { m = c.move({ from, to, promotion: promotion ?? 'q' }) } catch { return false }
+    const uci = m.from + m.to + (m.promotion ?? '')
+    setBoard({ fen: c.fen(), last: [m.from, m.to] })
+    const clean = tries === 0 && !hint
+    if (uci === item.bestUci) return finish(clean, `Precies! ${m.san} is de beste zet.`), true
+    if (uci === item.played.uci) return wrong(`${m.san} speelde je in de partij. Zoek iets beters.`), true
+    setPhase('checking')
+    setFeedback({ kind: 'info', text: `Stockfish bekijkt ${m.san}…` })
+    try {
+      const e = await evalPosition(c.fen())
+      const loss = forMe(winPct(evals[item.ply])) - forMe(winPct(e))
+      if (loss <= 2.5) finish(clean, `Ook goed! ${m.san} is bijna net zo sterk als ${item.bestSan}.`)
+      else wrong(`${m.san} is niet goed genoeg${loss > 20 ? ': dat verliest veel' : ''}. Probeer het nog eens.`)
+    } catch {
+      wrong(`Kon ${m.san} niet beoordelen. Probeer de beste zet te vinden.`)
+    }
+    return true
+  }
+
+  const arrows = solution ? [{ startSquare: item.bestUci.slice(0, 2), endSquare: item.bestUci.slice(2, 4), color: 'rgba(47,125,79,0.85)' }] : []
+  const flash = feedback && board.last && (feedback.kind === 'good' || feedback.kind === 'bad') ? { square: board.last[1], kind: feedback.kind } : null
+  const info = CLASS_INFO[item.played.cls]
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+      <div className="-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,620px)] lg:max-w-[min(640px,calc(100dvh-160px))]">
+        <Board fen={board.fen} orientation={me} movable={phase === 'solve' ? me : undefined} onMove={(f, t, p) => { void onMove(f, t, p) }}
+          lastMove={board.last} arrows={arrows} hintSquare={hint && phase === 'solve' ? item.bestUci.slice(0, 2) : null} flash={flash} id="mistake" label="Vind een betere zet" />
+      </div>
+      <aside className="card space-y-3 p-4" aria-live="polite">
+        {phase === 'preview' ? (
+          <p className="text-sm text-muted">Voorgespeeld: de zetten vóór je fout…</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <MoveClassIcon cls={item.played.cls} size={28} />
+              <div>
+                <h2 className="font-bold">Vind een betere zet</h2>
+                <p className="text-sm text-muted">In de partij speelde je <b className="font-mono" style={{ color: info.color }}>{item.played.san}</b> ({info.label.toLowerCase()}).</p>
+              </div>
+            </div>
+            {feedback && (
+              <p className={`rounded-lg px-3 py-2 text-sm ${feedback.kind === 'good' ? 'bg-brand-soft text-brand-strong' : feedback.kind === 'bad' ? 'bg-danger-soft text-danger-ink' : 'bg-info-soft text-info-ink'}`}>{feedback.text}</p>
+            )}
+            {phase === 'done' && item.played.bestLine.length > 1 && (
+              <p className="text-sm text-muted">Beste lijn: <span className="font-mono">{formatLine(item.played.bestLine, item.ply)}</span></p>
+            )}
+            {phase === 'done' ? (
+              <button className="btn btn-primary min-h-12 w-full" autoFocus onClick={onNext}>{last ? 'Afronden' : 'Volgende fout'}</button>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn btn-ghost min-h-11" disabled={hint || phase !== 'solve'} onClick={() => setHint(true)}>Hint</button>
+                <button className="btn btn-ghost min-h-11" disabled={phase !== 'solve'} onClick={showSolution}>Toon oplossing</button>
+              </div>
+            )}
+            {phase === 'solve' && tries > 0 && <p className="text-xs text-muted">Nog {2 - tries} poging over.</p>}
+          </>
+        )}
+      </aside>
+    </div>
+  )
+}
