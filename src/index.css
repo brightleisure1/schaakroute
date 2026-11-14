@@ -13,6 +13,7 @@
   --brand: #2f7d4f;
   --brand-strong: #22603b;
   --brand-soft: #e2f0e6;
+  --brand-shadow: #1d5a37;
   --accent: #d99a2b;
   --accent-soft: #fbf0da;
   /* tekstvarianten: haal ≥4.5:1 op alle oppervlakken (gemeten) */
@@ -48,6 +49,7 @@
   --brand: #4aa86f;
   --brand-strong: #6cc48f;
   --brand-soft: #1d3326;
+  --brand-shadow: #2a6e46;
   --accent: #e8b04a;
   --accent-soft: #3a2f19;
   --accent-ink: #e8b04a;
@@ -174,6 +176,45 @@ button.chip { min-height: 2rem; }
   input[type='range'] { min-height: 2.75rem; }
 }
 .chip-on { background: var(--brand-soft); color: var(--brand-strong); border-color: var(--brand); }
+
+/* "Alles wat je kunt aantikken voelt als een toets" (ontwerp ronde 10): dikkere rand en een onderrand.
+   .tap = kaart of knop, .tap-on = gekozen (groen), .btn-key = de grote groene hoofdknop. */
+.tap {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 1.125rem;
+  box-shadow: 0 3px 0 var(--line);
+  color: var(--ink);
+  transition: transform 0.06s, box-shadow 0.06s, border-color 0.15s, background 0.15s;
+}
+a.tap:active, button.tap:active, label.tap:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.tap-on { background: var(--brand-soft); border-color: var(--brand); box-shadow: 0 3px 0 var(--brand); }
+a.tap-on:active, button.tap-on:active, label.tap-on:active { box-shadow: 0 1px 0 var(--brand); }
+.btn-key {
+  min-height: 3.375rem;
+  border-radius: 0.875rem;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--brand-shadow);
+}
+.btn-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-shadow); }
+/* Grote keuzechip (filters, bronnen): rond, 2px rand, gekozen = groen */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pill-on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-strong); }
 
 .input {
   width: 100%;

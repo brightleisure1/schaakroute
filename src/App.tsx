@@ -1,8 +1,9 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BookMarked, ChartColumn, ChessKnight, Download, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { BookMarked, ChartColumn, ChessKnight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
+import { streak } from './lib/progress'
 import { FocusContext, Spinner, useSettings } from './components/ui'
 import { Dashboard } from './pages/Dashboard'
 import { Onboarding } from './pages/Onboarding'
@@ -142,6 +143,17 @@ function RouteMemory() {
   return null
 }
 
+/** Reeks in de kop op de telefoon: hoeveel dagen op rij je traint (opent je statistieken) */
+function StreakPill() {
+  const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
+  if (!st.current) return null
+  return (
+    <NavLink to="/statistieken" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-sm font-bold text-accent-ink" aria-label={`${st.current} ${st.current === 1 ? 'dag' : 'dagen'} op rij getraind`}>
+      <Flame size={16} className="text-accent" aria-hidden />{st.current} {st.current === 1 ? 'dag' : 'dagen'}
+    </NavLink>
+  )
+}
+
 /**
  * Vraagt de browser je gegevens blijvend te bewaren. Zonder die toestemming mag een browser de opslag van
  * een website opruimen (bij ruimtegebrek, of bij Safari na een tijd niet gebruiken), en dan zijn je
@@ -203,6 +215,7 @@ function Shell() {
         {/* De kopbalk scrolt gewoon mee weg; alleen de menuknop blijft vast rechtsboven staan (geen scroll-JavaScript) */}
         <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
+          <StreakPill />
         </header>
         <main id="main" className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:pb-10 lg:pt-8 ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
