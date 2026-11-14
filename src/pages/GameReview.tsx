@@ -103,6 +103,14 @@ export function GameReviewList() {
   }
 
 
+  // Met een opgeslagen gebruikersnaam meteen je partijen ophalen, zodat je ze allemaal ziet
+  const autoLoaded = useRef<string | null>(null)
+  useEffect(() => {
+    if (!settings || name !== null || !stored || autoLoaded.current === source) return
+    autoLoaded.current = source
+    load()
+  }, [settings, source]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function open(g: ReviewGame) {
     if (!(await db.reviews.get(g.id))) await db.reviews.put({ id: g.id, game: withOpening(g, names.data), evals: [], depth: depthPref, savedAt: Date.now() })
     else await db.reviews.update(g.id, { savedAt: Date.now() })
@@ -153,7 +161,12 @@ export function GameReviewList() {
   }
 
   const [pasteMode, setPasteMode] = useState(false)
-  const earlier = saved.filter(r => !games?.some(g => g.id === r.id))
+  // Eén lijst: de opgehaalde partijen plus wat je eerder analyseerde, nieuwste eerst
+  const allGames = useMemo(() => {
+    const fetched = (games ?? []).map(g => withOpening(g, names.data))
+    const ids = new Set(fetched.map(g => g.id))
+    return [...fetched, ...saved.filter(r => !ids.has(r.id)).map(r => r.game)].sort((a, b) => b.playedAt - a.playedAt)
+  }, [games, saved, names.data])
 
   const lockIcon = <Lock size={15} strokeWidth={2.25} />
   return (
@@ -212,24 +225,21 @@ export function GameReviewList() {
       </div>
 
       <div className="space-y-5 lg:max-w-2xl">
-        {busy && <Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} />}
         {err && <ErrorBox error={err} />}
-        {games && (games.length === 0
-          ? <Empty title="Geen partijen gevonden">{shownFor} heeft nog geen gewone schaakpartijen op {SOURCE_NAME[source]}.</Empty>
-          : <GameList title={`Laatste partijen van ${shownFor}`} games={games.map(g => withOpening(g, names.data))} saved={savedById} onOpen={open} />)}
-
-        <section aria-labelledby="analysed-title">
+        <section aria-labelledby="games-title">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 id="analysed-title" className="text-lg font-extrabold">Geanalyseerd</h2>
+            <h2 id="games-title" className="text-lg font-extrabold">Je partijen{allGames.length ? <span className="font-normal text-muted"> · {allGames.length}</span> : null}</h2>
             <Link to="/analyse/briljant" className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold"
               style={{ background: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 14%, transparent)`, color: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 70%, var(--ink))` }}>
               <MoveClassIcon cls="brilliant" size={18} />Mijn briljante zetten{brilliants ? ` (${brilliants})` : ''}
             </Link>
           </div>
-          {earlier.length === 0
-            ? <p className="rounded-[18px] border-2 border-dashed border-line p-4 text-sm text-muted">Nog geen partijen geanalyseerd. Haal je partijen op en kies er een.</p>
-            : <GameRows games={earlier.map(r => r.game)} saved={savedById} onOpen={open} />}
-          {earlier.length > 0 && (
+          {busy && <div className="mb-2"><Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} /></div>}
+          {games && games.length === 0 && <p className="mb-2 text-sm text-muted">{shownFor} heeft nog geen gewone schaakpartijen op {SOURCE_NAME[source]}.</p>}
+          {allGames.length === 0
+            ? !busy && <p className="rounded-[18px] border-2 border-dashed border-line p-4 text-sm text-muted">Vul je gebruikersnaam in en haal je partijen op. Kies daarna een partij om te analyseren.</p>
+            : <GameRows games={allGames} saved={savedById} onOpen={open} />}
+          {saved.length > 0 && (
             <div className="mt-2 text-right"><button className="btn btn-quiet text-sm" onClick={async () => { if (confirm('Alle opgeslagen analyses wissen?')) await db.reviews.clear() }}>Analyses wissen</button></div>
           )}
         </section>
@@ -243,15 +253,6 @@ function withOpening(g: ReviewGame, names?: Record<string, [string, string, stri
   if (!names || (g.source === 'lichess' && g.bookPly !== undefined)) return g
   const b = bookInfo(g.san, names)
   return { ...g, opening: b.name ?? g.opening, bookPly: b.ply }
-}
-
-function GameList({ title, games, saved, onOpen }: { title: string; games: ReviewGame[]; saved: Map<string, GameReviewRecord>; onOpen: (g: ReviewGame) => void }) {
-  return (
-    <section aria-label={title}>
-      <h2 className="mb-2 text-lg font-extrabold">{title}</h2>
-      <GameRows games={games} saved={saved} onOpen={onOpen} />
-    </section>
-  )
 }
 
 /** "vandaag", "gisteren", een weekdag in de laatste week, anders de datum */
