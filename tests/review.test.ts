@@ -180,3 +180,23 @@ describe('briljante zetten bijhouden', () => {
     expect(isOwnGame(g, [], true)).toBe(false)
   })
 })
+
+describe('briljant is streng', () => {
+  it('bij een vork je koning wegzetten is geen offer, ook al gaat de toren verloren', () => {
+    // Pe7+ vorkt koning g8 en toren c8; zwart zet de koning weg
+    expect(isSacrifice('2r3k1/4N1pp/8/8/8/8/5PPP/6K1 b - - 0 1', 'g8h8')).toBe(false)
+  })
+  it('een promotie is geen damesoffer', () => {
+    expect(isSacrifice('8/P7/8/8/8/8/k7/r5K1 w - - 0 1', 'a7a8q')).toBe(false)
+  })
+  it('een offer dat de tegenstander volgens Stockfish niet hoort te nemen is niet briljant', () => {
+    // 4.Lxf7+ in de Italiaan: als beste zet, maar de beste reactie slaat de loper niet
+    const san = ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5', 'Bxf7+']
+    const base: PosEval[] = san.map(() => ({ cp: 20 }))
+    base[6] = { cp: 20, best: 'c4f7' }
+    const declined = classifyGame(san, [...base, { cp: 30, best: 'e8e7' }])
+    const taken = classifyGame(san, [...base, { cp: 30, best: 'e8f7' }])
+    expect(declined[6].cls).not.toBe('brilliant')
+    expect(taken[6].cls).toBe('brilliant')
+  })
+})

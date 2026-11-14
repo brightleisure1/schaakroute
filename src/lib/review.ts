@@ -117,36 +117,66 @@ export function gameAccuracy(accs: number[]): number {
 // ---------------- Offers herkennen ----------------
 
 /**
- * Offert de gespeelde zet materiaal? Dat is zo als de tegenstander daarna een stuk (geen pion) met winst kan slaan:
- * het stuk dat net zette, of een ander stuk dat je bewust laat staan. Een eenvoudige ruilberekening per veld:
- * slaan met het goedkoopste stuk, en terugslaan als het veld gedekt is.
+ * Stukken (geen pionnen) van `color` die de tegenstander, die aan zet is, met winst kan slaan.
+ * Eenvoudige ruilberekening per veld: slaan met het goedkoopste stuk, terugslaan als het veld gedekt is.
+ * `gained`: wat er net geslagen werd (telt mee in de ruil).
+ */
+function hangingSquares(c: Chess, color: 'w' | 'b', gained = 0): Set<string> {
+  const replies = c.moves({ verbose: true }).filter(m => m.captured && m.captured !== 'p')
+  const out = new Set<string>()
+  for (const sq of new Set(replies.map(m => m.to))) {
+    const piece = c.get(sq as Square)
+    if (!piece || piece.color !== color) continue
+    const value = PIECE_VALUE[piece.type]
+    if (value < 3) continue
+    const cheapest = Math.min(...replies.filter(m => m.to === sq).map(m => PIECE_VALUE[m.piece] || 100))
+    // Een koning kan alleen slaan op een onverdedigd veld; die zet staat dan al niet tussen de legale zetten
+    const defended = c.attackers(sq as Square, color).length > 0
+    if ((defended ? gained - value + cheapest : gained - value) <= -2) out.add(sq)
+  }
+  return out
+}
+
+/**
+ * Offert de gespeelde zet echt materiaal? Alleen als een stuk door déze zet te slaan valt: het stuk dat
+ * zette, of een stuk dat pas door de zet onbeschermd raakt. Een stuk dat al verloren stond (bijv. bij een
+ * vork, waarna je je koning wegzet) is geen offer, en een promotie ook niet.
  */
 export function isSacrifice(fenBefore: string, uci: string): boolean {
+  return sacrificedSquares(fenBefore, uci).length > 0
+}
+
+/** De velden van de stukken die de zet offert (zie isSacrifice) */
+export function sacrificedSquares(fenBefore: string, uci: string): string[] {
   const c = new Chess(fenBefore)
   let move
   try {
     move = c.move(parseUci(uci))
   } catch {
-    return false
+    return []
   }
+  if (move.promotion) return []
   const gained = move.captured ? PIECE_VALUE[move.captured] : 0
-  const replies = c.moves({ verbose: true }).filter(m => m.captured && m.captured !== 'p')
-  const squares = new Set(replies.map(m => m.to))
-  for (const sq of squares) {
-    const piece = c.get(sq as Square)
-    if (!piece || piece.color !== move.color) continue
-    const value = PIECE_VALUE[piece.type]
-    if (value < 3) continue
-    const cheapest = Math.min(...replies.filter(m => m.to === sq).map(m => PIECE_VALUE[m.piece] || 100))
-    const defended = c.attackers(sq as Square, move.color).length > 0
-    // Een koning kan alleen slaan op een onverdedigd veld; die zet staat dan al niet tussen de legale zetten
-    const net = defended ? gained - value + cheapest : gained - value
-    if (net <= -2) return true
+  const after = hangingSquares(c, move.color, gained)
+  if (!after.size) return []
+  // Wat stond er vóór de zet al te slaan? Dezelfde stelling, maar met de tegenstander aan zet.
+  let before = new Set<string>()
+  try {
+    const parts = fenBefore.split(' ')
+    parts[1] = parts[1] === 'w' ? 'b' : 'w'
+    parts[3] = '-'
+    before = hangingSquares(new Chess(parts.join(' ')), move.color)
+  } catch {
+    // ongeldige omgedraaide stelling (bijv. schaak): alleen het gezette stuk telt
+    before = new Set([...after].filter(sq => sq !== move.to))
   }
-  return false
+  return [...after].filter(sq => sq === move.to || !before.has(sq))
 }
 
 // ---------------- Zetten beoordelen ----------------
+
+/** Boven deze winstkans (± +4,5) stond je al gewonnen: een offer is dan niet meer briljant */
+const BRILLIANT_MAX_WP = 85
 
 const sideAt = (ply: number): Side => (ply % 2 === 0 ? 'white' : 'black')
 const forSide = (wpWhite: number, side: Side) => (side === 'white' ? wpWhite : 100 - wpWhite)
@@ -192,10 +222,16 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
       const prev = out[ply - 1]
       // Gemist: de tegenstander gaf iets weg en jij profiteerde niet
       if ((cls === 'inaccuracy' || cls === 'mistake') && loss > 7 && prev && (prev.cls === 'mistake' || prev.cls === 'blunder' || prev.cls === 'miss')) cls = 'miss'
-      if ((cls === 'best' || cls === 'excellent') && forSide(wpAfter, side) >= 45) {
-        // Offer in een nog niet beslissende stelling, of een offer dat tot mat leidt
+      if ((cls === 'best' || cls === 'excellent') && forSide(wpAfter, side) >= 50) {
+        // Briljant is zeldzaam: precies de beste zet, een echt offer, geen gedwongen zet, en de stelling
+        // was nog niet al gewonnen (behalve als het offer tot mat leidt)
         const matingSac = isBest && after.mate !== undefined && (side === 'white' ? after.mate > 0 : after.mate < 0)
-        if ((forSide(wpBefore, side) < 98 || matingSac) && isSacrifice(fen, uci)) cls = 'brilliant'
+        const open = forSide(wpBefore, side) <= BRILLIANT_MAX_WP || matingSac
+        // Stockfish moet het offer bevestigen: de beste reactie van de tegenstander is het stuk slaan
+        // (of het offer leidt tot mat). Een stuk dat niemand wil nemen is geen briljant offer.
+        const offered = isBest && legal > 2 && open ? sacrificedSquares(fen, uci) : []
+        const accepted = !!after.best && offered.includes(after.best.slice(2, 4))
+        if (offered.length && (accepted || matingSac)) cls = 'brilliant'
         else if (isBest && legal > 1 && (before.cp2 !== undefined || before.mate2 !== undefined)) {
           // Enige goede zet: de op één na beste zet is veel slechter en de stelling was nog niet beslist
           const second = forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side)
@@ -206,7 +242,16 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
     }
 
     // Gemiste briljante zet: de beste zet was een offer en jij speelde iets duidelijk slechters
-    const missedBrilliant = cls !== 'book' && !isBest && loss >= 5 && !!before.best && forSide(wpBefore, side) >= 45 && forSide(wpBefore, side) < 98 && isSacrifice(fen, before.best)
+    // Ook hier moet Stockfish het offer bevestigen: in de beste lijn slaat de tegenstander het stuk (of het wordt mat)
+    let missedBrilliant = false
+    if (cls !== 'book' && !isBest && loss >= 10 && legal > 2 && before.best && forSide(wpBefore, side) >= 50) {
+      const mates = before.mate !== undefined && (side === 'white' ? before.mate > 0 : before.mate < 0)
+      if (forSide(wpBefore, side) <= BRILLIANT_MAX_WP || mates) {
+        const offered = sacrificedSquares(fen, before.best)
+        const reply = before.pv?.[1]
+        missedBrilliant = offered.length > 0 && ((!!reply && offered.includes(reply.slice(2, 4))) || mates)
+      }
+    }
     const bestLine = before.pv?.length ? sanLine(fen, before.pv.slice(0, 6)) : []
     out.push({
       missedBrilliant,
