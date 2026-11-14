@@ -28,6 +28,7 @@ const GameReviewList = lazy(() => import('./pages/GameReview').then(m => ({ defa
 const BrilliantsView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.BrilliantsView })))
 const SharedGameView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.SharedGameView })))
 const MistakeTrainerView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.MistakeTrainerView })))
+const ReviewReplayView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.ReviewReplayView })))
 const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
@@ -67,8 +68,8 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 /** Trainingsmodus (ontwerp ronde 10): geen kop en geen menu, alleen sluiten, voortgang en het bord */
-const TRAINING_MODE = /^\/(crushing|advantage)\//
-const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/(?!briljant))/
+const TRAINING_MODE = /^\/((crushing|advantage)\/|analyse\/[^/]+\/(naspelen|fouten))/
+const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/[^/]+\/(naspelen|fouten))/
 
 /**
  * Zet --bottom-nav op de pagina: de ruimte die de tabbalk inneemt. Vastgeplakte knoppen blijven erboven
@@ -246,6 +247,7 @@ function Shell() {
               <Route path="/analyse/briljant" element={<BrilliantsView />} />
               <Route path="/analyse/:id" element={<GameReviewView />} />
               <Route path="/analyse/:id/fouten" element={<MistakeTrainerView />} />
+              <Route path="/analyse/:id/naspelen" element={<ReviewReplayView />} />
               <Route path="/delen/:code" element={<SharedGameView />} />
               <Route path="/instellingen" element={<Settings />} />
               <Route path="/bronnen" element={<Sources />} />

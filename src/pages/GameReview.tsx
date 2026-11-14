@@ -1,21 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Dumbbell, ExternalLink, FlipVertical2, Share2, SkipForward, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Dumbbell, ExternalLink, FlipVertical2, Play, Share2, SkipForward, X } from 'lucide-react'
 import { db, saveSettings, type GameReviewRecord } from '../lib/db'
 import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type Highlight, type HighlightKind, type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board, MiniBoard } from '../components/Board'
 import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
 import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
-import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
+import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, STICKY_ACTIONS, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 import { Download, Lock, Search, User } from 'lucide-react'
 import { IconField, Note, Segmented } from '../components/Choice'
@@ -36,11 +36,7 @@ function readDepth(): number {
   }
 }
 
-const SPEED: Record<string, string> = {
-  ultraBullet: 'Bullet', bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', classical: 'Klassiek', daily: 'Per dag', correspondence: 'Per dag',
-}
 const SOURCE_NAME = { lichess: 'Lichess', chesscom: 'Chess.com', pgn: 'PGN' } as const
-const scaleOf = (s: ReviewGame['source']) => (s === 'chesscom' ? 'chesscom' : 'lichess')
 const SOURCE_KEY = 'schaakroute.analyseBron'
 
 const fmtPct = (v: number) => v.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
@@ -50,12 +46,6 @@ function outcome(g: ReviewGame): 'win' | 'loss' | 'draw' | 'open' {
   if (g.result === '*') return 'open'
   if (g.result === '1/2-1/2') return 'draw'
   return (g.result === '1-0') === (g.myColor === 'white') ? 'win' : 'loss'
-}
-const OUTCOME = {
-  win: { label: 'Winst', cls: 'bg-brand-soft text-brand-strong' },
-  loss: { label: 'Verlies', cls: 'bg-danger-soft text-danger-ink' },
-  draw: { label: 'Remise', cls: 'bg-surface-2 text-muted' },
-  open: { label: 'Bezig', cls: 'bg-info-soft text-info-ink' },
 }
 
 function readSource(): 'lichess' | 'chesscom' {
@@ -112,13 +102,6 @@ export function GameReviewList() {
     }
   }
 
-  // Bij een opgeslagen gebruikersnaam meteen de partijen laten zien
-  const autoLoaded = useRef<string | null>(null)
-  useEffect(() => {
-    if (!settings || name !== null || !stored || autoLoaded.current === source) return
-    autoLoaded.current = source
-    load()
-  }, [settings, source]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function open(g: ReviewGame) {
     if (!(await db.reviews.get(g.id))) await db.reviews.put({ id: g.id, game: withOpening(g, names.data), evals: [], depth: depthPref, savedAt: Date.now() })
@@ -186,6 +169,18 @@ export function GameReviewList() {
               <label htmlFor="review-paste" className="sr-only">Link of PGN van één partij</label>
               <textarea id="review-paste" className="input !min-h-28 !rounded-[14px] !border-2 font-mono text-sm" rows={4} spellCheck={false} autoCapitalize="none"
                 placeholder="Plak een link (Lichess of Chess.com) of een PGN" value={paste} onChange={e => setPaste(e.target.value)} />
+              <fieldset>
+                <legend className="sr-only">Hoe grondig analyseren</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
+                    <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center rounded-[14px]! px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
+                      <input type="radio" name={`review-depth-${pasteMode ? 'p' : 'u'}`} className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
+                      <span className="text-sm font-bold">{o.label}</span>
+                      <span className="text-xs text-muted">{o.hint}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <button className="btn btn-primary btn-key w-full" disabled={pasteBusy || !paste.trim()}><Search size={20} strokeWidth={2.25} aria-hidden />{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
               {pasteErr && <ErrorBox error={pasteErr} />}
               {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
@@ -196,44 +191,49 @@ export function GameReviewList() {
             <form className="space-y-3" onSubmit={load}>
               <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={`Gebruikersnaam op ${SOURCE_NAME[source]}`} placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`}
                 autoComplete="username" autoCapitalize="none" spellCheck={false} value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
+              <fieldset>
+                <legend className="sr-only">Hoe grondig analyseren</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
+                    <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center rounded-[14px]! px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
+                      <input type="radio" name={`review-depth-${pasteMode ? 'p' : 'u'}`} className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
+                      <span className="text-sm font-bold">{o.label}</span>
+                      <span className="text-xs text-muted">{o.hint}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <button className="btn btn-primary btn-key w-full" disabled={busy || !username}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
               <Note icon={lockIcon}>Je laatste 30 partijen. Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
             </form>
           )}
-          <fieldset className="border-t border-line pt-3 text-sm">
-            <legend className="float-left mb-2 w-full text-muted">Hoe grondig analyseren</legend>
-            <div className="clear-both grid grid-cols-2 gap-2">
-              {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
-                <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
-                  <input type="radio" name="review-depth" className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
-                  <span className="font-bold">{o.label}</span>
-                  <span className="text-xs text-muted">{o.hint}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
         </section>
 
-        <Link to="/analyse/briljant" className="tap flex min-h-11 items-center gap-3 p-3">
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 16%, transparent)` }}><MoveClassIcon cls="brilliant" size={26} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-bold">Mijn briljante zetten{brilliants ? <span className="font-normal text-muted"> ({brilliants})</span> : null}</span>
-            <span className="block text-[13px] text-muted">Verzameld uit je geanalyseerde partijen</span>
-          </span>
-          <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
-        </Link>
       </div>
 
-      {busy && <Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} />}
-      {err && <ErrorBox error={err} />}
-      {games && (games.length === 0
-        ? <Empty title="Geen partijen gevonden">{shownFor} heeft nog geen gewone schaakpartijen op {SOURCE_NAME[source]}.</Empty>
-        : <GameList title={`Laatste partijen van ${shownFor}`} games={games.map(g => withOpening(g, names.data))} saved={savedById} onOpen={open} />)}
+      <div className="space-y-5 lg:max-w-2xl">
+        {busy && <Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} />}
+        {err && <ErrorBox error={err} />}
+        {games && (games.length === 0
+          ? <Empty title="Geen partijen gevonden">{shownFor} heeft nog geen gewone schaakpartijen op {SOURCE_NAME[source]}.</Empty>
+          : <GameList title={`Laatste partijen van ${shownFor}`} games={games.map(g => withOpening(g, names.data))} saved={savedById} onOpen={open} />)}
 
-      {earlier.length > 0 && (
-        <GameList title="Eerder geopend" games={earlier.map(r => r.game)} saved={savedById} onOpen={open}
-          action={<button className="btn btn-quiet text-sm" onClick={async () => { if (confirm('Alle opgeslagen analyses wissen?')) await db.reviews.clear() }}>Wissen</button>} />
-      )}
+        <section aria-labelledby="analysed-title">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 id="analysed-title" className="text-lg font-extrabold">Geanalyseerd</h2>
+            <Link to="/analyse/briljant" className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold"
+              style={{ background: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 14%, transparent)`, color: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 70%, var(--ink))` }}>
+              <MoveClassIcon cls="brilliant" size={18} />Mijn briljante zetten{brilliants ? ` (${brilliants})` : ''}
+            </Link>
+          </div>
+          {earlier.length === 0
+            ? <p className="rounded-[18px] border-2 border-dashed border-line p-4 text-sm text-muted">Nog geen partijen geanalyseerd. Haal je partijen op en kies er een.</p>
+            : <GameRows games={earlier.map(r => r.game)} saved={savedById} onOpen={open} />}
+          {earlier.length > 0 && (
+            <div className="mt-2 text-right"><button className="btn btn-quiet text-sm" onClick={async () => { if (confirm('Alle opgeslagen analyses wissen?')) await db.reviews.clear() }}>Analyses wissen</button></div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
@@ -245,44 +245,63 @@ function withOpening(g: ReviewGame, names?: Record<string, [string, string, stri
   return { ...g, opening: b.name ?? g.opening, bookPly: b.ply }
 }
 
-function GameList({ title, games, saved, onOpen, action }: { title: string; games: ReviewGame[]; saved: Map<string, GameReviewRecord>; onOpen: (g: ReviewGame) => void; action?: ReactNode }) {
+function GameList({ title, games, saved, onOpen }: { title: string; games: ReviewGame[]; saved: Map<string, GameReviewRecord>; onOpen: (g: ReviewGame) => void }) {
   return (
-    <section className="card p-2 sm:p-3">
-      <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
-        <h2 className="font-semibold">{title}</h2>
-        {action}
-      </div>
-      <ul className="divide-y divide-line">
-        {games.map(g => {
-          const me = g.myColor === 'white' ? g.white : g.black
-          const opp = g.myColor === 'white' ? g.black : g.white
-          const o = OUTCOME[outcome(g)]
-          const acc = saved.get(g.id)?.accuracy?.[g.myColor]
-          // Altijd met de huidige formule rekenen, ook voor eerder opgeslagen analyses
-          const rec = saved.get(g.id)
-          const est = rec?.rating?.[g.myColor] != null && rec.accuracy ? estimateRating(rec.accuracy[g.myColor], scaleOf(g.source)) : null
-          return (
-            <li key={g.id}>
-              <button className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
-                <span className={`w-16 shrink-0 rounded-lg px-1.5 py-1 text-center text-xs font-bold ${o.cls}`}>{o.label}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    <span className={`inline-block h-3 w-3 shrink-0 rounded-full border border-line ${g.myColor === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-label={g.myColor === 'white' ? 'jij speelde wit' : 'jij speelde zwart'} />
-                    <span className="truncate">tegen {opp.name}{opp.rating ? ` (${opp.rating})` : ''}</span>
-                  </span>
-                  <span className="block truncate text-sm text-muted">
-                    {[g.opening, g.speed && SPEED[g.speed], fmtDate(g.playedAt), `${Math.ceil(g.san.length / 2)} zetten`, me.rating && `jij ${me.rating}`].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-                {acc !== undefined
-                  ? <span className="shrink-0 text-right"><span className="block text-lg font-bold tabular-nums">{est ?? fmtPct(acc)}</span><span className="block text-xs text-muted">{est ? 'partijrating' : 'nauwkeurig'}</span></span>
-                  : <ChevronRight size={20} className="shrink-0 text-muted" aria-hidden />}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+    <section aria-label={title}>
+      <h2 className="mb-2 text-lg font-extrabold">{title}</h2>
+      <GameRows games={games} saved={saved} onOpen={onOpen} />
     </section>
+  )
+}
+
+/** "vandaag", "gisteren", een weekdag in de laatste week, anders de datum */
+function relDay(t: number): string {
+  const d = new Date(t)
+  const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const days = Math.round((start(new Date()) - start(d)) / 86_400_000)
+  if (days === 0) return 'vandaag'
+  if (days === 1) return 'gisteren'
+  if (days > 1 && days < 7) return d.toLocaleDateString('nl-NL', { weekday: 'short' }).replace('.', '')
+  return fmtDate(t)
+}
+
+const RESULT_TILE = {
+  win: { letter: 'W', label: 'Winst', cls: 'bg-brand-soft text-brand-strong' },
+  loss: { letter: 'V', label: 'Verlies', cls: 'bg-danger-soft text-danger-ink' },
+  draw: { letter: 'R', label: 'Remise', cls: 'bg-surface-2 text-muted' },
+  open: { letter: '…', label: 'Bezig', cls: 'bg-info-soft text-info-ink' },
+}
+
+function GameRows({ games, saved, onOpen }: { games: ReviewGame[]; saved: Map<string, GameReviewRecord>; onOpen: (g: ReviewGame) => void }) {
+  return (
+    <ul className="overflow-hidden rounded-[18px] border-2 border-line bg-surface">
+      {games.map((g, i) => {
+        const opp = g.myColor === 'white' ? g.black : g.white
+        const o = RESULT_TILE[outcome(g)]
+        const rec = saved.get(g.id)
+        const acc = rec && isAnalysed(rec) ? rec.accuracy?.[g.myColor] : undefined
+        const blunders = rec?.blunders?.[g.myColor]
+        return (
+          <li key={g.id} className={i ? 'border-t border-line' : undefined}>
+            <button className="flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-sm font-extrabold ${o.cls}`} aria-label={o.label}>{o.letter}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline gap-1.5"><span className="truncate font-bold">{opp.name}</span>{opp.rating && <span className="text-sm text-muted">{opp.rating}</span>}</span>
+                <span className="block truncate text-[13px] text-muted">{[g.opening, relDay(g.playedAt)].filter(Boolean).join(' · ')}</span>
+              </span>
+              {acc !== undefined ? (
+                <span className="shrink-0 text-right">
+                  <span className="block font-extrabold tabular-nums">{Math.round(acc)}%</span>
+                  {blunders !== undefined && (blunders > 0
+                    ? <span className="rounded-md bg-danger-soft px-1.5 text-[11px] font-bold text-danger-ink">{plural(blunders, 'blunder', 'blunders')}</span>
+                    : <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-bold text-brand-strong">geen blunders</span>)}
+                </span>
+              ) : <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />}
+            </button>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -495,7 +514,7 @@ export function SharedGameView() {
     ;(async () => {
       const { game, ply } = shared
       if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: readDepth(), savedAt: Date.now(), shared: true })
-      navigate(`/analyse/${encodeURIComponent(game.id)}${ply ? `?zet=${ply}` : ''}`, { replace: true })
+      navigate(ply ? replayUrl(game, ply) : `/analyse/${encodeURIComponent(game.id)}`, { replace: true })
     })()
   }, [shared, navigate])
   if (!shared) return <Empty title="Deze link klopt niet" action={<Link className="btn btn-primary" to="/analyse">Naar partij-analyse</Link>}>De gedeelde partij kon niet gelezen worden. Misschien is de link niet helemaal gekopieerd.</Empty>
@@ -504,16 +523,28 @@ export function SharedGameView() {
 
 export function GameReviewView() {
   const { id = '' } = useParams()
+  const [params] = useSearchParams()
+  const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
+  // Oude links met een zetnummer gaan meteen naar het naspelen
+  if (params.get('zet')) return <Navigate to={`/analyse/${encodeURIComponent(id)}/naspelen?zet=${params.get('zet')}`} replace />
+  if (record === null) return <Spinner label="Partij laden…" />
+  if (!record) return <Navigate to="/analyse" replace />
+  return <ReviewOverview record={record} />
+}
+
+export function ReviewReplayView() {
+  const { id = '' } = useParams()
   const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
   if (record === null) return <Spinner label="Partij laden…" />
   if (!record) return <Navigate to="/analyse" replace />
-  return <ReviewBoard record={record} />
+  return <ReviewReplay record={record} />
 }
 
 const NOTABLE: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder']
 const ERRORS: MoveClass[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
 
-function ReviewBoard({ record }: { record: GameReviewRecord }) {
+/** Alles wat overzicht en naspelen delen: engine-analyse, theorie, beoordeling per zet, en het bewaren van de cijfers */
+function useReview(record: GameReviewRecord) {
   const game = record.game
   const { evals, error, progress } = useEngineReview(record)
   const names = useAsync(() => loadNames(), [])
@@ -522,32 +553,156 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
     const own = names.data ? bookInfo(game.san, names.data) : { ply: 0 }
     return { ply: Math.max(own.ply, game.bookPly ?? 0), name: game.opening ?? own.name }
   }, [names.data, game])
-  const total = game.san.length
   const done = evals ? Math.min(evals.length, fens.length) : 0
   const ready = done >= fens.length
   const moves = useMemo(() => (evals ? classifyGame(game.san, evals, book.ply) : []), [evals, game.san, book.ply])
-  // Nauwkeurigheid bewaren voor de partijlijst, met dezelfde theorielengte als hier
+  // Cijfers bewaren voor de partijlijst, met dezelfde theorielengte als hier
   useEffect(() => {
     if (!ready || !names.data || !moves.length) return
     const w = summarize(moves, 'white', game.source)
     const b = summarize(moves, 'black', game.source)
     const accuracy = { white: w.accuracy, black: b.accuracy }
     const rating = { white: w.rating, black: b.rating }
-    if (record.accuracy?.white !== accuracy.white || record.accuracy?.black !== accuracy.black || record.rating?.white !== rating.white || record.rating?.black !== rating.black) {
-      db.reviews.update(record.id, { accuracy, rating })
+    const blunders = { white: w.counts.blunder, black: b.counts.blunder }
+    const r = record
+    if (r.accuracy?.white !== accuracy.white || r.accuracy?.black !== accuracy.black || r.rating?.white !== rating.white || r.rating?.black !== rating.black
+      || r.blunders?.white !== blunders.white || r.blunders?.black !== blunders.black) {
+      db.reviews.update(record.id, { accuracy, rating, blunders })
     }
   }, [ready, names.data, moves]) // eslint-disable-line react-hooks/exhaustive-deps
+  return { game, evals, error, progress, fens, book, done, ready, moves }
+}
+
+function AnalysisProgress({ progress, done, total, error }: { progress: EngineProgress | null; done: number; total: number; error: string | null }) {
+  return (
+    <div className="rounded-[18px] border-2 border-line bg-surface p-4" aria-live="polite">
+      <div className="flex justify-between text-sm">
+        <span className="font-semibold">{progress?.deepening ? `Grondige analyse (diepte ${progress.depth})…` : 'Stockfish analyseert…'}</span>
+        <span className="tabular-nums text-muted">{progress?.done ?? done}/{total}</span>
+      </div>
+      <ProgressBar className="mt-2" value={(progress?.done ?? done) / total} label="Voortgang van de analyse" />
+      {error ? <div className="mt-2"><ErrorBox error={error} /></div> : <p className="mt-2 text-xs text-muted">{progress?.deepening
+        ? 'De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat.'
+        : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al naspelen.'}</p>}
+    </div>
+  )
+}
+
+const replayUrl = (g: ReviewGame, ply?: number) => `/analyse/${encodeURIComponent(g.id)}/naspelen${ply ? `?zet=${ply}` : ''}`
+
+// ---------------- 11b: overzicht ----------------
+
+function ReviewOverview({ record }: { record: GameReviewRecord }) {
+  const navigate = useNavigate()
+  const { game, evals, error, progress, fens, book, done, ready, moves } = useReview(record)
+  const me = game.myColor
+  const opp: Side = me === 'white' ? 'black' : 'white'
+  const sum = { white: summarize(moves, 'white', game.source), black: summarize(moves, 'black', game.source) }
+  const myErrors = moves.filter(m => m.side === me && ERRORS.includes(m.cls)).length
+  const rows = CLASS_ORDER.filter(k => sum.white.counts[k] + sum.black.counts[k] > 0)
+  const scale = game.source === 'chesscom' ? 'Chess.com' : 'Lichess'
+
+  const SideCard = ({ side }: { side: Side }) => {
+    const p = side === 'white' ? game.white : game.black
+    const s = sum[side]
+    const mine = side === me
+    return (
+      <div className={`min-w-0 rounded-[16px] p-3 ${mine ? 'bg-brand-soft' : 'bg-surface-2'}`}>
+        <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
+          <span className={`inline-block h-3.5 w-3.5 shrink-0 rounded-sm border border-line ${side === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-hidden />
+          <span className="truncate">{p.name}</span>{mine && <span className="sr-only">(jij)</span>}
+        </div>
+        {ready ? (
+          <>
+            <div className="mt-1 text-[32px] leading-none font-extrabold tracking-tight tabular-nums">{fmtPct(s.accuracy).replace(/%$/, '')}<span className="text-lg">%</span></div>
+            <div className="text-xs text-muted">nauwkeurigheid</div>
+            <div className="mt-1 text-sm">partijrating <b className="tabular-nums">{s.rating ?? '–'}</b></div>
+          </>
+        ) : <div className="mt-2 h-14 animate-pulse rounded-lg bg-surface/60" aria-hidden />}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div>
+        <Link to="/analyse" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink"><ChevronLeft size={16} aria-hidden />Partij-analyse</Link>
+        <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">{game.white.name} <span className="text-muted">–</span> {game.black.name}</h1>
+        <p className="text-sm text-muted">
+          {[game.result === '*' ? 'Nog bezig' : game.result.replace('1/2-1/2', '½-½'), book.name, fmtDate(game.playedAt)].filter(Boolean).join(' · ')}
+          {game.url && <>{' · '}<a className="inline-flex items-center gap-1 underline hover:text-ink" href={game.url} target="_blank" rel="noreferrer">{SOURCE_NAME[game.source]}<ExternalLink size={12} aria-hidden /></a></>}
+        </p>
+      </div>
+
+      {(!ready || progress?.deepening) && <AnalysisProgress progress={progress} done={done} total={fens.length} error={error} />}
+
+      <section className="rounded-[22px] border-2 border-line bg-surface p-3" aria-label="Nauwkeurigheid en verloop">
+        <div className="grid grid-cols-2 gap-2">
+          <SideCard side={me} />
+          <SideCard side={opp} />
+        </div>
+        {evals && evals.length > 1 && <div className="mt-3"><EvalGraph evals={evals} total={game.san.length} moves={moves} onPick={p => navigate(replayUrl(game, p))} /></div>}
+        {ready && <p className="mt-2 text-xs text-muted">Partijrating op {scale}-schaal: de rating die typisch bij deze nauwkeurigheid hoort. Tik op het verloop om naar die zet te gaan.</p>}
+      </section>
+
+      {ready && (
+        <section className="overflow-hidden rounded-[22px] border-2 border-line bg-surface" aria-label="Zetten per soort">
+          <table className="w-full text-sm">
+            <caption className="sr-only">Aantal zetten per soort: jij links, je tegenstander rechts</caption>
+            <thead className="sr-only"><tr><th>{(me === 'white' ? game.white : game.black).name}</th><th>Soort</th><th>{(opp === 'white' ? game.white : game.black).name}</th></tr></thead>
+            <tbody className="divide-y divide-line">
+              {rows.map(k => {
+                const hot = k === 'blunder' && sum[me].counts[k] > 0
+                return (
+                  <tr key={k} className={hot ? 'bg-danger-soft' : undefined}>
+                    <td className={`w-14 py-2.5 text-center text-base font-bold tabular-nums ${hot ? 'text-danger-ink' : ''}`}>{sum[me].counts[k]}</td>
+                    <td className="py-2.5"><span className={`flex items-center justify-center gap-2 font-semibold ${hot ? 'text-danger-ink' : ''}`}><MoveClassIcon cls={k} size={20} />{CLASS_INFO[k].label}</span></td>
+                    <td className="w-14 py-2.5 text-center text-base tabular-nums text-muted">{sum[opp].counts[k]}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {sum[me].missedBrilliants > 0 && (
+            <p className="flex items-center justify-center gap-2 border-t border-line px-3 py-2 text-sm"><MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zetten: <b>{sum[me].missedBrilliants}</b></p>
+          )}
+        </section>
+      )}
+
+      <p className="text-center text-xs text-muted">
+        {ENGINE_NAME} · diepte {record.depth}{record.depth >= DEEP_DEPTH ? ' (grondig)' : ''} · op je eigen apparaat
+        {ready && record.depth < DEEP_DEPTH && !progress?.deepening && <> · <button className="underline hover:text-ink" onClick={() => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } })}>Grondiger analyseren</button></>}
+      </p>
+
+      <div className={`grid gap-2 ${myErrors > 0 ? 'grid-cols-[1.4fr_1fr]' : 'grid-cols-1'} ${STICKY_ACTIONS}`}>
+        {myErrors > 0 && (
+          <button className="btn btn-primary btn-key" disabled={!ready} onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}>
+            <Dumbbell size={20} aria-hidden />Train je {plural(myErrors, 'fout', 'fouten')}
+          </button>
+        )}
+        <Link to={replayUrl(game)} className={myErrors > 0 ? 'tap flex min-h-[54px] items-center justify-center gap-2 font-bold' : 'btn btn-primary btn-key'}>
+          <Play size={18} aria-hidden />Naspelen
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// ---------------- 11c: naspelen ----------------
+
+function ReviewReplay({ record }: { record: GameReviewRecord }) {
+  const navigate = useNavigate()
+  const { game, evals, error, progress, fens, done, ready, moves } = useReview(record)
+  const total = game.san.length
   const [params] = useSearchParams()
-  const [ply, setPly] = useState(() => Math.max(0, Math.min(game.san.length, Number(params.get('zet')) || 0)))
+  const [ply, setPly] = useState(() => Math.max(0, Math.min(total, Number(params.get('zet')) || 0)))
   const [sharing, setSharing] = useState(false)
   const [orientation, setOrientation] = useState<Side>(game.myColor)
   const current: ReviewedMove | undefined = moves[ply - 1]
-
   const go = (p: number) => setPly(Math.max(0, Math.min(total, p)))
-  const nextError = () => {
-    const m = moves.find(m => m.ply >= ply && m.side === game.myColor && ERRORS.includes(m.cls))
-    if (m) setPly(m.ply + 1)
-  }
+  const nextError = moves.find(m => m.ply >= ply && m.side === game.myColor && ERRORS.includes(m.cls))
+  const close = () => navigate(`/analyse/${encodeURIComponent(game.id)}`)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.metaKey || e.ctrlKey || e.altKey) return
@@ -567,83 +722,138 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
     ? [{ startSquare: current.bestUci.slice(0, 2), endSquare: current.bestUci.slice(2, 4), color: 'rgba(47,125,79,0.8)' }]
     : []
   const evalNow = evals?.[ply]
-  const top = orientation === 'white' ? game.black : game.white
-  const bottom = orientation === 'white' ? game.white : game.black
+  const topSide: Side = orientation === 'white' ? 'black' : 'white'
+  const top = topSide === 'white' ? game.white : game.black
+  const bottom = topSide === 'white' ? game.black : game.white
+
+  const Player = ({ p, side, score }: { p: { name: string; rating?: number }; side: Side; score?: string }) => (
+    <div className="flex items-center gap-2 py-1.5 text-sm">
+      <span className={`inline-block h-3.5 w-3.5 shrink-0 rounded-sm border border-line ${side === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-hidden />
+      <span className="truncate font-semibold">{p.name}</span>{p.rating && <span className="text-muted">{p.rating}</span>}
+      {score && <span className="ml-auto font-mono text-xs font-bold tabular-nums text-muted">{score}</span>}
+    </div>
+  )
 
   return (
-    <div className="space-y-4">
-      <PageHeader back="/analyse" title={<>{game.white.name} <span className="text-muted">–</span> {game.black.name}</>}
-        subtitle={<>{[game.result === '*' ? 'Nog bezig' : game.result.replace('1/2-1/2', '½-½'), game.ending, book.name, fmtDate(game.playedAt)].filter(Boolean).join(' · ')}
-          {game.url && <>{' · '}<a className="inline-flex items-center gap-1 underline hover:text-ink" href={game.url} target="_blank" rel="noreferrer">{SOURCE_NAME[game.source]}<ExternalLink size={13} aria-hidden /></a></>}</>} />
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        <div className="-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,640px)] lg:max-w-[min(680px,calc(100dvh-200px))]">
-          <PlayerRow p={top} side={orientation === 'white' ? 'black' : 'white'} />
-          <div className="flex items-stretch gap-1.5">
-            <EvalBar e={evalNow} orientation={orientation} />
-            <div className="relative min-w-0 flex-1">
-              <Board fen={fens[ply]} orientation={orientation} lastMove={lastMove} arrows={arrows} id="review" label={`Partijstelling na ${ply} halve zetten`} />
-              {current && lastMove && <SquareBadge square={lastMove[1]} cls={current.cls} orientation={orientation} />}
-            </div>
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6">
+      <div className="mx-auto w-full max-w-[min(92vw,620px)] lg:max-w-[min(640px,calc(100dvh-140px))]">
+        <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-bg/95 px-2 py-1.5 backdrop-blur sm:-mx-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0">
+          <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={close} aria-label="Sluiten, terug naar het overzicht"><X size={22} aria-hidden /></button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-bold">{game.white.name} – {game.black.name}</div>
+            <div className="text-xs text-muted">zet {ply} van {total}</div>
           </div>
-          <PlayerRow p={bottom} side={orientation} />
-          <div className="px-2 sm:px-0 lg:hidden"><MoveComment move={current} evalAfter={evalNow} ply={ply} ready={!!evals && done > ply} compact /></div>
-          <div className="mt-2 grid grid-cols-6 gap-1.5 px-2 sm:px-0">
-            <NavButton label="Begin" onClick={() => go(0)} disabled={ply === 0}><ChevronsLeft size={22} /></NavButton>
-            <NavButton label="Vorige zet" onClick={() => go(ply - 1)} disabled={ply === 0}><ChevronLeft size={22} /></NavButton>
-            <NavButton label="Volgende zet" onClick={() => go(ply + 1)} disabled={ply === total}><ChevronRight size={22} /></NavButton>
-            <NavButton label="Einde" onClick={() => go(total)} disabled={ply === total}><ChevronsRight size={22} /></NavButton>
-            <NavButton label="Bord draaien" onClick={() => setOrientation(o => (o === 'white' ? 'black' : 'white'))}><FlipVertical2 size={20} /></NavButton>
-            <NavButton label="Delen" onClick={() => setSharing(true)}><Share2 size={20} /></NavButton>
-          </div>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setOrientation(o => (o === 'white' ? 'black' : 'white'))} aria-label="Bord draaien" title="Bord draaien"><FlipVertical2 size={20} aria-hidden /></button>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setSharing(true)} aria-label="Delen" title="Delen"><Share2 size={20} aria-hidden /></button>
         </div>
 
-        <aside className="space-y-4">
-          {(!ready || progress?.deepening) && (
-            <div className="card space-y-2 p-4" aria-live="polite">
-              <div className="flex justify-between text-sm">
-                <span className="font-semibold">{progress?.deepening ? `Grondige analyse (diepte ${progress.depth})…` : 'Stockfish analyseert…'}</span>
-                <span className="tabular-nums text-muted">{progress?.done ?? done}/{fens.length}</span>
-              </div>
-              <ProgressBar value={(progress?.done ?? done) / fens.length} label="Voortgang van de analyse" />
-              {error ? <ErrorBox error={error} /> : <p className="text-xs text-muted">{progress?.deepening
-                ? 'De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat en kan een paar minuten duren.'
-                : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.'}</p>}
-            </div>
-          )}
+        <Player p={top} side={topSide} score={evals ? formatScore(evalNow).replace('.', ',') : undefined} />
+        <div className="flex items-stretch gap-1.5">
+          <EvalBar e={evalNow} orientation={orientation} />
+          <div className="relative min-w-0 flex-1">
+            <Board fen={fens[ply]} orientation={orientation} lastMove={lastMove} arrows={arrows} id="review" label={`Partijstelling na ${ply} halve zetten`} />
+            {current && lastMove && <SquareBadge square={lastMove[1]} cls={current.cls} orientation={orientation} />}
+          </div>
+        </div>
+        <Player p={bottom} side={orientation} />
+      </div>
 
-          <div className="max-lg:hidden"><MoveComment move={current} evalAfter={evalNow} ply={ply} ready={!!evals && done > ply} /></div>
-
-          {ready && <Summary moves={moves} game={game} onNextError={nextError} depth={record.depth}
-            onDeepen={record.depth < DEEP_DEPTH && !progress?.deepening ? () => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } }) : undefined} />}
-
-          <EvalGraph evals={evals ?? []} total={total} ply={ply} moves={moves} onPick={go} />
-
-          <MoveList san={game.san} moves={moves} ply={ply} onPick={go} />
-        </aside>
+      <div className="mx-auto mt-2 w-full max-w-[min(92vw,620px)] space-y-3 lg:mt-12 lg:max-w-none">
+        {(!ready || progress?.deepening) && <AnalysisProgress progress={progress} done={done} total={fens.length} error={error} />}
+        <ReplayComment move={current} ply={ply} ready={!!evals && done > ply} game={game} replyLine={current ? replyLine(fens[ply], evals?.[ply]) : []} />
+        {evals && evals.length > 1 && <EvalGraph evals={evals} total={total} ply={ply} moves={moves} onPick={go} compact />}
+        <MoveChips san={game.san} moves={moves} ply={ply} onPick={go} />
+        <div className={`grid grid-cols-[auto_auto_1fr] gap-2 ${STICKY_ACTIONS}`}>
+          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply - 1)} disabled={ply === 0} aria-label="Vorige zet"><ChevronLeft size={22} aria-hidden /></button>
+          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply + 1)} disabled={ply === total} aria-label="Volgende zet"><ChevronRight size={22} aria-hidden /></button>
+          {nextError
+            ? <button className="btn btn-primary btn-key" onClick={() => setPly(nextError.ply + 1)}><SkipForward size={20} aria-hidden />Volgende fout</button>
+            : <button className="btn btn-primary btn-key" onClick={close}>Naar het overzicht</button>}
+        </div>
       </div>
       {sharing && <ShareDialog game={game} ply={ply} move={current} onClose={() => setSharing(false)} />}
     </div>
   )
 }
 
+/** De beste reactie van de tegenstander na de gespeelde zet (twee halve zetten), voor de uitleg */
+function replyLine(fenAfter: string, e: PosEval | undefined): string[] {
+  if (!e?.pv?.length) return []
+  const c = new Chess(fenAfter)
+  const out: string[] = []
+  for (const u of e.pv.slice(0, 2)) {
+    try { out.push(c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] }).san) } catch { break }
+  }
+  return out
+}
+
+function ReplayComment({ move, ply, ready, game, replyLine }: { move?: ReviewedMove; ply: number; ready: boolean; game: ReviewGame; replyLine: string[] }) {
+  if (ply === 0) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">Beginstelling. Blader met de knoppen onderaan of tik op een zet.</div>
+  if (!move || !ready) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">Deze zet wordt nog beoordeeld…</div>
+  const info = CLASS_INFO[move.cls]
+  const player = (move.side === 'white' ? game.white : game.black).name
+  const label = formatLine([move.san], move.ply)
+  const isError = ERRORS.includes(move.cls)
+  const better = move.bestSan && move.bestUci !== move.uci ? formatLine([move.bestSan], move.ply) : null
+  let text = explainMove(move)
+  if (isError && better) {
+    text = `Beter was ${better}.`
+    if (replyLine.length) text += ` Na ${label} volgt ${formatLine(replyLine, move.ply + 1)}.`
+    if (move.missedBrilliant) text += ' Dat was een briljante zet geweest!'
+  }
+  return (
+    <div className="rounded-[18px] border-2 p-4" aria-live="polite"
+      style={{ background: `color-mix(in srgb, ${info.color} 10%, var(--surface))`, borderColor: `color-mix(in srgb, ${info.color} 38%, var(--line))` }}>
+      <div className="flex items-start gap-3">
+        <MoveClassIcon cls={move.cls} size={34} />
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-muted">{player}</div>
+          <div className="font-extrabold" style={{ color: `color-mix(in srgb, ${info.color} 75%, var(--ink))` }}>{info.label} · {label}</div>
+          <p className="mt-0.5 text-sm">{text}</p>
+          {!isError && move.bestLine.length > 1 && move.bestUci !== move.uci && move.cls !== 'book' && (
+            <p className="mt-1 text-xs text-muted">Beste lijn: <span className="font-mono">{formatLine(move.bestLine, move.ply)}</span></p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Zetten als een rij chips om horizontaal door te scrollen; de huidige zet blijft in beeld */
+function MoveChips({ san, moves, ply, onPick }: { san: string[]; moves: ReviewedMove[]; ply: number; onPick: (p: number) => void }) {
+  const ref = useRef<HTMLOListElement>(null)
+  useEffect(() => {
+    const box = ref.current
+    const el = box?.querySelector<HTMLElement>('[aria-current="true"]')
+    if (box && el) box.scrollLeft = el.parentElement!.offsetLeft - box.clientWidth / 2 + el.clientWidth / 2
+  }, [ply, moves.length])
+  return (
+    <nav aria-label="Zetten">
+      <ol ref={ref} className="relative -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1 [scrollbar-width:none]">
+        {san.map((s, i) => {
+          const m = moves[i]
+          const notable = m && NOTABLE.includes(m.cls)
+          const on = ply === i + 1
+          return (
+            <li key={i} className="shrink-0">
+              <button aria-current={on ? 'true' : undefined} onClick={() => onPick(i + 1)}
+                aria-label={`${formatLine([s], i)}${m ? `, ${CLASS_INFO[m.cls].label.toLowerCase()}` : ''}`}
+                className={`tap flex min-h-10 items-center gap-1.5 rounded-xl! px-2.5 text-sm font-bold tabular-nums ${on ? 'tap-on' : ''}`}
+                style={on && notable ? { borderColor: CLASS_INFO[m.cls].color, boxShadow: `0 3px 0 ${CLASS_INFO[m.cls].color}`, background: `color-mix(in srgb, ${CLASS_INFO[m.cls].color} 12%, var(--surface))` } : undefined}>
+                {notable && <MoveClassIcon cls={m.cls} size={16} />}
+                {i % 2 === 0 ? `${i / 2 + 1}.${s}` : s}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
 function uciAt(fen: string, san: string): string {
   const m = new Chess(fen).move(san)
   return m.from + m.to + (m.promotion ?? '')
-}
-
-function NavButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-  return <button className="btn btn-ghost min-h-12 px-0" onClick={onClick} disabled={disabled} aria-label={label} title={label}>{children}</button>
-}
-
-function PlayerRow({ p, side }: { p: { name: string; rating?: number }; side: Side }) {
-  return (
-    <div className="flex items-center gap-2 px-2 py-1.5 text-sm sm:px-0">
-      <span className={`inline-block h-3.5 w-3.5 rounded-sm border border-line ${side === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-hidden />
-      <span className="font-semibold">{p.name}</span>
-      {p.rating && <span className="text-muted">({p.rating})</span>}
-    </div>
-  )
 }
 
 function SquareBadge({ square, cls, orientation, size = 26 }: { square: string; cls: MoveClass; orientation: Side; size?: number }) {
@@ -664,34 +874,9 @@ function SquareBadge({ square, cls, orientation, size = 26 }: { square: string; 
 function EvalBar({ e, orientation }: { e: PosEval | undefined; orientation: Side }) {
   const white = winPct(e)
   const score = formatScore(e)
-  const whiteAhead = white >= 50
   return (
-    <div className={`relative w-3.5 shrink-0 overflow-hidden rounded-md bg-neutral-700 sm:w-5 ${orientation === 'black' ? 'rotate-180' : ''}`} role="img" aria-label={`Evaluatie ${score}`}>
+    <div className={`relative w-2.5 shrink-0 overflow-hidden rounded-md bg-neutral-700 sm:w-3.5 ${orientation === 'black' ? 'rotate-180' : ''}`} role="img" aria-label={`Evaluatie ${score}`}>
       <div className="absolute inset-x-0 bottom-0 bg-neutral-100 transition-[height] duration-500" style={{ height: `${white}%` }} />
-      <span className={`absolute inset-x-0 hidden text-center text-[9px] font-bold sm:block ${orientation === 'black' ? 'rotate-180' : ''} ${whiteAhead ? 'text-neutral-800' : 'text-neutral-100'}`}
-        style={whiteAhead === (orientation === 'white') ? { bottom: 2 } : { top: 2 }}>{e ? score.replace(/^[+−]/, '') : ''}</span>
-    </div>
-  )
-}
-
-function MoveComment({ move, evalAfter, ply, ready, compact }: { move?: ReviewedMove; evalAfter?: PosEval; ply: number; ready: boolean; compact?: boolean }) {
-  const box = compact ? 'card min-h-16 px-3 py-2' : 'card p-4'
-  if (ply === 0) return <div className={`${box} flex items-center text-sm text-muted`}>Beginstelling. Blader met de pijltjes of klik op een zet.</div>
-  if (!move || !ready) return <div className={`${box} flex items-center text-sm text-muted`}>Deze zet wordt nog beoordeeld…</div>
-  const info = CLASS_INFO[move.cls]
-  const showLine = !compact && move.bestLine.length > 0 && move.bestUci !== move.uci && move.cls !== 'book'
-  return (
-    <div className={box} aria-live="polite">
-      <div className={`flex items-center ${compact ? 'gap-2.5' : 'gap-3'}`}>
-        <MoveClassIcon cls={move.cls} size={compact ? 26 : 30} />
-        <div className="min-w-0 flex-1">
-          <div className="font-bold" style={{ color: info.color }}>{info.label}</div>
-          <div className="text-sm">{explainMove(move)}</div>
-        </div>
-        <span className="shrink-0 rounded-lg bg-surface-2 px-2 py-1 font-mono text-sm font-bold tabular-nums">{formatScore(evalAfter)}</span>
-      </div>
-      {move.missedBrilliant && !compact && <p className="mt-2 flex items-center gap-2 text-sm font-semibold" style={{ color: CLASS_INFO.brilliant.color }}><MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zet: {move.bestSan}</p>}
-      {showLine && <p className="mt-2 text-sm text-muted">Beste lijn: <span className="font-mono">{formatLine(move.bestLine, move.ply)}</span></p>}
     </div>
   )
 }
@@ -704,63 +889,14 @@ function formatLine(san: string[], startPly: number): string {
   }).join(' ')
 }
 
-function Summary({ moves, game, onNextError, depth, onDeepen }: { moves: ReviewedMove[]; game: ReviewGame; onNextError: () => void; depth: number; onDeepen?: () => void }) {
-  const navigate = useNavigate()
-  const w = summarize(moves, 'white', game.source)
-  const b = summarize(moves, 'black', game.source)
-  const myErrors = moves.filter(m => m.side === game.myColor && ERRORS.includes(m.cls)).length
-  return (
-    <div className="card p-4">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2 text-center">
-        <div><div className="truncate text-sm text-muted">{game.white.name}</div><div className="text-3xl font-extrabold tabular-nums">{fmtPct(w.accuracy)}</div></div>
-        <div className="pb-1.5 text-xs text-muted">nauw&shy;keurig&shy;heid</div>
-        <div><div className="truncate text-sm text-muted">{game.black.name}</div><div className="text-3xl font-extrabold tabular-nums">{fmtPct(b.accuracy)}</div></div>
-        <div className="text-xl font-bold tabular-nums">{w.rating ?? '–'}</div>
-        <div className="pb-0.5 text-xs text-muted">partij&shy;rating</div>
-        <div className="text-xl font-bold tabular-nums">{b.rating ?? '–'}</div>
-        <div className="-mt-2 text-xs text-muted">{game.white.rating ? `rating ${game.white.rating}` : ''}</div>
-        <div />
-        <div className="-mt-2 text-xs text-muted">{game.black.rating ? `rating ${game.black.rating}` : ''}</div>
-      </div>
-      <p className="mt-2 text-center text-xs text-muted">{w.rating === null || b.rating === null
-        ? `Een partijrating komt er vanaf ${MIN_RATED_MOVES} eigen zetten na de theorie.`
-        : `Partijrating (${game.source === 'chesscom' ? 'Chess.com' : 'Lichess'}-schaal): de rating die typisch hoort bij deze nauwkeurigheid. Eén partij zegt niet alles.`}</p>
-      <table className="mt-3 w-full text-sm">
-        <caption className="sr-only">Aantal zetten per beoordeling, wit en zwart</caption>
-        <tbody>
-          {CLASS_ORDER.filter(k => w.counts[k] + b.counts[k] > 0 || k === 'blunder' || k === 'best').map(k => (
-            <tr key={k} className="border-t border-line">
-              <td className="w-10 py-1 text-center tabular-nums font-semibold" style={{ color: w.counts[k] ? CLASS_INFO[k].color : undefined }}>{w.counts[k]}</td>
-              <td className="py-1"><span className="flex items-center justify-center gap-2"><MoveClassIcon cls={k} size={18} />{CLASS_INFO[k].label}</span></td>
-              <td className="w-10 py-1 text-center tabular-nums font-semibold" style={{ color: b.counts[k] ? CLASS_INFO[k].color : undefined }}>{b.counts[k]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {(w.missedBrilliants > 0 || b.missedBrilliants > 0) && (
-        <p className="mt-2 flex items-center justify-center gap-2 text-sm"><MoveClassIcon cls="brilliant" size={18} />
-          Gemiste briljante zetten: <b>{w.missedBrilliants}</b> wit, <b>{b.missedBrilliants}</b> zwart</p>
-      )}
-      {myErrors > 0 && (
-        <div className="mt-3 grid gap-2">
-          <button className="btn btn-primary min-h-12 w-full" onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}><Dumbbell size={18} aria-hidden />Train je fouten <span className="font-normal opacity-80">({myErrors})</span></button>
-          <button className="btn btn-ghost w-full" onClick={onNextError}><SkipForward size={18} aria-hidden />Naar je volgende fout</button>
-        </div>
-      )}
-      <p className="mt-3 text-center text-xs text-muted">{ENGINE_NAME} · diepte {depth}{depth >= DEEP_DEPTH ? ' (grondig)' : ''} · op je eigen apparaat</p>
-      {onDeepen && <button className="btn btn-quiet mt-1 w-full text-sm" onClick={onDeepen}>Grondiger analyseren (diepte {DEEP_DEPTH}, duurt een paar minuten)</button>}
-    </div>
-  )
-}
-
-function EvalGraph({ evals, total, ply, moves, onPick }: { evals: PosEval[]; total: number; ply: number; moves: ReviewedMove[]; onPick: (p: number) => void }) {
+function EvalGraph({ evals, total, ply, moves, onPick, compact }: { evals: PosEval[]; total: number; ply?: number; moves: ReviewedMove[]; onPick: (p: number) => void; compact?: boolean }) {
   if (evals.length < 2) return null
   const W = Math.max(total, 1)
   const pts = evals.map((e, i) => `${i},${100 - winPct(e)}`)
   const area = `M0,100 L${pts.join(' L')} L${evals.length - 1},100 Z`
   return (
-    <div className="card overflow-hidden p-0">
-      <svg viewBox={`0 0 ${W} 100`} preserveAspectRatio="none" className="block h-24 w-full cursor-pointer bg-neutral-700" role="img" aria-label="Verloop van de evaluatie. Klik om naar die zet te gaan."
+    <div className="overflow-hidden rounded-[14px]">
+      <svg viewBox={`0 0 ${W} 100`} preserveAspectRatio="none" className={`block w-full cursor-pointer bg-neutral-700 ${compact ? 'h-12' : 'h-20'}`} role="img" aria-label="Verloop van de evaluatie. Tik om naar die zet te gaan."
         onClick={e => {
           const r = e.currentTarget.getBoundingClientRect()
           onPick(Math.round(((e.clientX - r.left) / r.width) * W))
@@ -768,53 +904,13 @@ function EvalGraph({ evals, total, ply, moves, onPick }: { evals: PosEval[]; tot
         <path d={area} fill="#f2f2ef" />
         <line x1="0" x2={W} y1="50" y2="50" stroke="#888" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
         {moves.filter(m => ['mistake', 'miss', 'blunder', 'brilliant', 'great'].includes(m.cls)).map(m => (
-          <line key={m.ply} x1={m.ply + 1} x2={m.ply + 1} y1="0" y2="100" stroke={CLASS_INFO[m.cls].color} strokeWidth="2" vectorEffect="non-scaling-stroke" opacity="0.85" />
+          <line key={m.ply} x1={m.ply + 1} x2={m.ply + 1} y1="0" y2="100" stroke={CLASS_INFO[m.cls].color} strokeWidth="2" vectorEffect="non-scaling-stroke" opacity="0.9" />
         ))}
-        <line x1={ply} x2={ply} y1="0" y2="100" stroke="var(--brand)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+        {ply !== undefined && <line x1={ply} x2={ply} y1="0" y2="100" stroke="#e4a92a" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />}
       </svg>
     </div>
   )
 }
-
-function MoveList({ san, moves, ply, onPick }: { san: string[]; moves: ReviewedMove[]; ply: number; onPick: (p: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = ref.current?.querySelector<HTMLElement>('[aria-current="true"]')
-    const box = ref.current
-    if (el && box) box.scrollTop = el.offsetTop - box.clientHeight / 2
-  }, [ply])
-  const rows = Array.from({ length: Math.ceil(san.length / 2) }, (_, i) => i)
-  const cell = (p: number) => {
-    if (p >= san.length) return <span />
-    const m = moves[p]
-    const notable = m && NOTABLE.includes(m.cls)
-    return (
-      <button aria-current={ply === p + 1 ? 'true' : undefined} onClick={() => onPick(p + 1)}
-        className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-left font-mono text-sm ${ply === p + 1 ? 'bg-brand-soft font-bold text-brand-strong' : 'hover:bg-surface-2'}`}
-        aria-label={`${san[p]}${m ? `, ${CLASS_INFO[m.cls].label.toLowerCase()}` : ''}`}>
-        {notable && <MoveClassIcon cls={m.cls} size={16} />}
-        <span style={notable ? { color: CLASS_INFO[m.cls].color } : undefined}>{san[p]}</span>
-      </button>
-    )
-  }
-  return (
-    <div className="card p-2">
-      <h2 className="px-2 pt-1 pb-1 text-sm font-semibold">Zetten <span className="font-normal text-muted">· {plural(rows.length, 'zet', 'zetten')}</span></h2>
-      <div ref={ref} className="relative max-h-72 overflow-y-auto">
-        <ol className="grid grid-cols-[2.25rem_1fr_1fr] gap-x-1">
-          {rows.map(i => (
-            <li key={i} className="contents">
-              <span className="flex min-h-9 items-center justify-end pr-1 text-xs tabular-nums text-muted">{i + 1}.</span>
-              {cell(i * 2)}
-              {cell(i * 2 + 1)}
-            </li>
-          ))}
-        </ol>
-      </div>
-    </div>
-  )
-}
-
 
 // ---------------- Fouten-trainer ----------------
 
@@ -1088,7 +1184,7 @@ function HighlightCard({ h }: { h: FoundHighlight }) {
   const missed = h.kind === 'missed'
   // Gemist: de stelling vóór je zet, zodat je de briljante zet zelf kunt zien; anders de stelling na je zet
   const fen = missed ? h.fenBefore : h.fenAfter
-  const to = `/analyse/${encodeURIComponent(g.id)}?zet=${h.move.ply + 1}`
+  const to = replayUrl(g, h.move.ply + 1)
   return (
     <li>
       <Link to={to} className="card block overflow-hidden p-0 transition hover:shadow-md">

@@ -154,6 +154,8 @@ export interface GameReviewRecord {
   shared?: boolean
   /** Geschatte partijrating van wit en zwart (null: te kort voor een schatting) */
   rating?: { white: number | null; black: number | null }
+  /** Aantal blunders van wit en zwart (voor de partijlijst) */
+  blunders?: { white: number; black: number }
 }
 
 export interface Badge {
