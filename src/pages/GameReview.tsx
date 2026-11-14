@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Dumbbell, ExternalLink, FlipVertical2, SkipForward } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Dumbbell, ExternalLink, FlipVertical2, Share2, SkipForward, X } from 'lucide-react'
 import { db, saveSettings, type GameReviewRecord } from '../lib/db'
 import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board } from '../components/Board'
@@ -294,6 +294,95 @@ function useEngineReview(record: GameReviewRecord | undefined) {
   return { evals, error }
 }
 
+// ---------------- Delen ----------------
+
+const shareUrl = (g: ReviewGame, ply?: number) => `${location.origin}${location.pathname}#/delen/${encodeShare(g, ply)}`
+
+function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: number; move?: ReviewedMove; onClose: () => void }) {
+  const [status, setStatus] = useState<string | null>(null)
+  const [manual, setManual] = useState<string | null>(null)
+  const first = useRef<HTMLButtonElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    first.current?.focus()
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close.current() }
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey); opener?.focus() }
+  }, [])
+  const opp = game.myColor === 'white' ? game.black : game.white
+  const moveText = move ? `${formatLine([move.san], move.ply)}${['brilliant', 'great', 'blunder'].includes(move.cls) ? ` (${CLASS_INFO[move.cls].label.toLowerCase()})` : ''}` : ''
+
+  async function copy(text: string, done: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setStatus(done)
+    } catch {
+      setManual(text) // geen klembord: laat de tekst zien om zelf te kopiëren
+    }
+  }
+  async function share(url: string, text: string) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'SchaakRoute', text, url })
+        onClose()
+        return
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return
+      }
+    }
+    await copy(url, 'Link gekopieerd. Plak hem waar je wilt.')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div className="absolute inset-0 bg-black/40 animate-fade-in" aria-hidden onClick={onClose} />
+      <div className="safe-bottom relative w-full max-w-md rounded-t-3xl bg-surface p-4 shadow-2xl animate-fade-up sm:rounded-3xl">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 id="share-title" className="text-lg font-bold">Delen</h2>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={onClose} aria-label="Sluiten"><X size={22} aria-hidden /></button>
+        </div>
+        <div className="grid gap-2">
+          {ply > 0 && move && (
+            <button ref={first} className="btn btn-primary min-h-12 justify-start" onClick={() => share(shareUrl(game, ply), `Bekijk ${moveText} uit mijn partij tegen ${opp.name}`)}>
+              <MoveClassIcon cls={move.cls} size={22} />Deze zet delen <span className="font-mono font-normal opacity-80">{formatLine([move.san], move.ply)}</span>
+            </button>
+          )}
+          <button ref={ply > 0 && move ? undefined : first} className={`btn ${ply > 0 && move ? 'btn-ghost' : 'btn-primary'} min-h-12 justify-start`} onClick={() => share(shareUrl(game), `Bekijk mijn partij tegen ${opp.name}`)}>
+            <Share2 size={20} aria-hidden />Hele partij delen
+          </button>
+          <button className="btn btn-ghost min-h-12 justify-start" onClick={() => copy(gameToPgn(game), 'PGN gekopieerd.')}>PGN kopiëren</button>
+        </div>
+        {status && <p className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong" role="status">{status}</p>}
+        {manual && (
+          <label className="mt-3 block text-sm">Kopieer zelf:
+            <textarea className="input mt-1 h-24 font-mono text-xs" readOnly value={manual} onFocus={e => e.currentTarget.select()} autoFocus />
+          </label>
+        )}
+        <p className="mt-3 text-xs text-muted">Wie de link opent, ziet de partij in SchaakRoute en laat hem daar zelf analyseren.</p>
+      </div>
+    </div>
+  )
+}
+
+/** Opent een gedeelde partij: bewaart hem lokaal en gaat naar de analyse */
+export function SharedGameView() {
+  const { code = '' } = useParams()
+  const navigate = useNavigate()
+  const shared = useMemo(() => decodeShare(code), [code])
+  useEffect(() => {
+    if (!shared) return
+    ;(async () => {
+      const { game, ply } = shared
+      if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: DEPTH, savedAt: Date.now() })
+      navigate(`/analyse/${encodeURIComponent(game.id)}${ply ? `?zet=${ply}` : ''}`, { replace: true })
+    })()
+  }, [shared, navigate])
+  if (!shared) return <Empty title="Deze link klopt niet" action={<Link className="btn btn-primary" to="/analyse">Naar partij-analyse</Link>}>De gedeelde partij kon niet gelezen worden. Misschien is de link niet helemaal gekopieerd.</Empty>
+  return <Spinner label="Gedeelde partij openen…" />
+}
+
 export function GameReviewView() {
   const { id = '' } = useParams()
   const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
@@ -329,7 +418,9 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
       db.reviews.update(record.id, { accuracy, rating })
     }
   }, [ready, names.data, moves]) // eslint-disable-line react-hooks/exhaustive-deps
-  const [ply, setPly] = useState(0)
+  const [params] = useSearchParams()
+  const [ply, setPly] = useState(() => Math.max(0, Math.min(game.san.length, Number(params.get('zet')) || 0)))
+  const [sharing, setSharing] = useState(false)
   const [orientation, setOrientation] = useState<Side>(game.myColor)
   const current: ReviewedMove | undefined = moves[ply - 1]
 
@@ -341,6 +432,7 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.metaKey || e.ctrlKey || e.altKey) return
+      if (document.querySelector('[role="dialog"]')) return
       if (e.key === 'ArrowLeft') { e.preventDefault(); setPly(p => Math.max(0, p - 1)) }
       else if (e.key === 'ArrowRight') { e.preventDefault(); setPly(p => Math.min(total, p + 1)) }
       else if (e.key === 'Home') { e.preventDefault(); setPly(0) }
@@ -377,12 +469,13 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
           </div>
           <PlayerRow p={bottom} side={orientation} />
           <div className="px-2 sm:px-0 lg:hidden"><MoveComment move={current} evalAfter={evalNow} ply={ply} ready={!!evals && done > ply} compact /></div>
-          <div className="mt-2 grid grid-cols-5 gap-1.5 px-2 sm:px-0">
+          <div className="mt-2 grid grid-cols-6 gap-1.5 px-2 sm:px-0">
             <NavButton label="Begin" onClick={() => go(0)} disabled={ply === 0}><ChevronsLeft size={22} /></NavButton>
             <NavButton label="Vorige zet" onClick={() => go(ply - 1)} disabled={ply === 0}><ChevronLeft size={22} /></NavButton>
             <NavButton label="Volgende zet" onClick={() => go(ply + 1)} disabled={ply === total}><ChevronRight size={22} /></NavButton>
             <NavButton label="Einde" onClick={() => go(total)} disabled={ply === total}><ChevronsRight size={22} /></NavButton>
             <NavButton label="Bord draaien" onClick={() => setOrientation(o => (o === 'white' ? 'black' : 'white'))}><FlipVertical2 size={20} /></NavButton>
+            <NavButton label="Delen" onClick={() => setSharing(true)}><Share2 size={20} /></NavButton>
           </div>
         </div>
 
@@ -404,6 +497,7 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
           <MoveList san={game.san} moves={moves} ply={ply} onPick={go} />
         </aside>
       </div>
+      {sharing && <ShareDialog game={game} ply={ply} move={current} onClose={() => setSharing(false)} />}
     </div>
   )
 }

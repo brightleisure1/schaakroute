@@ -43,7 +43,7 @@ De 10 populairste openingen voor wit en de 10 populairste voor zwart, met alle 2
 | **Afstraffen** | Echte puzzels uit Lichess-partijen: je tegenstander maakt een fout in de opening en jij laat zien hoe je die afstraft. |
 | **Op jouw niveau** | Wat spelers op jouw rating echt spelen in een stelling, en welke zet het best scoort. |
 | **Repertoire** | Je eigen openingen samenstellen, importeren uit PGN en trainen. |
-| **Partij-analyse** | Vul je gebruikersnaam van Lichess of Chess.com in en kies een partij. Stockfish beoordeelt iedere zet, van briljant tot blunder, laat zien wat beter was en schat op welke rating je in die partij speelde. Met de fouten-trainer speel je je fouten opnieuw tot je de betere zet vindt. |
+| **Partij-analyse** | Vul je gebruikersnaam van Lichess of Chess.com in en kies een partij. Stockfish beoordeelt iedere zet, van briljant tot blunder, laat zien wat beter was en schat op welke rating je in die partij speelde. Met de fouten-trainer speel je je fouten opnieuw tot je de betere zet vindt, en een partij of zet deel je met een link. |
 | **Mijn partijen** | Je partijen ophalen van Lichess of Chess.com. De app laat zien waar je van de theorie afwijkt en zet die posities in je herhalingen. |
 
 Elke variant kun je op drie manieren spelen: **Leren** (met pijlen), **Oefenen** (zelf, met hulp als je vastloopt) en **Uit het hoofd** (zonder hulp).

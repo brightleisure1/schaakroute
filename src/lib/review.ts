@@ -485,3 +485,77 @@ export function bookInfo(san: string[], names: Record<string, [string, string, s
   }
   return { ply, name }
 }
+
+// ---------------- Delen ----------------
+
+const SAFE_URL = /^https:\/\/(lichess\.org|(www\.)?chess\.com)\/[\w/.-]*$/
+const SAFE_ID = /^(li|cc|pgn):[A-Za-z0-9]{1,40}$/
+
+function toBase64Url(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function fromBase64Url(code: string): string {
+  const bin = atob(code.replace(/-/g, '+').replace(/_/g, '/'))
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)))
+}
+
+/** Codeert een partij (en eventueel een zet) voor in een deellink. De analyse zelf gaat niet mee. */
+export function encodeShare(g: ReviewGame, ply?: number): string {
+  return toBase64Url(JSON.stringify({
+    v: 1, i: g.id, s: g.source, u: g.url, w: [g.white.name, g.white.rating], b: [g.black.name, g.black.rating],
+    c: g.myColor === 'white' ? 'w' : 'b', r: g.result, e: g.ending, p: g.speed, t: g.playedAt, o: g.opening, k: g.bookPly,
+    m: g.san.join(' '), z: ply || undefined,
+  }))
+}
+
+/** Leest een deellink terug. Alles wordt gecontroleerd: de zetten moeten legaal zijn en links mogen alleen naar Lichess of Chess.com. */
+export function decodeShare(code: string): { game: ReviewGame; ply?: number } | null {
+  try {
+    const d = JSON.parse(fromBase64Url(code))
+    if (d?.v !== 1 || typeof d.m !== 'string') return null
+    const san = d.m.split(' ').filter(Boolean)
+    const c = new Chess()
+    for (const s of san) c.move(s)
+    if (!san.length) return null
+    const str = (x: unknown, max = 80) => (typeof x === 'string' ? x.slice(0, max) : undefined)
+    const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : undefined)
+    const source: ReviewGame['source'] = d.s === 'lichess' || d.s === 'chesscom' ? d.s : 'pgn'
+    const url = str(d.u, 200)
+    const id = typeof d.i === 'string' && SAFE_ID.test(d.i) ? d.i : 'pgn:' + hash(d.m)
+    const result = ['1-0', '0-1', '1/2-1/2', '*'].includes(d.r) ? d.r : '*'
+    const ply = num(d.z)
+    return {
+      game: {
+        id, source, url: url && SAFE_URL.test(url) ? url : undefined,
+        white: { name: str(d.w?.[0]) || 'Wit', rating: num(d.w?.[1]) }, black: { name: str(d.b?.[0]) || 'Zwart', rating: num(d.b?.[1]) },
+        myColor: d.c === 'b' ? 'black' : 'white', result, ending: str(d.e, 30), speed: str(d.p, 20),
+        playedAt: num(d.t) ?? Date.now(), opening: str(d.o, 120), bookPly: num(d.k), san,
+      },
+      ply: ply !== undefined ? Math.max(0, Math.min(san.length, Math.round(ply))) : undefined,
+    }
+  } catch {
+    return null
+  }
+}
+
+/** De partij als PGN, met de bekende gegevens in de koppen */
+export function gameToPgn(g: ReviewGame): string {
+  const c = new Chess()
+  for (const s of g.san) c.move(s)
+  const d = new Date(g.playedAt)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  c.setHeader('Event', g.speed ? `${g.speed} partij` : 'Partij')
+  c.setHeader('Site', g.url ?? 'SchaakRoute')
+  c.setHeader('Date', `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`)
+  c.setHeader('White', g.white.name)
+  c.setHeader('Black', g.black.name)
+  c.setHeader('Result', g.result)
+  if (g.white.rating) c.setHeader('WhiteElo', String(g.white.rating))
+  if (g.black.rating) c.setHeader('BlackElo', String(g.black.rating))
+  if (g.opening) c.setHeader('Opening', g.opening)
+  return c.pgn()
+}

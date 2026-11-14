@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, estimateRating, explainMove, formatScore, gameFromPgn, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -140,5 +140,28 @@ describe('briljant bij een matcombinatie', () => {
     const moves = classifyGame(san, evals)
     expect(moves[30].san).toBe('Qb8+')
     expect(moves[30].cls).toBe('brilliant')
+  })
+})
+
+describe('delen', () => {
+  const game = gameFromPgn('[White "Anna"]\n[Black "Bob"]\n[Result "0-1"]\n[WhiteElo "1200"]\n\n1. f3 e5 2. g4 Qh4# 0-1', ['bob'])
+  it('een partij gaat heen en terug door een deellink, met de zet', () => {
+    const code = encodeShare({ ...game, url: 'https://lichess.org/abcdefgh' }, 3)
+    expect(code).toMatch(/^[A-Za-z0-9_-]+$/)
+    const back = decodeShare(code)!
+    expect(back.ply).toBe(3)
+    expect(back.game).toMatchObject({ id: game.id, san: game.san, myColor: 'black', result: '0-1', url: 'https://lichess.org/abcdefgh', white: { name: 'Anna', rating: 1200 } })
+  })
+  it('weigert onzin, illegale zetten en gevaarlijke links', () => {
+    expect(decodeShare('onzin')).toBeNull()
+    const bad = encodeShare({ ...game, san: ['e4', 'e4'] })
+    expect(decodeShare(bad)).toBeNull()
+    const evil = decodeShare(encodeShare({ ...game, url: 'javascript:alert(1)' }))!
+    expect(evil.game.url).toBeUndefined()
+  })
+  it('maakt een PGN met koppen', () => {
+    const pgn = gameToPgn(game)
+    expect(pgn).toContain('[White "Anna"]')
+    expect(pgn).toContain('2. g4 Qh4#')
   })
 })

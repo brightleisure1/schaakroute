@@ -24,6 +24,7 @@ const RepertoireTrain = lazy(() => import('./pages/Repertoire').then(m => ({ def
 const Statistics = lazy(() => import('./pages/Statistics').then(m => ({ default: m.Statistics })))
 const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ default: m.ImportGames })))
 const GameReviewList = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewList })))
+const SharedGameView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.SharedGameView })))
 const MistakeTrainerView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.MistakeTrainerView })))
 const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
@@ -161,7 +162,9 @@ function Shell() {
   const [sessionFocus, setSessionFocus] = useState(false)
   if (!settings) return <Spinner />
   const onboarding = loc.pathname === '/welkom' && !settings.onboarded
-  if (!settings.onboarded && loc.pathname !== '/welkom' && loc.pathname !== '/bronnen') return <Navigate to="/welkom" replace />
+  // Een gedeelde partij is ook zonder account te bekijken
+  const openWithoutOnboarding = /^\/(welkom|bronnen|delen\/|analyse\/)/.test(loc.pathname)
+  if (!settings.onboarded && !openWithoutOnboarding) return <Navigate to="/welkom" replace />
   const focus = FOCUS_ROUTES.test(loc.pathname) || sessionFocus
   const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`
   return (
@@ -226,6 +229,7 @@ function Shell() {
               <Route path="/analyse" element={<GameReviewList />} />
               <Route path="/analyse/:id" element={<GameReviewView />} />
               <Route path="/analyse/:id/fouten" element={<MistakeTrainerView />} />
+              <Route path="/delen/:code" element={<SharedGameView />} />
               <Route path="/instellingen" element={<Settings />} />
               <Route path="/bronnen" element={<Sources />} />
               <Route path="*" element={<Navigate to="/" replace />} />
