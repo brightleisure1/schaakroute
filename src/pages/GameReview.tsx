@@ -17,6 +17,8 @@ import { MoveClassIcon } from '../components/MoveClassIcon'
 import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
 import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
+import { Download, Lock, Search, User } from 'lucide-react'
+import { IconField, Note, Segmented } from '../components/Choice'
 
 /** Rekendiepte van Stockfish per stelling. Snel: een halve minuut per partij; grondig: een paar minuten. */
 const QUICK_DEPTH = 14
@@ -155,7 +157,7 @@ export function GameReviewList() {
         if (!game && settings?.chesscomUser) game = await findChesscomGame(settings.chesscomUser, link.id)
         if (!game) throw new Error(settings?.chesscomUser
           ? `Deze partij staat niet in de partijen van ${settings.chesscomUser}. Kopieer op Chess.com de PGN (Delen → PGN) en plak die hier.`
-          : 'Chess.com-partijen zoek ik op via je gebruikersnaam. Haal eerst je Chess.com-partijen op hierboven, of plak de PGN (Delen → PGN op Chess.com).')
+          : 'Chess.com-partijen zoek ik op via je gebruikersnaam. Haal eerst je Chess.com-partijen op (tabblad Chess.com), of plak de PGN (Delen → PGN op Chess.com).')
       } else if (/^\s*(\[|1\.)/.test(text)) game = gameFromPgn(text, myNames)
       else throw new Error('Dit herken ik niet. Plak een link naar een partij op Lichess of Chess.com, of een PGN.')
       setPaste('')
@@ -167,44 +169,60 @@ export function GameReviewList() {
     }
   }
 
+  const [pasteMode, setPasteMode] = useState(false)
   const earlier = saved.filter(r => !games?.some(g => g.id === r.id))
 
+  const lockIcon = <Lock size={15} strokeWidth={2.25} />
   return (
     <div className="space-y-5">
-      <PageHeader title="Partij-analyse" subtitle="Vul je gebruikersnaam in, kies een partij en zie per zet hoe goed hij was: van briljant tot blunder."
-        actions={<Link className="btn btn-ghost" to="/analyse/briljant"><MoveClassIcon cls="brilliant" size={20} />Mijn briljante zetten{brilliants ? <span className="font-normal text-muted">({brilliants})</span> : null}</Link>} />
-      <form className="card space-y-3 p-4" onSubmit={load}>
-        <Tabs value={source} onChange={pickSource} options={[{ value: 'lichess', label: 'Lichess' }, { value: 'chesscom', label: 'Chess.com' }]} />
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="sr-only" htmlFor="review-user">Gebruikersnaam op {SOURCE_NAME[source]}</label>
-          <input id="review-user" className="input sm:flex-1" placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`} autoComplete="username" autoCapitalize="none" spellCheck={false}
-            value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
-          <button className="btn btn-primary" disabled={busy || !username}>Partijen ophalen</button>
-        </div>
-        <p className="text-xs text-muted">Je laatste 30 partijen. Stockfish rekent alles op je eigen apparaat; er wordt niets naar ons gestuurd.</p>
-        <fieldset className="flex flex-wrap items-center gap-2 text-sm">
-          <legend className="sr-only">Hoe grondig analyseren</legend>
-          <span className="text-muted">Analyse:</span>
-          {[{ d: QUICK_DEPTH, label: 'Snel', hint: 'ongeveer een halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'een paar minuten, preciezer' }].map(o => (
-            <label key={o.d} className={`chip cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand ${depthPref === o.d ? 'chip-on' : ''}`}>
-              <input type="radio" name="review-depth" className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
-              {o.label} <span className="font-normal opacity-70">· {o.hint}</span>
-            </label>
-          ))}
-        </fieldset>
-      </form>
+      <PageHeader title="Partij-analyse" subtitle="Zie per zet hoe goed hij was, van briljant tot blunder." />
+      <div className="space-y-4 lg:max-w-2xl">
+        <section className="space-y-3 rounded-[22px] border-2 border-line bg-surface p-4" aria-label="Partijen kiezen om te analyseren">
+          <Segmented name="review-source" label="Waar komt de partij vandaan?" value={pasteMode ? 'pgn' : source}
+            onChange={v => { if (v === 'pgn') setPasteMode(true); else { setPasteMode(false); if (v !== source) pickSource(v) } }}
+            options={[{ value: 'lichess', label: 'Lichess' }, { value: 'chesscom', label: 'Chess.com' }, { value: 'pgn', label: 'Plak PGN' }]} />
+          {pasteMode ? (
+            <form className="space-y-3" onSubmit={openPasted}>
+              <label htmlFor="review-paste" className="sr-only">Link of PGN van één partij</label>
+              <textarea id="review-paste" className="input !min-h-28 !rounded-[14px] !border-2 font-mono text-sm" rows={4} spellCheck={false} autoCapitalize="none"
+                placeholder="Plak een link (Lichess of Chess.com) of een PGN" value={paste} onChange={e => setPaste(e.target.value)} />
+              <button className="btn btn-primary btn-key w-full" disabled={pasteBusy || !paste.trim()}><Search size={20} strokeWidth={2.25} aria-hidden />{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
+              {pasteErr && <ErrorBox error={pasteErr} />}
+              {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
+              <p className="text-[13px] leading-snug text-muted">Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.</p>
+              <Note icon={lockIcon}>Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
+            </form>
+          ) : (
+            <form className="space-y-3" onSubmit={load}>
+              <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={`Gebruikersnaam op ${SOURCE_NAME[source]}`} placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`}
+                autoComplete="username" autoCapitalize="none" spellCheck={false} value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
+              <button className="btn btn-primary btn-key w-full" disabled={busy || !username}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+              <Note icon={lockIcon}>Je laatste 30 partijen. Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
+            </form>
+          )}
+          <fieldset className="border-t border-line pt-3 text-sm">
+            <legend className="float-left mb-2 w-full text-muted">Hoe grondig analyseren</legend>
+            <div className="clear-both grid grid-cols-2 gap-2">
+              {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
+                <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
+                  <input type="radio" name="review-depth" className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
+                  <span className="font-bold">{o.label}</span>
+                  <span className="text-xs text-muted">{o.hint}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </section>
 
-      <form className="card space-y-2 p-4" onSubmit={openPasted}>
-        <label htmlFor="review-paste" className="font-semibold">Of analyseer één partij</label>
-        <textarea id="review-paste" className="input min-h-20 font-mono text-sm" rows={3} spellCheck={false} autoCapitalize="none"
-          placeholder="Plak een link (Lichess of Chess.com) of een PGN" value={paste} onChange={e => setPaste(e.target.value)} />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted">Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.</p>
-          <button className="btn btn-primary" disabled={pasteBusy || !paste.trim()}>{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
-        </div>
-        {pasteErr && <ErrorBox error={pasteErr} />}
-        {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
-      </form>
+        <Link to="/analyse/briljant" className="tap flex min-h-11 items-center gap-3 p-3">
+          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 16%, transparent)` }}><MoveClassIcon cls="brilliant" size={26} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold">Mijn briljante zetten{brilliants ? <span className="font-normal text-muted"> ({brilliants})</span> : null}</span>
+            <span className="block text-[13px] text-muted">Verzameld uit je geanalyseerde partijen</span>
+          </span>
+          <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
+        </Link>
+      </div>
 
       {busy && <Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} />}
       {err && <ErrorBox error={err} />}

@@ -66,6 +66,8 @@ interface NavItem { to: string; label: string; short?: string; icon: LucideIcon;
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
+/** Trainingsmodus (ontwerp ronde 10): geen kop en geen menu, alleen sluiten, voortgang en het bord */
+const TRAINING_MODE = /^\/(crushing|advantage)\//
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/(?!briljant))/
 
 /**
@@ -213,7 +215,7 @@ function Shell() {
 
       <div className="min-w-0 flex-1">
         {/* De kopbalk scrolt gewoon mee weg; alleen de menuknop blijft vast rechtsboven staan (geen scroll-JavaScript) */}
-        <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus ? 'hidden' : 'flex'}`}>
+        <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus || TRAINING_MODE.test(loc.pathname) ? 'hidden' : 'flex'}`}>
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           <StreakPill />
         </header>

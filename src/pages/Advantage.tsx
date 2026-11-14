@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Star } from 'lucide-react'
+import { Check, Star, X } from 'lucide-react'
 import { Chess } from 'chess.js'
+import type { Arrow } from 'react-chessboard'
 import { loadNames, loadStats } from '../lib/data'
 import { useAsync, useFamily, useManifest } from '../lib/hooks'
-import { START_FEN, epdOf, formatMoves, parseUci, uciOf } from '../lib/chess'
+import { START_FEN, epdOf, parseUci, uciOf } from '../lib/chess'
 import { moveScore, bandCount } from '../lib/trainer'
 import { addXp } from '../lib/progress'
 import { queryExplorer, ratingGroupsFor, type ExplorerResult } from '../lib/explorer'
 import { Board } from '../components/Board'
 import { EvalButton } from '../components/EvalButton'
 import { MoveList } from '../components/Trainer'
-import { ErrorBox, PageHeader, Spinner, Tabs, nf, pct, useSettings } from '../components/ui'
+import { BottomAction, FilterKey, PillChoice, TrainingHeading, TrainingSheet, TrainingTopBar, useCloseTraining } from '../components/TrainingModeChrome'
+import { Empty, ErrorBox, Spinner, nf, pct, useSettings } from '../components/ui'
 import { FamilyPicker } from './Variations'
 import type { Side, StatMove, StatsFile } from '../lib/types'
 
@@ -82,29 +84,92 @@ function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: St
   )
 }
 
+type Names = Record<string, [string, string, string]>
+type Mode = 'train' | 'explore'
+
+/** Op jouw niveau (ontwerp 10m): een korte ronde van tien vragen "welke zet scoort het best?", met verkennen achter de filterknop */
 export function Advantage() {
   const { id: paramId } = useParams()
   const nav = useNavigate()
+  const close = useCloseTraining()
   const settings = useSettings()
   const { data: manifest, error } = useManifest()
   const id = paramId ?? settings?.openings[0] ?? manifest?.families[0]?.id
   const { data: file } = useFamily(id)
   const stats = useAsync(() => (id ? loadStats(id) : Promise.resolve(null)), [id])
   const names = useAsync(() => loadNames(), [])
-  const [tab, setTab] = useState<'train' | 'explore'>('train')
+  const [mode, setMode] = useState<Mode>('train')
+  const [sheet, setSheet] = useState(false)
+  const [round, setRound] = useState(0)
 
   if (error) return <ErrorBox error={error} />
   if (!manifest || !settings) return <Spinner />
+  const band = bandFor(settings.elo)
+  const family = manifest.families.find(f => f.id === id)
+  const openSheet = () => setSheet(true)
+  const filterKey = <FilterKey onClick={openSheet} expanded={sheet} active={mode === 'explore'} label="Opening en modus" />
+  const label = `Op jouw niveau · rating ${BAND_LABEL[band]}`
+  const loading = !file || stats.loading
+
   return (
-    <div>
-      <PageHeader title="Op jouw niveau" subtitle="Wat er gespeeld wordt en wat scoort." />
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`)} families={manifest.families} mine={settings.openings} />
-        <Tabs value={tab} onChange={setTab} options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]} />
-      </div>
-      {!file || stats.loading ? <Spinner /> : !stats.data ? <ErrorBox error="Geen statistieken beschikbaar" /> : tab === 'train'
-        ? <PracticeTrainer key={file.family.id} rootUci={file.family.rootUci} side={file.family.side} stats={stats.data} elo={settings.elo} names={names.data ?? {}} />
-        : <Explorer key={file.family.id} rootUci={file.family.rootUci} side={file.family.side} stats={stats.data} elo={settings.elo} token={settings.lichessToken} names={names.data ?? {}} />}
+    <div className="flex flex-col gap-2.5">
+      {loading || !stats.data ? (
+        <>
+          <TrainingTopBar onClose={close} closeLabel="Stoppen met Op jouw niveau" />
+          <TrainingHeading tone="info" label={label} title={mode === 'train' ? 'Welke zet scoort het best?' : 'Wat wordt hier gespeeld?'} action={filterKey} />
+          {loading ? <Spinner /> : <ErrorBox error="Geen statistieken beschikbaar" />}
+        </>
+      ) : mode === 'train' ? (
+        <AdvantageQuiz
+          key={`${file.family.id}-${round}`}
+          rootUci={file.family.rootUci}
+          side={file.family.side}
+          stats={stats.data}
+          elo={settings.elo}
+          names={names.data ?? {}}
+          label={label}
+          familyName={family?.name ?? file.family.name}
+          filterKey={filterKey}
+          onClose={close}
+          onOpenSheet={openSheet}
+          onRestart={() => setRound(r => r + 1)}
+        />
+      ) : (
+        <>
+          <TrainingTopBar onClose={close} closeLabel="Stoppen met Op jouw niveau" />
+          <TrainingHeading tone="info" label={`${label} · verkennen`} title="Wat wordt hier gespeeld?" sub={family?.name} action={filterKey} />
+          <Explorer key={file.family.id} rootUci={file.family.rootUci} side={file.family.side} stats={stats.data} elo={settings.elo} token={settings.lichessToken} names={names.data ?? {}} />
+        </>
+      )}
+
+      <TrainingSheet
+        open={sheet}
+        onClose={() => setSheet(false)}
+        title="Opening en modus"
+        footer={<button type="button" className="btn btn-primary btn-key w-full" onClick={() => setSheet(false)}>Klaar</button>}
+      >
+        <div>
+          <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>
+          <div className="[&_select]:max-w-none">
+            <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`, { replace: true })} families={manifest.families} mine={settings.openings} />
+          </div>
+        </div>
+        <PillChoice<Mode>
+          legend="Wat wil je doen?"
+          value={mode}
+          onChange={setMode}
+          options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]}
+          hint={mode === 'train' ? 'Tien vragen: kies uit vier zetten welke het best scoort op jouw niveau.' : 'Speel zelf zetten op het bord en zie wat er op jouw niveau gespeeld wordt en hoe het afloopt.'}
+        />
+        {mode === 'train' && (
+          <button type="button" className="tap flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px]! px-4 font-bold" onClick={() => { setRound(r => r + 1); setSheet(false) }}>
+            ⟲ Opnieuw beginnen
+          </button>
+        )}
+        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">
+          Praktische score = winst + ½ remise, in partijen van spelers met rating {BAND_LABEL[band]} (jouw rating is {settings.elo}; aan te passen in Instellingen).
+        </p>
+      </TrainingSheet>
     </div>
   )
 }
@@ -169,8 +234,8 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
       <div className="mx-auto w-full max-w-[min(92vw,600px)]">
         <Board id="explorer" fen={fen} orientation={side} movable={turn} onMove={play} lastMove={last} />
         <div className="mt-2 flex gap-2">
-          <button className="btn btn-ghost flex-1" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>Terug</button>
-          <button className="btn btn-ghost flex-1" onClick={() => setUci(rootUci)}>⟲ Begin van de opening</button>
+          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold disabled:opacity-50" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>Terug</button>
+          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold" onClick={() => setUci(rootUci)}>⟲ Begin van de opening</button>
         </div>
       </div>
       <aside className="space-y-3">
@@ -223,33 +288,107 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
   )
 }
 
-/** Trainen: jij kiest de zet met de beste praktische score; de tegenstander speelt wat spelers van jouw niveau vaak spelen. */
-function PracticeTrainer({ rootUci, side, stats, elo, names }: { rootUci: string[]; side: Side; stats: StatsFile; elo: number; names: Record<string, [string, string, string]> }) {
-  const { uci, setUci, fen, san, last } = useLine(rootUci)
+const QUESTIONS = 10
+/** Binnen 3 procentpunt van de best scorende zet telt als een van de beste keuzes (zoals voorheen) */
+const MARGIN = 0.03
+const ARROW_PICK = 'rgba(47,125,79,0.85)'
+const ARROW_BEST = 'rgba(58,110,165,0.85)'
+
+interface Choice { uci: string; san: string; score: number; n: number; allLevels: boolean; name: string }
+
+/** Korte naam van de stelling na een zet ("Italian Game: Classical Variation, Giuoco Pianissimo" → "Giuoco Pianissimo") */
+const shortName = (full: string) => full.split(/[:,]\s*/).pop()?.trim() || full
+
+function shuffle<T>(list: T[]) {
+  const a = [...list]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+/**
+ * Trainen als keuzevraag: in elke stelling waar jij aan zet bent kies je uit (maximaal) vier zetten die op jouw niveau
+ * echt gespeeld worden, waaronder de best scorende. Na Controleer zie je per zet de praktische score. Je speelt verder
+ * met jouw keuze; de tegenstander antwoordt zoals spelers van jouw niveau dat vaak doen.
+ */
+function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, filterKey, onClose, onOpenSheet, onRestart }: {
+  rootUci: string[]; side: Side; stats: StatsFile; elo: number; names: Names; label: string; familyName: string
+  filterKey: ReactNode; onClose: () => void; onOpenSheet: () => void; onRestart: () => void
+}) {
+  const { uci, setUci, fen, last } = useLine(rootUci)
   const band = bandFor(elo)
   const pos = stats.positions[epdOf(fen)]
   const turn: Side = fen.split(' ')[1] === 'w' ? 'white' : 'black'
   const userTurn = turn === side
-  const [feedback, setFeedback] = useState<{ tone: 'good' | 'bad' | 'info'; text: string; uci?: string } | null>(null)
-  const [score, setScore] = useState({ good: 0, total: 0 })
-  const [reveal, setReveal] = useState(false)
+  const colorNl = side === 'white' ? 'wit' : 'zwart'
+  const [asked, setAsked] = useState(0)
+  const [good, setGood] = useState(0)
+  const [choice, setChoice] = useState<string | null>(null)
+  const [checked, setChecked] = useState(false)
+  const [finished, setFinished] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
+  // Zelfde selectie als voorheen: genoeg partijen (op jouw niveau, anders alle niveaus) en minstens 2% gespeeld
   const candidates = useMemo(() => {
     if (!pos) return []
     return pos.m
       .map(m => {
         const mine = moveScore(m, side, band)
         const s = mine.n >= 20 ? mine : moveScore(m, side)
-        return { m, s, n: mine.n >= 20 ? mine.n : m[2] }
+        return { m, s, n: mine.n >= 20 ? mine.n : m[2], allLevels: mine.n < 20 }
       })
       .filter(x => x.n >= 20 && x.m[2] / pos.n >= 0.02)
       .sort((a, b) => b.s.score - a.s.score)
   }, [pos, side, band])
-  const ended = !pos || (userTurn && candidates.length === 0) || uci.length - rootUci.length >= 16
+
+  const here = useMemo(() => nameAt(names, uci), [names, uci])
+  // De beste zet plus de drie andere die op jouw niveau het vaakst gespeeld worden, in willekeurige volgorde
+  // (de volgorde ligt vast per stelling, zodat de kaarten niet verspringen als de namen later binnenkomen)
+  const picks = useMemo(() => {
+    if (!userTurn || !candidates.length) return []
+    const [best, ...rest] = candidates
+    const others = [...rest].sort((a, b) => (bandCount(b.m, band) || b.m[2]) - (bandCount(a.m, band) || a.m[2])).slice(0, 3)
+    return shuffle([best, ...others])
+  }, [candidates, userTurn, band])
+  const choices = useMemo<Choice[]>(() => {
+    const bandTotal = pos ? pos.m.reduce((a, m) => a + bandCount(m, band), 0) : 0
+    return picks.map(x => {
+      let name = ''
+      try {
+        const after = new Chess(fen)
+        after.move(parseUci(x.m[0]))
+        const full = names[epdOf(after.fen())]?.[1]
+        if (full && full !== here) name = shortName(full)
+      } catch { /* zet niet speelbaar: zonder naam */ }
+      if (!name) {
+        const freq = bandTotal ? bandCount(x.m, band) / bandTotal : pos ? x.m[2] / pos.n : 0
+        name = `${pct(freq)} van de partijen`
+      }
+      return { uci: x.m[0], san: x.m[1], score: x.s.score, n: x.n, allLevels: x.allLevels, name }
+    })
+  }, [picks, fen, names, here, pos, band])
+
+  const bestUci = candidates[0]?.m[0]
+  const bestScore = candidates[0]?.s.score ?? 0
+  const depth = uci.length - rootUci.length
+  const lineEnded = !pos || (userTurn && choices.length < 2) || depth >= 16
+  const noData = lineEnded && depth === 0
+
+  // Einde van de betrouwbare data: opnieuw vanaf de opening, de ronde loopt door
+  useEffect(() => {
+    if (!lineEnded || noData || finished || checked) return
+    const t = setTimeout(() => {
+      setUci(rootUci)
+      setNotice('Verder in deze lijn zijn er te weinig partijen. We beginnen opnieuw vanaf de opening.')
+    }, 900)
+    return () => clearTimeout(t)
+  }, [lineEnded, noData, finished, checked]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // tegenstander: gewogen willekeurig op basis van wat er op jouw niveau gespeeld wordt
   useEffect(() => {
-    if (userTurn || ended || !pos) return
+    if (userTurn || lineEnded || finished || !pos) return
     const t = setTimeout(() => {
       const opts = pos.m.map(m => ({ m, w: bandCount(m, band) || m[2] })).filter(x => x.w / pos.n >= 0.03 || x.w >= 30)
       const sum = opts.reduce((a, x) => a + x.w, 0)
@@ -258,65 +397,170 @@ function PracticeTrainer({ rootUci, side, stats, elo, names }: { rootUci: string
       if (pick) setUci(u => [...u, pick.m[0]])
     }, 600)
     return () => clearTimeout(t)
-  }, [fen, userTurn, ended]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fen, userTurn, lineEnded, finished]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function play(from: string, to: string, promotion?: string) {
-    if (!userTurn || ended) return false
-    const c = new Chess(fen)
-    let mv
-    try { mv = c.move({ from, to, promotion: promotion ?? 'q' }) } catch { return false }
-    const u = uciOf(mv)
-    const best = candidates[0]
-    const mine = candidates.find(x => x.m[0] === u)
-    setReveal(false)
-    if (!mine) {
-      setFeedback({ tone: 'info', text: `${mv.san} komt op dit niveau (bijna) niet voor. Kies een gangbare zet.` })
-      return false
+  // Sneltoetsen: 1 t/m 4 kiest een zet (niet tijdens typen in een veld)
+  useEffect(() => {
+    if (checked || finished || !choices.length) return
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest('input, textarea, select, [role="dialog"]')) return
+      const c = choices[Number(e.key) - 1]
+      if (c) { e.preventDefault(); setChoice(c.uci) }
     }
-    setScore(s => ({ good: s.good + (mine.s.score >= best.s.score - 0.03 ? 1 : 0), total: s.total + 1 }))
-    if (mine.s.score >= best.s.score - 0.03) {
-      setFeedback({ tone: 'good', text: `${mv.san}: praktische score ${pct(mine.s.score)} over ${nf(mine.n)} partijen, een van de best scorende keuzes.`, uci: u })
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [choices, checked, finished])
+
+  const picked = choices.find(c => c.uci === choice)
+  const correct = !!picked && picked.score >= bestScore - MARGIN
+  const bestSan = candidates[0]?.m[1]
+
+  function check() {
+    if (!picked || checked) return
+    setChecked(true)
+    setNotice(null)
+    setAsked(a => a + 1)
+    if (correct) {
+      setGood(g => g + 1)
       addXp(3).catch(() => {})
-    } else {
-      setFeedback({ tone: 'bad', text: `${mv.san} scoort ${pct(mine.s.score)}; ${best.m[1]} scoort ${pct(best.s.score)} op jouw niveau. Je speelt verder met jouw zet.`, uci: u })
     }
-    setUci(x => [...x, u])
-    return true
+  }
+  function next() {
+    if (!checked || !choice) return
+    if (asked >= QUESTIONS) { setFinished(true); return }
+    setUci(x => [...x, choice])
+    setChoice(null)
+    setChecked(false)
   }
 
-  const restart = () => { setUci(rootUci); setFeedback(null); setScore({ good: 0, total: 0 }) }
+  const arrows: Arrow[] = []
+  if (picked && !finished) {
+    arrows.push({ startSquare: picked.uci.slice(0, 2), endSquare: picked.uci.slice(2, 4), color: ARROW_PICK })
+    if (checked && bestUci && bestUci !== picked.uci) arrows.push({ startSquare: bestUci.slice(0, 2), endSquare: bestUci.slice(2, 4), color: ARROW_BEST })
+  }
+
+  const qNum = Math.min(QUESTIONS, asked + (checked || finished ? 0 : 1))
+  const top = (
+    <TrainingTopBar
+      value={asked / QUESTIONS}
+      count={`${qNum}/${QUESTIONS}`}
+      countLabel={`Vraag ${qNum} van ${QUESTIONS}`}
+      onClose={onClose}
+      closeLabel="Stoppen met Op jouw niveau"
+    />
+  )
+  const heading = <TrainingHeading tone="info" label={label} title={finished ? 'Ronde klaar' : 'Welke zet scoort het best?'} sub={here ?? familyName} action={filterKey} />
+
+  if (noData) {
+    return (
+      <>
+        {top}
+        {heading}
+        <Empty title="Te weinig partijen" action={<button type="button" className="btn btn-primary btn-key" onClick={onOpenSheet}>Andere opening kiezen</button>}>
+          Voor deze opening zijn er op jouw niveau te weinig partijen in de steekproef om een vraag te stellen.
+        </Empty>
+      </>
+    )
+  }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
-      <div className="mx-auto w-full max-w-[min(92vw,600px)]">
-        <Board id="practice" fen={fen} orientation={side} movable={userTurn && !ended ? side : undefined} onMove={play} lastMove={last} />
+    <>
+      {top}
+      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-4">
+        <div className="lg:col-start-2 lg:row-start-1">{heading}</div>
+
+        <div className="mx-auto w-full max-w-[clamp(240px,calc(100dvh-520px),100%)] sm:max-w-[clamp(300px,calc(100dvh-460px),480px)] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-w-[min(100%,600px,calc(100dvh-140px))]">
+          <div className="rounded-xl shadow-[0_1px_0_var(--line),0_10px_26px_rgba(30,40,30,0.14)]">
+            <Board id="practice" label={`Schaakbord, je speelt ${colorNl}`} fen={fen} orientation={side} lastMove={last} arrows={arrows} />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3.5 lg:col-start-2 lg:row-start-2">
+          {finished ? (
+            <div className="rounded-[18px] border-2 border-line bg-surface p-5 text-center animate-fade-up" role="status">
+              <div className="text-4xl font-extrabold tabular-nums text-info-ink">{good} <span className="text-2xl text-muted">van {QUESTIONS}</span></div>
+              <p className="mt-2 text-muted">keer koos je een van de best scorende zetten op jouw niveau.</p>
+            </div>
+          ) : userTurn && !lineEnded ? (
+            <div role="group" aria-label="Kies de zet die volgens jou het best scoort" className="flex flex-col gap-2">
+              {choices.map((c, i) => {
+                const selected = choice === c.uci
+                const isBest = c.uci === bestUci
+                const state = !checked ? (selected ? 'tap-on' : '')
+                  : selected ? (correct ? 'tap-on' : 'border-danger! bg-danger-soft! shadow-[0_3px_0_var(--danger)]!')
+                  : isBest ? 'border-brand!' : 'opacity-80'
+                const verdict = checked ? `, score ${pct(c.score)} over ${nf(c.n)} partijen${isBest ? ', best scorend' : ''}${selected ? ', jouw keuze' : ''}` : ''
+                return (
+                  <button
+                    key={c.uci}
+                    type="button"
+                    className={`tap grid min-h-[3.75rem] w-full grid-cols-[4.25rem_minmax(0,1fr)_2.75rem] items-center gap-2.5 rounded-[14px]! px-3 py-2.5 text-left ${state}`}
+                    aria-pressed={selected}
+                    aria-disabled={checked || undefined}
+                    aria-label={`${c.san}, ${c.name}${verdict}`}
+                    aria-keyshortcuts={String(i + 1)}
+                    onClick={() => { if (!checked) setChoice(c.uci) }}
+                  >
+                    <span className="flex items-center gap-1 text-[17px] font-extrabold">
+                      {c.san}
+                      {checked && isBest && <Star size={13} aria-hidden className="shrink-0 fill-star text-star" />}
+                      {checked && selected && (correct ? <Check size={16} strokeWidth={3} aria-hidden className="shrink-0 text-brand-strong" /> : <X size={16} strokeWidth={3} aria-hidden className="shrink-0 text-danger-ink" />)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block truncate text-xs ${selected && (!checked || correct) ? 'text-brand-strong' : 'text-muted'}`}>
+                        {c.name}{checked && <> · {nf(c.n)} partijen{c.allLevels ? ' (alle niveaus)' : ''}</>}
+                      </span>
+                      <span className={`mt-1 block h-2 overflow-hidden rounded-full ${selected ? 'bg-surface' : 'bg-surface-2'} ${checked ? '' : 'invisible'}`} aria-hidden>
+                        <span className={`block h-full rounded-full transition-[width] duration-500 ${selected && correct ? 'bg-brand' : selected ? 'bg-danger' : 'bg-info'}`} style={{ width: checked ? `${Math.round(c.score * 100)}%` : 0 }} />
+                      </span>
+                    </span>
+                    <span className="text-right text-sm font-bold tabular-nums" aria-hidden>{checked ? pct(c.score) : ''}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-[18px] border-2 border-line bg-surface-2 px-4 py-3 text-sm text-muted" aria-live="polite">
+              {notice ?? 'De tegenstander kiest een zet zoals spelers van jouw niveau dat vaak doen…'}
+            </div>
+          )}
+
+          {checked && !finished && pos && (
+            <details className="text-sm">
+              <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-muted hover:text-ink">Alle zetten in deze stelling</summary>
+              <div className="mt-1 rounded-[18px] border-2 border-line bg-surface p-2">
+                <StatsTable moves={pos.m} total={pos.n} side={side} band={band} highlight={choice ?? undefined} />
+              </div>
+            </details>
+          )}
+
+          {finished ? (
+            <BottomAction>
+              <button type="button" className="btn btn-primary btn-key w-full" onClick={onRestart} autoFocus>Nog een ronde</button>
+              <button type="button" className="tap flex min-h-12 w-full items-center justify-center rounded-[14px]! px-4 font-bold" onClick={onClose}>Sluiten</button>
+            </BottomAction>
+          ) : (
+            <BottomAction tone={checked ? (correct ? 'good' : 'bad') : undefined}>
+              {checked && picked && (
+                <p className={`text-sm font-semibold ${correct ? 'text-brand-strong' : 'text-danger-ink'}`} role="status">
+                  {correct
+                    ? `Goed gekozen! ${picked.san} scoort ${pct(picked.score)} over ${nf(picked.n)} partijen, een van de best scorende keuzes.`
+                    : `${picked.san} scoort ${pct(picked.score)}; ${bestSan} scoort ${pct(bestScore)} op jouw niveau. Je speelt verder met jouw zet.`}
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn btn-primary btn-key w-full"
+                onClick={checked ? next : check}
+                disabled={!checked && (!picked || !userTurn || lineEnded)}
+              >
+                {checked ? (asked >= QUESTIONS ? 'Bekijk je resultaat' : 'Volgende') : 'Controleer'}
+              </button>
+            </BottomAction>
+          )}
+        </div>
       </div>
-      <aside className="space-y-3">
-        <div className="card p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-brand-strong">Praktijktraining · rating {BAND_LABEL[band]}</div>
-          <div className="mt-1 text-sm text-muted">{nameAt(names, uci) ?? ''}</div>
-          <div className="mt-1 font-mono text-xs">{formatMoves(san)}</div>
-          <div className="mt-2 text-sm">Beste praktische keuzes: <b>{score.good}</b> van {score.total}</div>
-        </div>
-        {feedback && <div className={`rounded-2xl px-4 py-3 text-sm ${feedback.tone === 'good' ? 'bg-brand-soft text-brand-strong' : feedback.tone === 'bad' ? 'bg-danger-soft text-danger-ink' : 'bg-info-soft text-info-ink'}`}>{feedback.text}</div>}
-        {ended ? (
-          <div className="card p-4">
-            <div className="font-semibold">Einde van de betrouwbare data</div>
-            <p className="text-sm text-muted">Verder in deze lijn zijn er te weinig partijen in de steekproef om iets zinnigs te zeggen.</p>
-            <button className="btn btn-primary mt-3 w-full" onClick={restart}>Nieuwe ronde</button>
-          </div>
-        ) : userTurn ? (
-          <div className="card p-4">
-            <div className="text-sm">Jij bent aan zet. Welke zet scoort in de praktijk het best?</div>
-            <button className="btn btn-quiet mt-2 px-0 text-sm" onClick={() => setReveal(r => !r)}>{reveal ? 'Verberg' : 'Toon'} de statistiek</button>
-            {reveal && pos && <StatsTable moves={pos.m} total={pos.n} side={side} band={band} />}
-          </div>
-        ) : <div className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">De tegenstander kiest een zet zoals spelers van jouw niveau dat vaak doen…</div>}
-        <div className="flex gap-2">
-          <button className="btn btn-ghost flex-1" onClick={restart}>⟲ Opnieuw</button>
-        </div>
-        <p className="text-xs text-muted">Praktische score = winst + ½ remise op jouw niveau.</p>
-      </aside>
-    </div>
+    </>
   )
 }

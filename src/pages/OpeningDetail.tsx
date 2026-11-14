@@ -1,15 +1,17 @@
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowRight, ChevronDown, Lightbulb, Play, Swords, TrendingUp } from 'lucide-react'
-import { familyProgress, useCardMap, useFamily, useProgressMap, variationMastery } from '../lib/hooks'
+import { ArrowLeft, ArrowRight, ChevronDown, Lightbulb, Play, Swords, TrendingUp } from 'lucide-react'
+import { familyProgress, useCardMap, useFamily, useProgressMap } from '../lib/hooks'
 import { moveNumberLabel } from '../lib/chess'
-import { VariationItem, type VariationStatus } from '../components/VariationItem'
 import { learnLessons, learnThreshold, userMoveCount } from '../lib/course'
 import { CropBoard } from '../components/CropBoard'
-import { ErrorBox, ProgressBar, Spinner } from '../components/ui'
+import { MoveChips, ROW_DIVIDE, ROW_LIST, ThickBar, VariationRow, rowMetaMap } from '../components/OpeningScreens'
+import { ErrorBox, Spinner, plural } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
 
-// Opening details (ontwerp 7a/7b): één boodschap per blok. Wat is de opening, wat is het idee, wat moet je
-// weten en welke varianten leer je eerst. De volledige lijst met zoeken en filters staat achter één link.
+// Opening (ontwerp 10j): één kaart met bord, beginzetten, het idee en de ene grote knop (verder met de cursus).
+// Daaronder de twee andere trainingen als tegels en de varianten om mee te beginnen. De achtergrond
+// (plannen, sterk en zwak, tip) staat lager op de pagina; de volledige lijst achter één link.
 
 export function OpeningDetail() {
   const { id } = useParams()
@@ -31,6 +33,7 @@ export function OpeningDetail() {
   const courseTo = nextLesson ? `/les/${f.id}/${nextLesson.id}` : `/cursus/${f.id}`
 
   // De vijf meest gespeelde varianten om mee te beginnen (geen basislijnen, wel lang genoeg om te leren)
+  const meta = rowMetaMap(file, progress, cards)
   const min = learnThreshold(file)
   const seen = new Set<string>()
   const top = [...file.variations]
@@ -38,104 +41,110 @@ export function OpeningDetail() {
     .sort((a, b) => b.freq - a.freq)
     .filter(v => { const k = v.path.join('>'); if (seen.has(k)) return false; seen.add(k); return true })
     .slice(0, 5)
-    .map(v => {
-      const pr = progress.get(v.id)
-      const m = variationMastery(v, f.side, cards, pr)
-      const hard = !!pr && pr.completions > 0 && pr.mistakes / pr.completions >= 1
-      const status: VariationStatus = hard ? 'hard' : m.mastered ? 'mastered' : m.learned ? 'learned' : 'new'
-      return { v, status }
-    })
 
   const rootMoves = f.rootSan.map((m, i) => (i % 2 === 0 ? `${moveNumberLabel(i)}${m}` : m))
+  const caption = `Met ${sideNl} · ${f.curated ? 'extra opening' : `#${f.rank} populairst`}`
 
   return (
-    <div className="space-y-6 lg:space-y-7">
-      <header className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3">
-        <div>
-          <Link to="/openingen" className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Openingen</Link>
-          <h1 className="text-3xl font-extrabold leading-none tracking-tight lg:text-[2.5rem]">{f.name}</h1>
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {[info?.nameNl, `Met ${sideNl}`, f.curated ? 'Extra opening' : `#${f.rank} populairst voor ${sideNl}`].filter(Boolean).map(t => <span key={t} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-sm font-semibold">{t}</span>)}
-          </div>
-        </div>
-        <div className="w-full sm:w-64">
-          <div className="flex justify-between text-sm text-muted"><span><b className="text-ink">{p.learned}</b> van {p.total} varianten geleerd</span><span>{Math.round(p.pct * 100)}%</span></div>
-          <ProgressBar value={p.pct} className="mt-1.5" label="Varianten geleerd" />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <header>
+        <Link to="/openingen" className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm text-muted hover:text-ink"><ArrowLeft size={14} aria-hidden />Openingen</Link>
+        <h1 className="text-[1.75rem] font-extrabold leading-[1.12] tracking-[-0.03em] lg:text-[2.5rem]">{f.name}</h1>
+        {info?.nameNl && <p className="mt-0.5 text-sm text-muted">{info.nameNl} · {f.ecoRange}</p>}
+        <div className="mt-2.5 flex items-center gap-2.5 lg:max-w-md">
+          <ThickBar value={p.pct} size="lg" label="Varianten geleerd" className="flex-1" />
+          <span className="shrink-0 text-[0.8125rem] text-muted tabular-nums"><b className="text-ink">{p.learned}</b> van {p.total}<span className="sr-only"> varianten geleerd</span>{p.mastered > 0 && <span className="hidden sm:inline"> · {p.mastered} beheerst</span>}</span>
         </div>
       </header>
 
-      <section className="card p-4 sm:p-5 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center lg:gap-9 lg:p-7">
+      <section aria-label="Over deze opening" className="rounded-[22px] border-2 border-line bg-surface p-4 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-center lg:gap-8 lg:p-6">
         <div className="flex items-center gap-3.5 lg:block">
-          <div className="w-32 shrink-0 overflow-hidden rounded-xl shadow-[0_6px_22px_rgb(30_40_30/0.12)] lg:w-full"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} inset={5} /></div>
-          <ol className="flex flex-wrap gap-1 lg:hidden" aria-label="Beginzetten">
-            {rootMoves.map((m, i) => <MoveChip key={i} m={m} last={i === rootMoves.length - 1} />)}
-          </ol>
-        </div>
-        <div className="mt-4 flex flex-col lg:mt-0">
-          <ol className="hidden flex-wrap gap-1.5 lg:flex" aria-label="Beginzetten">
-            {rootMoves.map((m, i) => <MoveChip key={i} m={m} last={i === rootMoves.length - 1} />)}
-          </ol>
-          {info && <>
-            <h2 className="text-xs font-bold uppercase tracking-wide text-muted lg:mt-5 lg:text-sm">Het idee</h2>
-            <p className="mt-1 max-w-[600px] text-[1.0625rem] font-medium leading-relaxed lg:mt-1.5 lg:text-xl">{info.idea}</p>
-          </>}
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:mt-6 lg:gap-2.5">
-            <Link to={courseTo} className="btn btn-primary min-h-13 px-5 text-base"><Play size={20} aria-hidden />{courseLabel}</Link>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <Link to={`/crushing/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><Swords size={16} aria-hidden />Afstraffen</Link>
-              <Link to={`/advantage/${f.id}`} className="btn btn-ghost min-h-11 sm:min-h-13"><TrendingUp size={16} aria-hidden />Op jouw niveau</Link>
-            </div>
+          <div className="w-[120px] shrink-0 lg:w-full"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} /></div>
+          <div className="min-w-0 lg:hidden">
+            <p className="text-xs font-bold uppercase tracking-[0.04em] text-muted">{caption}</p>
+            <MoveChips moves={rootMoves} className="mt-2" />
           </div>
+        </div>
+        <div className="mt-3.5 flex flex-col gap-3.5 lg:mt-0 lg:gap-4">
+          <div className="hidden lg:block">
+            <p className="text-sm font-bold uppercase tracking-[0.04em] text-muted">{caption}</p>
+            <MoveChips moves={rootMoves} className="mt-2" />
+          </div>
+          {info && <p className="max-w-[600px] text-base font-medium leading-[1.45] lg:text-xl lg:leading-relaxed">{info.idea}</p>}
+          <Link to={courseTo} className="btn btn-primary btn-key w-full gap-2.5! lg:w-auto lg:self-start lg:px-7!"><Play size={20} aria-hidden />{courseLabel}</Link>
+          {courseTo !== `/cursus/${f.id}` && (
+            <Link to={`/cursus/${f.id}`} className="-my-1.5 inline-flex min-h-11 items-center justify-center gap-1 self-center text-sm font-semibold text-brand-strong hover:underline lg:self-start">
+              Bekijk het leerpad · {plural(lessons.length, 'les', 'lessen')}<ArrowRight size={14} aria-hidden />
+            </Link>
+          )}
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-2.5 lg:max-w-2xl lg:gap-3">
+        <TrainTile to={`/crushing/${f.id}`} title="Afstraffen" text="Straf fouten van je tegenstander af" tone="danger" icon={<Swords size={20} aria-hidden />} />
+        <TrainTile to={`/advantage/${f.id}`} title="Op jouw niveau" text="Oefen wat er op jouw niveau gespeeld wordt" tone="info" icon={<TrendingUp size={20} aria-hidden />} />
+      </div>
+
+      <section aria-labelledby="eerst-title" className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <h2 id="eerst-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">Leer deze varianten eerst</h2>
+          <span className="text-sm text-muted">de {top.length} meest gespeelde</span>
+        </div>
+        <div className={ROW_LIST}>
+          <ul className={ROW_DIVIDE}>
+            {top.map((v, i) => <VariationRow key={v.id} v={v} file={file} status={meta.get(v.id)!.status} shareSuffix={i === 0} />)}
+          </ul>
+          <Link to={`/variaties?opening=${f.id}`} className="flex min-h-12 items-center justify-center gap-2 border-t-2 border-surface-2 p-4 text-sm font-semibold text-brand-strong hover:bg-surface-2 focus-visible:-outline-offset-2! lg:text-base">
+            Alle {f.variationCount} varianten bekijken, zoeken en filteren<ArrowRight size={16} aria-hidden />
+          </Link>
         </div>
       </section>
 
       {info && (
         <section aria-labelledby="weten-title">
-          <h2 id="weten-title" className="mb-3 text-lg font-bold lg:text-xl">Wat je moet weten</h2>
+          <h2 id="weten-title" className="mb-2.5 text-lg font-bold tracking-[-0.01em] lg:text-xl">Wat je moet weten</h2>
           <div className="grid gap-2.5 lg:grid-cols-3 lg:gap-3.5">
-            <div className="card p-4 lg:p-5">
+            <div className="rounded-[18px] border-2 border-line bg-surface p-4 lg:p-5">
               <h3 className="font-bold">Typische plannen</h3>
               <ul className="mt-2.5 space-y-2.5 text-sm leading-relaxed">
                 {info.plans.map(t => <li key={t} className="flex gap-2.5"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />{t}</li>)}
               </ul>
             </div>
-            <div className="card hidden p-5 lg:block">
+            <div className="hidden rounded-[18px] border-2 border-line bg-surface p-5 lg:block">
               <h3 className="font-bold">Sterk en zwak</h3>
               <ProsCons strengths={info.strengths} weaknesses={info.weaknesses} />
             </div>
-            <div className="rounded-2xl bg-accent-soft p-4 lg:p-5">
+            <div className="rounded-[18px] bg-accent-soft p-4 lg:p-5">
               <h3 className="flex items-center gap-2 font-bold text-accent-ink"><Lightbulb size={16} aria-hidden />Tip</h3>
               <p className="mt-2 text-sm leading-relaxed">{info.tip}</p>
             </div>
-            {/* Telefoon: sterk en zwak ingeklapt, zodat de varianten sneller in beeld komen */}
-            <details className="card group p-4 lg:hidden">
+            {/* Telefoon: sterk en zwak ingeklapt */}
+            <details className="group rounded-[18px] border-2 border-line bg-surface px-4 py-1.5 lg:hidden">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-bold">Sterk en zwak<ChevronDown size={18} aria-hidden className="text-muted transition group-open:rotate-180" /></summary>
-              <ProsCons strengths={info.strengths} weaknesses={info.weaknesses} />
+              <div className="pb-2.5"><ProsCons strengths={info.strengths} weaknesses={info.weaknesses} /></div>
             </details>
           </div>
         </section>
       )}
-
-      <section aria-labelledby="eerst-title">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
-          <h2 id="eerst-title" className="text-lg font-bold lg:text-xl">Leer deze varianten eerst</h2>
-          <span className="text-sm text-muted">de {top.length} meest gespeelde</span>
-        </div>
-        <div className="card overflow-hidden">
-          <ul className="divide-y divide-line">
-            {top.map(({ v, status }) => <VariationItem key={v.id} v={v} file={file} status={status} />)}
-          </ul>
-          <Link to={`/variaties?opening=${f.id}`} className="flex min-h-12 items-center justify-center gap-2 border-t border-line p-4 text-sm font-semibold text-brand-strong hover:bg-surface-2 lg:text-base">
-            Alle {f.variationCount} varianten bekijken, zoeken en filteren<ArrowRight size={16} aria-hidden />
-          </Link>
-        </div>
-      </section>
     </div>
   )
 }
 
-function MoveChip({ m, last }: { m: string; last: boolean }) {
-  return <li className={`rounded-lg border px-2 py-1 text-sm font-bold lg:px-2.5 lg:text-base ${last ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line bg-surface-2'}`}>{m}</li>
+const TONE = {
+  danger: 'bg-danger-soft text-danger-ink',
+  info: 'bg-info-soft text-info-ink',
+}
+
+function TrainTile({ to, title, text, tone, icon }: { to: string; title: string; text: string; tone: keyof typeof TONE; icon: ReactNode }) {
+  return (
+    <Link to={to} className="tap flex min-h-16 items-center gap-2.5 rounded-2xl! p-3 hover:border-brand! lg:p-4">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${TONE[tone]}`}>{icon}</span>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold leading-tight lg:text-base">{title}</span>
+        <span className="hidden text-xs text-muted lg:block">{text}</span>
+      </span>
+    </Link>
+  )
 }
 
 function ProsCons({ strengths, weaknesses }: { strengths: string[]; weaknesses: string[] }) {

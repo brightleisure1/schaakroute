@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Lock } from 'lucide-react'
+import { Brain, Check, Flame, Lock, Timer, X, type LucideIcon } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, today, type DailyActivity } from '../lib/db'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
-import { BADGES } from '../lib/gamification'
+import { BADGES, levelFromXp } from '../lib/gamification'
 import { streak, totalXp } from '../lib/progress'
 import { stageOf } from '../lib/srs'
 import { displayName } from '../lib/data'
-import { Empty, PageHeader, ProgressBar, Spinner, StatTile, Stars, Tabs, pct } from '../components/ui'
+import { Empty, PageHeader, ProgressBar, Spinner, Stars, Tabs, nf, pct } from '../components/ui'
+import { IconTile, type Tone } from '../components/SettingsList'
 
 // Uitsluitend echte, lokaal opgeslagen gebruikersgegevens. Lege toestanden in plaats van voorbeelddata.
 
@@ -24,6 +25,7 @@ function lastDays(n: number) {
   }
   return out
 }
+const CARD = 'rounded-[18px] border-2 border-line bg-surface p-4'
 const shortDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 
 export function Statistics() {
@@ -78,39 +80,57 @@ export function Statistics() {
   for (const d of sortedDays) if (d < days[0]) before += learnedByDay.get(d)!
   const cumulative = days.reduce<number[]>((acc, d) => [...acc, (acc[acc.length - 1] ?? before) + (learnedByDay.get(d) ?? 0)], [])
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Statistieken" />
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatTile label="Goede zetten" value={totals.correct.toLocaleString('nl-NL')} />
-        <StatTile label="Fouten" value={totals.mistakes.toLocaleString('nl-NL')} hint={totals.correct + totals.mistakes ? `${pct(totals.correct / (totals.correct + totals.mistakes))} nauwkeurig` : undefined} />
-        <StatTile label="Geleerde posities" value={learned} hint={`${mature} met interval ≥ 7 dagen`} />
-        <StatTile label="Herhalingen" value={totals.reviews} />
-        <StatTile label="Trainingstijd" value={`${Math.round(totals.seconds / 60)} min`} />
-        <StatTile label="Reeks" value={`${st.current} d`} hint={`record ${st.best} · ${xp.toLocaleString('nl-NL')} XP`} />
-      </section>
+  const lvl = levelFromXp(xp)
+  const attempts = totals.correct + totals.mistakes
 
-      <section className="card p-4">
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Statistieken" />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <StreakHero current={st.current} best={st.best} xp={xp} level={lvl.level} progress={lvl.progress} toNext={lvl.next - xp} />
+        <ul className="grid grid-cols-2 gap-2.5">
+          <Tile icon={Check} tone="brand" label="Goede zetten" value={nf(totals.correct)} />
+          <Tile icon={X} tone="danger" label="Fouten" value={nf(totals.mistakes)} />
+          <Tile icon={Brain} tone="info" label="Geleerde posities" value={nf(learned)} />
+          <Tile icon={Timer} tone="accent" label="Trainingstijd" {...trainingTime(totals.seconds)} />
+        </ul>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <CorrectBars byDay={byDay} />
+        <section className={CARD} aria-labelledby="heatmap-title">
+          <h2 id="heatmap-title" className="text-[15px] font-bold">Activiteit · 16 weken</h2>
+          <Heatmap byDay={byDay} />
+        </section>
+      </div>
+
+      <section className={CARD}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Trainingsactiviteit per dag</h2>
+          <h2 className="text-[15px] font-bold">Goed en fout per dag</h2>
           <Tabs value={range} onChange={setRange} options={[{ value: '30', label: '30 dagen' }, { value: '90', label: '90 dagen' }]} />
         </div>
         <DailyBars days={days} byDay={byDay} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="card p-4">
-          <h2 className="mb-1 font-semibold">Geleerde posities door de tijd</h2>
+        <div className={CARD}>
+          <h2 className="mb-1 text-[15px] font-bold">Geleerde posities door de tijd</h2>
           <LineChart days={days} values={cumulative} />
         </div>
-        <div className="card p-4">
-          <h2 className="mb-3 font-semibold">Activiteit (16 weken)</h2>
-          <Heatmap byDay={byDay} />
+        <div className={CARD}>
+          <h2 className="mb-2 text-[15px] font-bold">Meer cijfers</h2>
+          <dl className="divide-y-2 divide-surface-2 text-sm">
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Nauwkeurigheid</dt><dd className="font-bold tabular-nums">{attempts ? pct(totals.correct / attempts) : '–'}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Herhalingen</dt><dd className="font-bold tabular-nums">{nf(totals.reviews)}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Posities met interval ≥ 7 dagen</dt><dd className="font-bold tabular-nums">{nf(mature)}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Volgend level</dt><dd className="font-bold tabular-nums">nog {nf(lvl.next - xp)} XP</dd></div>
+          </dl>
         </div>
       </section>
 
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Beheersing per opening</h2>
+      <section className={CARD}>
+        <h2 className="mb-3 text-[15px] font-bold">Beheersing per opening</h2>
         {famRows.length === 0 ? <p className="text-sm text-muted">Nog geen opening getraind.</p> : (
           <ul className="space-y-3">
             {famRows.map(({ f, p }) => (
@@ -124,8 +144,8 @@ export function Statistics() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="card p-4">
-          <h2 className="mb-3 font-semibold">Moeilijkste varianten</h2>
+        <div className={CARD}>
+          <h2 className="mb-3 text-[15px] font-bold">Moeilijkste varianten</h2>
           {hardest.length === 0 ? <p className="text-sm text-muted">Nog geen fouten geregistreerd. Knap!</p> : (
             <table className="w-full text-sm">
               <thead className="text-xs text-muted"><tr><th className="text-left">Variant</th><th className="text-right">Fouten/keer</th><th className="text-right">Beheersing</th></tr></thead>
@@ -138,8 +158,8 @@ export function Statistics() {
             </table>
           )}
         </div>
-        <div className="card p-4">
-          <h2 className="mb-3 font-semibold">Beheersing per variant</h2>
+        <div className={CARD}>
+          <h2 className="mb-3 text-[15px] font-bold">Beheersing per variant</h2>
           {varRows.length === 0 ? <p className="text-sm text-muted">Nog geen varianten afgerond.</p> : (
             <div className="max-h-80 overflow-auto scrollbar-thin">
               <table className="w-full text-sm">
@@ -157,8 +177,8 @@ export function Statistics() {
         </div>
       </section>
 
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Prestaties ({badges.length}/{BADGES.length})</h2>
+      <section className={CARD}>
+        <h2 className="mb-3 text-[15px] font-bold">Prestaties ({badges.length}/{BADGES.length})</h2>
         <ul className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {BADGES.map(b => {
             const has = badges.find(x => x.id === b.id)
@@ -278,21 +298,97 @@ function LineChart({ days, values }: { days: string[]; values: number[] }) {
 
 function Heatmap({ byDay }: { byDay: Map<string, DailyActivity> }) {
   const days = lastDays(16 * 7)
-  const max = Math.max(1, ...days.map(d => (byDay.get(d)?.correct ?? 0) + (byDay.get(d)?.mistakes ?? 0)))
+  const count = (d: string) => (byDay.get(d)?.correct ?? 0) + (byDay.get(d)?.mistakes ?? 0)
+  const max = Math.max(1, ...days.map(count))
+  const active = days.filter(d => count(d) > 0).length
   const offset = (new Date(days[0] + 'T12:00:00').getDay() + 6) % 7
   const cells = [...Array(offset).fill(null), ...days]
   return (
-    <div>
-      <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: 'minmax(0, 1fr)' }}>
+    <div className="mt-3">
+      <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: 'minmax(0, 1fr)' }} role="img" aria-label={`${active} van de ${days.length} dagen getraind`}>
         {cells.map((d, i) => {
           if (!d) return <span key={i} />
           const a = byDay.get(d)
-          const n = (a?.correct ?? 0) + (a?.mistakes ?? 0)
-          const level = n === 0 ? 0 : Math.ceil((n / max) * 4)
-          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · dagtraining voltooid' : ''}`} className="aspect-square rounded-[3px]" style={{ background: level ? 'var(--chart-1)' : 'var(--surface-2)', opacity: level ? 0.25 + level * 0.1875 : 1 }} />
+          const n = count(d)
+          const level = n === 0 ? 0 : Math.ceil((n / max) * 3)
+          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · dagtraining voltooid' : ''}`} className="aspect-square rounded-[4px]" style={{ background: HEAT[level] }} />
         })}
       </div>
-      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">minder {[0, 1, 2, 3, 4].map(l => <span key={l} className="h-2.5 w-2.5 rounded-[2px]" style={{ background: l ? 'var(--chart-1)' : 'var(--surface-2)', opacity: l ? 0.25 + l * 0.1875 : 1 }} />)} meer</div>
+      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted" aria-hidden>minder {HEAT.map(c => <span key={c} className="h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />)} meer</div>
     </div>
+  )
+}
+
+/** Kleurtrappen van de activiteitskaart; mengt met de tokens, dus licht en donker kloppen allebei */
+const HEAT = [
+  'var(--surface-2)',
+  'color-mix(in srgb, var(--chart-1) 28%, var(--surface-2))',
+  'color-mix(in srgb, var(--chart-1) 60%, var(--surface-2))',
+  'var(--chart-1)',
+]
+
+/** Grote reekskaart bovenaan: dagen op rij, record, level en XP. Vaste donkergroene kaart, leesbaar in licht en donker. */
+function StreakHero({ current, best, xp, level, progress, toNext }: { current: number; best: number; xp: number; level: number; progress: number; toNext: number }) {
+  return (
+    <section aria-label="Reeks en level" className="flex items-center gap-4 rounded-[22px] bg-[#1f4d33] p-[18px] text-white dark:ring-2 dark:ring-[#2a6e46]">
+      <Flame size={52} strokeWidth={2} aria-hidden className="shrink-0 text-[#e9b44c]" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{current} {current === 1 ? 'dag' : 'dagen'}</div>
+        <div className="mt-1 text-sm text-[#d5e6db]">{current ? 'op rij' : 'train vandaag om te beginnen'} · record {best}</div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="text-xs font-bold uppercase tracking-[0.04em] text-[#e9b44c]">Level {level}</div>
+        <div className="text-lg font-extrabold tabular-nums">{nf(xp)} XP</div>
+        <div className="ml-auto mt-1.5 h-1.5 w-20 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Nog ${nf(toNext)} XP tot level ${level + 1}`}>
+          <div className="h-full rounded-full bg-[#e9b44c]" style={{ width: `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%` }} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Tile({ icon, tone, label, value, sr }: { icon: LucideIcon; tone: Tone; label: string; value: string; sr?: string }) {
+  return (
+    <li className="flex items-center gap-2.5 rounded-2xl border-2 border-line bg-surface p-3">
+      <IconTile icon={icon} tone={tone} size="lg" />
+      <span className="min-w-0">
+        <span className="block text-[19px] font-extrabold leading-tight tabular-nums">
+          {sr ? <><span aria-hidden>{value}</span><span className="sr-only">{sr}</span></> : value}
+        </span>
+        <span className="block text-xs text-muted">{label}</span>
+      </span>
+    </li>
+  )
+}
+
+/** "3 u 12" zoals in het ontwerp; voorgelezen als "3 uur 12 minuten" */
+function trainingTime(seconds: number): { value: string; sr: string } {
+  const m = Math.round(seconds / 60)
+  if (m < 60) return { value: `${m} min`, sr: `${m} ${m === 1 ? 'minuut' : 'minuten'}` }
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return { value: `${h} u ${String(r).padStart(2, '0')}`, sr: `${h} uur ${r} ${r === 1 ? 'minuut' : 'minuten'}` }
+}
+
+/** Goede zetten per dag, laatste 14 dagen (eenvoudige staafjes zoals in het ontwerp) */
+function CorrectBars({ byDay }: { byDay: Map<string, DailyActivity> }) {
+  const days = lastDays(14)
+  const vals = days.map(d => byDay.get(d)?.correct ?? 0)
+  const max = Math.max(1, ...vals)
+  const total = vals.reduce((a, v) => a + v, 0)
+  const H = 72
+  return (
+    <section className={CARD} aria-labelledby="bars-title">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="bars-title" className="text-[15px] font-bold">Goede zetten per dag</h2>
+        <span className="text-[13px] text-muted">14 dagen</span>
+      </div>
+      <div className="mt-3.5 flex items-end gap-[5px]" style={{ height: H }} role="img" aria-label={`${nf(total)} goede zetten in de laatste 14 dagen, vandaag ${nf(vals[vals.length - 1])}`}>
+        {vals.map((v, i) => (
+          <span key={days[i]} title={`${shortDate(days[i])}: ${v} goede zetten`} className="flex-1 rounded-[5px]" style={{ height: v ? Math.max(6, Math.round((v / max) * H)) : 4, background: v ? 'var(--chart-1)' : 'var(--surface-2)' }} />
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>vandaag</span></div>
+    </section>
   )
 }

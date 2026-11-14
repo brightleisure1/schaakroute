@@ -1,22 +1,39 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { ChessKnight, Download, FileUp, User } from 'lucide-react'
 import { db, saveSettings, type ImportedGame } from '../lib/db'
 import { analyseGames, exitsToCards, fetchChesscomGames, fetchLichessGames, gamesFromPgnFile, saveGames } from '../lib/games'
 import { loadAllFamilies, loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import { formatMoves } from '../lib/chess'
-import { Empty, ErrorBox, PageHeader, Spinner, pct, sideLabel, useSettings } from '../components/ui'
+import { ChoiceCards, FileField, IconField } from '../components/Choice'
+import { ErrorBox, PageHeader, Spinner, pct, sideLabel, useSettings } from '../components/ui'
+
+type Source = 'lichess' | 'chesscom' | 'pgn'
+const SOURCES: { value: Source; label: string; hint: string }[] = [
+  { value: 'lichess', label: 'Lichess', hint: 'laatste 300 partijen' },
+  { value: 'chesscom', label: 'Chess.com', hint: 'laatste 3 maanden' },
+  { value: 'pgn', label: 'PGN-bestand', hint: 'vanaf je apparaat' },
+]
 
 export function ImportGames() {
   const settings = useSettings()
   const games = useLiveQuery(() => db.games.toArray(), [], [] as ImportedGame[])
-  const [lichess, setLichess] = useState('')
-  const [chesscom, setChesscom] = useState('')
+  const [source, setSource] = useState<Source | null>(null)
+  const [lichess, setLichess] = useState<string | null>(null)
+  const [chesscom, setChesscom] = useState<string | null>(null)
   const [pgnUser, setPgnUser] = useState('')
+  const [pgnFile, setPgnFile] = useState<File | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+
+  // Zonder eigen keuze: de bron waarvan we al een gebruikersnaam kennen
+  const chosen: Source = source ?? (!settings?.lichessUser && settings?.chesscomUser ? 'chesscom' : 'lichess')
+  const lichessName = (lichess ?? settings?.lichessUser ?? '').trim()
+  const chesscomName = (chesscom ?? settings?.chesscomUser ?? '').trim()
+  const ready = chosen === 'lichess' ? !!lichessName : chosen === 'chesscom' ? !!chesscomName : !!pgnFile
 
   async function run(label: string, fn: () => Promise<ImportedGame[]>) {
     setBusy(label); setErr(null); setMsg(null)
@@ -31,32 +48,55 @@ export function ImportGames() {
     }
   }
 
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (busy || !ready) return
+    if (chosen === 'lichess') {
+      saveSettings({ lichessUser: lichessName })
+      run('lichess', () => fetchLichessGames(lichessName, 300, n => setBusy(`Lichess: ${n} partijen…`)))
+    } else if (chosen === 'chesscom') {
+      saveSettings({ chesscomUser: chesscomName })
+      run('chesscom', () => fetchChesscomGames(chesscomName, 3, n => setBusy(`Chess.com: ${n} partijen…`)))
+    } else if (pgnFile) {
+      const file = pgnFile
+      run('pgn', async () => gamesFromPgnFile(await file.text(), pgnUser))
+    }
+  }
+
+  const userIcon = <User size={18} strokeWidth={2.25} />
   return (
     <div className="space-y-6">
-      <PageHeader title="Mijn partijen" subtitle="Haal je partijen op van Lichess of Chess.com." />
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="card space-y-2 p-4">
-          <h2 className="font-semibold">Lichess</h2>
-          <input className="input" placeholder="Gebruikersnaam" defaultValue={settings?.lichessUser} onChange={e => setLichess(e.target.value)} />
-          <button className="btn btn-primary w-full" disabled={!!busy || !(lichess || settings?.lichessUser)} onClick={() => { const u = lichess || settings!.lichessUser!; saveSettings({ lichessUser: u }); run('lichess', () => fetchLichessGames(u, 300, n => setBusy(`Lichess: ${n} partijen…`))) }}>Laatste 300 partijen ophalen</button>
+      <PageHeader title="Mijn partijen" subtitle="Met je eigen partijen krijg je persoonlijke aanbevelingen." />
+      <form className="space-y-4 lg:max-w-3xl" onSubmit={submit}>
+        <ChoiceCards name="games-source" label="Waar staan je partijen?" value={chosen} onChange={s => { setSource(s); setErr(null); setMsg(null) }} options={SOURCES} className="sm:grid-cols-3" />
+        <div className="space-y-3 sm:max-w-md">
+          {chosen === 'lichess' && (
+            <IconField key="lichess" icon={userIcon} label="Gebruikersnaam op Lichess" placeholder="Gebruikersnaam op Lichess" autoComplete="username" autoCapitalize="none" spellCheck={false}
+              value={lichess ?? settings?.lichessUser ?? ''} onChange={e => setLichess(e.target.value)} />
+          )}
+          {chosen === 'chesscom' && (
+            <IconField key="chesscom" icon={userIcon} label="Gebruikersnaam op Chess.com" placeholder="Gebruikersnaam op Chess.com" autoComplete="username" autoCapitalize="none" spellCheck={false}
+              value={chesscom ?? settings?.chesscomUser ?? ''} onChange={e => setChesscom(e.target.value)} />
+          )}
+          {chosen === 'pgn' && (
+            <>
+              <FileField icon={<FileUp size={18} strokeWidth={2.25} />} label="PGN-bestand kiezen" placeholder="Kies een PGN-bestand…" accept=".pgn,text/plain" fileName={pgnFile?.name} onFile={f => setPgnFile(f ?? null)} disabled={!!busy} />
+              <IconField key="pgn" icon={userIcon} label="Jouw naam in de PGN (White/Black)" placeholder="Jouw naam in de PGN (White/Black)" autoCapitalize="none" spellCheck={false}
+                value={pgnUser} onChange={e => setPgnUser(e.target.value)} />
+              <p className="text-xs text-muted">Zonder naam worden alle partijen als wit geteld.</p>
+            </>
+          )}
+          <button className="btn btn-primary btn-key w-full" disabled={!!busy || !ready}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
         </div>
-        <div className="card space-y-2 p-4">
-          <h2 className="font-semibold">Chess.com</h2>
-          <input className="input" placeholder="Gebruikersnaam" defaultValue={settings?.chesscomUser} onChange={e => setChesscom(e.target.value)} />
-          <button className="btn btn-primary w-full" disabled={!!busy || !(chesscom || settings?.chesscomUser)} onClick={() => { const u = chesscom || settings!.chesscomUser!; saveSettings({ chesscomUser: u }); run('chesscom', () => fetchChesscomGames(u, 3, n => setBusy(`Chess.com: ${n} partijen…`))) }}>Laatste 3 maanden ophalen</button>
-        </div>
-        <div className="card space-y-2 p-4">
-          <h2 className="font-semibold">PGN-bestand</h2>
-          <input className="input" placeholder="Jouw naam in de PGN (White/Black)" value={pgnUser} onChange={e => setPgnUser(e.target.value)} />
-          <label className={`btn btn-ghost w-full cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>Bestand kiezen…<input type="file" accept=".pgn,text/plain" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) { const text = await f.text(); run('pgn', async () => gamesFromPgnFile(text, pgnUser)) } }} /></label>
-          <p className="text-xs text-muted">Zonder naam worden alle partijen als wit geteld.</p>
-        </div>
-      </div>
+      </form>
       {busy && <Spinner label={busy.includes('…') ? busy : 'Bezig met importeren…'} />}
       {err && <ErrorBox error={err} />}
-      {msg && <div className="card bg-brand-soft p-3 text-sm text-brand-strong">{msg}</div>}
+      {msg && <div className="card bg-brand-soft p-3 text-sm text-brand-strong" role="status">{msg}</div>}
       {games.length === 0 ? (
-        <Empty title="Nog geen partijen geïmporteerd">De app werkt ook prima zonder. Met je eigen partijen krijg je persoonlijke aanbevelingen en trainingen.</Empty>
+        <div className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-surface p-4 lg:max-w-3xl">
+          <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-surface-2 text-muted"><ChessKnight size={24} strokeWidth={1.75} /></span>
+          <p className="text-sm leading-snug text-muted">Nog geen partijen opgehaald. Daarna zie je hier je werkpunten per opening.</p>
+        </div>
       ) : <AnalysisView games={games} />}
     </div>
   )

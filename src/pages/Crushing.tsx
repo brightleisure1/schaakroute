@@ -5,22 +5,28 @@ import { db } from '../lib/db'
 import { loadPuzzles } from '../lib/data'
 import { useAsync, useManifest } from '../lib/hooks'
 import { endSession, startSession } from '../lib/progress'
-import { PuzzleTrainer } from '../components/PuzzleTrainer'
-import { Confetti, ErrorBox, PageHeader, Spinner, useSettings } from '../components/ui'
+import { CrushingPuzzle } from '../components/CrushingPuzzle'
+import { FilterKey, PillChoice, TrainingHeading, TrainingSheet, TrainingTopBar, useCloseTraining } from '../components/TrainingModeChrome'
+import { Confetti, Empty, ErrorBox, Spinner, nf, useSettings } from '../components/ui'
 import { FamilyPicker } from './Variations'
 
+const DEFAULT_RANGE = 300
+
+/** Afstraffen (ontwerp 10l): trainingsmodus met alleen sluiten, voortgang en het bord; filters achter één knop */
 export function Crushing() {
   const { id: paramId } = useParams()
   const nav = useNavigate()
+  const close = useCloseTraining()
   const settings = useSettings()
   const { data: manifest, error } = useManifest()
   const id = paramId ?? settings?.openings[0] ?? manifest?.families[0]?.id
   const puzzles = useAsync(() => (id ? loadPuzzles(id) : Promise.resolve(null)), [id])
   const progress = useLiveQuery(() => (id ? db.puzzles.where('familyId').equals(id).toArray() : []), [id], [])
-  const [range, setRange] = useState(300)
+  const [range, setRange] = useState(DEFAULT_RANGE)
   const [variation, setVariation] = useState('')
   const [current, setCurrent] = useState<string | null>(null)
   const [fire, setFire] = useState(0)
+  const [sheet, setSheet] = useState(false)
   const [sessionId, setSessionId] = useState<number>()
   const elo = settings?.elo ?? 1500
 
@@ -50,38 +56,84 @@ export function Crushing() {
   if (error) return <ErrorBox error={error} />
   if (!manifest || !settings) return <Spinner />
   const puzzle = pool.find(p => p.id === current)
+  const family = manifest.families.find(f => f.id === id)
+  const solvedInPool = pool.filter(p => solvedIds.has(p.id)).length
+  const filtered = range !== DEFAULT_RANGE || !!variation
+
+  const heading = (
+    <TrainingHeading
+      tone="danger"
+      label={`Afstraffen${family ? ` · ${family.name}` : ''}`}
+      title="Vind de sterkste zet"
+      action={<FilterKey onClick={() => setSheet(true)} expanded={sheet} active={filtered} label="Opening en filters" />}
+    />
+  )
 
   return (
-    <div>
-      <PageHeader title="Afstraffen" subtitle="Straf de openingsfouten van je tegenstander af." />
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <FamilyPicker value={id ?? ''} onChange={v => nav(`/crushing/${v}`)} families={manifest.families} mine={settings.openings} />
-        <select className="input sm:max-w-xs" value={range} onChange={e => setRange(Number(e.target.value))} aria-label="Moeilijkheid">
-          <option value={150}>Rond mijn rating ({elo} ± 150)</option>
-          <option value={300}>Rond mijn rating ({elo} ± 300)</option>
-          <option value={600}>Breed ({elo} ± 600)</option>
-          <option value={5000}>Alle niveaus</option>
-        </select>
-        {variations.length > 1 && (
-          <select className="input sm:max-w-xs" value={variation} onChange={e => setVariation(e.target.value)} aria-label="Variant">
-            <option value="">Alle varianten</option>
-            {variations.map(v => <option key={v} value={v}>{v}</option>)}
-          </select>
-        )}
-        <span className="text-sm text-muted">{pool.length} puzzels · {pool.filter(p => solvedIds.has(p.id)).length} opgelost</span>
-      </div>
+    <div className="flex flex-col gap-2.5">
+      <TrainingTopBar
+        value={pool.length ? solvedInPool / pool.length : 0}
+        count={`${solvedInPool}/${pool.length}`}
+        countLabel={`${solvedInPool} van ${pool.length} puzzels opgelost`}
+        onClose={close}
+        closeLabel="Stoppen met afstraffen"
+      />
       <Confetti fire={fire} />
-      {puzzles.loading ? <Spinner /> : !puzzle ? (
-        <div className="card p-6 text-center text-muted">Geen puzzels in dit bereik. Kies een breder niveau.</div>
+      {puzzles.loading ? <><div>{heading}</div><Spinner /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
+        <>
+          <div>{heading}</div>
+          <Empty title="Geen puzzels in dit bereik" action={<button type="button" className="btn btn-primary btn-key" onClick={() => setSheet(true)}>Filters aanpassen</button>}>
+            Kies een breder niveau of een andere variant.
+          </Empty>
+        </>
       ) : (
-        <PuzzleTrainer
+        <CrushingPuzzle
           key={puzzle.id}
           puzzle={puzzle}
           familyId={id!}
+          heading={heading}
           onDone={r => r.solved && setFire(f => f + 1)}
           onNext={() => setCurrent(pick())}
         />
       )}
+
+      <TrainingSheet
+        open={sheet}
+        onClose={() => setSheet(false)}
+        title="Opening en filters"
+        footer={<button type="button" className="btn btn-primary btn-key w-full" onClick={() => setSheet(false)}>Klaar</button>}
+      >
+        <div>
+          <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>
+          <div className="[&_select]:max-w-none">
+            <FamilyPicker value={id ?? ''} onChange={v => nav(`/crushing/${v}`, { replace: true })} families={manifest.families} mine={settings.openings} />
+          </div>
+        </div>
+        <PillChoice
+          legend="Moeilijkheid"
+          value={range}
+          onChange={setRange}
+          options={[
+            { value: 150, label: '± 150' },
+            { value: 300, label: '± 300' },
+            { value: 600, label: 'Breed (± 600)' },
+            { value: 5000, label: 'Alle niveaus' },
+          ]}
+          hint={`Puzzels rond jouw rating (${elo}). Je rating pas je aan in Instellingen.`}
+        />
+        {variations.length > 1 && (
+          <div>
+            <label className="mb-2 block text-sm font-semibold" htmlFor="crushing-variation">Variant</label>
+            <select id="crushing-variation" className="input min-h-11" value={variation} onChange={e => setVariation(e.target.value)}>
+              <option value="">Alle varianten</option>
+              {variations.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+        )}
+        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted" aria-live="polite">
+          <b className="text-ink">{nf(pool.length)}</b> puzzels in deze keuze · <b className="text-ink">{nf(solvedInPool)}</b> opgelost
+        </p>
+      </TrainingSheet>
     </div>
   )
 }

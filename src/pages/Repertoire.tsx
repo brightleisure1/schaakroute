@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
-import { ChessKing, ChevronRight } from 'lucide-react'
+import { ChessKing, ChessKnight, ChessPawn, ChevronRight, Dumbbell, Plus } from 'lucide-react'
 import { db, type RepertoireMove } from '../lib/db'
 import { addLine, deleteMove, repertoireLines, setMain, updateComment } from '../lib/repertoire'
 import { loadFamily, loadNames, loadStats } from '../lib/data'
@@ -14,10 +14,14 @@ import { endSession, startSession } from '../lib/progress'
 import { Board } from '../components/Board'
 import { MoveList, Trainer } from '../components/Trainer'
 import { Empty, ErrorBox, PageHeader, ProgressBar, Spinner, pct, sideLabel } from '../components/ui'
+import { Segmented } from '../components/Choice'
+import { STARTERS, createStarterRepertoire } from '../components/repertoireStarter'
 import type { Side, StatsFile } from '../lib/types'
 
+const PANEL = 'rounded-[18px] border-2 border-line bg-surface'
+
 export function RepertoireList() {
-  const reps = useLiveQuery(() => db.repertoires.toArray(), [], [])
+  const reps = useLiveQuery(() => db.repertoires.toArray(), [])
   const counts = useLiveQuery(async () => {
     const all = await db.repMoves.toArray()
     const m = new Map<number, number>()
@@ -26,48 +30,120 @@ export function RepertoireList() {
   }, [], new Map<number, number>())
   const { data: manifest } = useManifest()
   const nav = useNavigate()
+  const [creating, setCreating] = useState(false)
+  const [starting, setStarting] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function start(familyId: string) {
+    setStarting(familyId); setErr(null)
+    try {
+      nav(`/repertoire/${await createStarterRepertoire(familyId)}`)
+    } catch (e) {
+      setErr(e instanceof TypeError ? 'Kon de openingsdata niet laden. Controleer je internetverbinding.' : (e as Error).message)
+      setStarting(null)
+    }
+  }
+
+  if (!reps) return <Spinner />
+  const empty = reps.length === 0
+  const starters = STARTERS.filter(s => !manifest || manifest.families.some(f => f.id === s.familyId))
+  const form = <NewRepertoire onCancel={() => setCreating(false)} />
+
+  return (
+    <div>
+      <PageHeader title="Mijn repertoire" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="space-y-4">
+          {empty ? (creating ? form : (
+            <section className={`${PANEL} flex flex-col items-center gap-1.5 px-5 py-7 text-center`}>
+              <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-[19px] bg-brand-soft text-brand-strong"><ChessKnight size={34} strokeWidth={1.75} /></span>
+              <h2 className="mt-2 text-lg font-extrabold tracking-tight">Nog geen repertoire</h2>
+              <p className="max-w-[280px] text-sm leading-snug text-muted">Bundel de varianten die jij echt speelt en train alleen die.</p>
+              <button className="btn btn-primary btn-key mt-3 w-full" onClick={() => setCreating(true)}><Plus size={20} strokeWidth={2.5} aria-hidden />Nieuw repertoire</button>
+            </section>
+          )) : (
+            <ul className="space-y-3">
+              {reps.map(r => (
+                <li key={r.id} className="tap flex items-center gap-2 p-2 pl-2.5">
+                  <Link to={`/repertoire/${r.id}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl py-0.5">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2">
+                      <ChessKing size={24} strokeWidth={1.75} aria-label={sideLabel(r.side)} className={r.side === 'black' ? 'fill-current' : ''} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-bold">{r.name}</span>
+                      <span className="block text-[13px] text-muted">{sideLabel(r.side)} · {counts.get(r.id!) ?? 0} zetten · bijgewerkt {new Date(r.updatedAt).toLocaleDateString('nl-NL')}</span>
+                    </span>
+                  </Link>
+                  <Link to={`/repertoire/${r.id}/train`} className="btn btn-ghost shrink-0" aria-label={`${r.name} trainen`}><Dumbbell size={16} aria-hidden />Trainen</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="space-y-4">
+          {empty ? starters.length > 0 && (
+            <section className={`${PANEL} space-y-3 p-4`}>
+              <h2 className="text-[15px] font-bold">Of begin met een voorstel</h2>
+              {starters.map(s => (
+                <button key={s.familyId} className="tap flex min-h-11 w-full items-center gap-3 p-2.5 text-left disabled:opacity-60" disabled={!!starting} onClick={() => start(s.familyId)}>
+                  <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2">
+                    <ChessPawn size={22} strokeWidth={1.75} className={s.side === 'black' ? 'fill-current' : ''} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold">{s.title}</span>
+                    <span className="block text-[13px] text-muted">{starting === s.familyId ? 'Repertoire maken…' : s.hint}</span>
+                  </span>
+                  <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
+                </button>
+              ))}
+              {err && <ErrorBox error={err} />}
+            </section>
+          ) : creating ? form : (
+            <button className="tap flex min-h-14 w-full items-center justify-center gap-2 px-4 font-bold text-brand-strong!" onClick={() => setCreating(true)}><Plus size={20} strokeWidth={2.5} aria-hidden />Nieuw repertoire</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Nieuw repertoire: kies een kleur en eventueel een opening als begin; een naam is optioneel */
+function NewRepertoire({ onCancel }: { onCancel: () => void }) {
+  const { data: manifest } = useManifest()
+  const nav = useNavigate()
   const [name, setName] = useState('')
   const [side, setSide] = useState<Side>('white')
   const [familyId, setFamilyId] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  async function create() {
-    const fam = manifest?.families.find(f => f.id === familyId)
-    const id = (await db.repertoires.add({ name: name.trim() || (fam ? `Mijn ${fam.name}` : `Repertoire ${side === 'white' ? 'wit' : 'zwart'}`), side: fam?.side ?? side, familyId: fam?.id, createdAt: Date.now(), updatedAt: Date.now() })) as number
+  async function create(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    const fam = manifest?.families.find(f => f.id === familyId && f.side === side)
+    const id = (await db.repertoires.add({ name: name.trim() || (fam ? `Mijn ${fam.name}` : `Repertoire ${side === 'white' ? 'wit' : 'zwart'}`), side, familyId: fam?.id, createdAt: Date.now(), updatedAt: Date.now() })) as number
     if (fam) await addLine(id, fam.side, fam.rootUci)
     nav(`/repertoire/${id}`)
   }
 
   return (
-    <div>
-      <PageHeader title="Mijn repertoire" />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-3">
-          {reps.length === 0 ? <Empty title="Nog geen repertoire">Maak hiernaast je eerste repertoire, of voeg een variant toe vanuit het eindscherm van een training.</Empty> : reps.map(r => (
-            <div key={r.id} className="card flex flex-wrap items-center gap-3 p-4">
-              <ChessKing size={28} strokeWidth={1.5} aria-label={r.side === 'white' ? 'Wit' : 'Zwart'} className={r.side === 'black' ? 'fill-current' : ''} />
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">{r.name}</div>
-                <div className="text-xs text-muted">{sideLabel(r.side)} · {counts.get(r.id!) ?? 0} zetten · bijgewerkt {new Date(r.updatedAt).toLocaleDateString('nl-NL')}</div>
-              </div>
-              <Link to={`/repertoire/${r.id}`} className="btn btn-ghost">Bewerken</Link>
-              <Link to={`/repertoire/${r.id}/train`} className="btn btn-primary">Trainen</Link>
-            </div>
-          ))}
-        </div>
-        <div className="card space-y-3 p-4">
-          <h2 className="font-semibold">Nieuw repertoire</h2>
-          <input className="input" placeholder="Naam (optioneel)" value={name} onChange={e => setName(e.target.value)} />
-          <select className="input" value={familyId} onChange={e => setFamilyId(e.target.value)}>
-            <option value="">Leeg beginnen</option>
-            {manifest?.families.map(f => <option key={f.id} value={f.id}>Op basis van {f.name} ({sideLabel(f.side)})</option>)}
-          </select>
-          {!familyId && (
-            <div className="flex gap-2">{(['white', 'black'] as const).map(s => <button key={s} aria-pressed={side === s} className={`chip min-h-11 min-w-14 justify-center px-3 ${side === s ? 'chip-on' : ''}`} onClick={() => setSide(s)}>{sideLabel(s)}</button>)}</div>
-          )}
-          <button className="btn btn-primary w-full" onClick={create}>Aanmaken</button>
-        </div>
+    <form className={`${PANEL} space-y-3 p-4`} onSubmit={create}>
+      <h2 className="text-lg font-extrabold tracking-tight">Nieuw repertoire</h2>
+      <Segmented name="new-rep-side" label="Kleur" value={side} onChange={s => { setSide(s); setFamilyId('') }}
+        options={[{ value: 'white', label: 'Ik speel wit' }, { value: 'black', label: 'Ik speel zwart' }]} />
+      <div>
+        <label htmlFor="new-rep-family" className="mb-1 block text-sm font-semibold">Begin met</label>
+        <select id="new-rep-family" className="input min-h-11" value={familyId} onChange={e => setFamilyId(e.target.value)}>
+          <option value="">Een leeg bord</option>
+          {manifest?.families.filter(f => f.side === side).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+        </select>
       </div>
-    </div>
+      <div>
+        <label htmlFor="new-rep-name" className="mb-1 block text-sm font-semibold">Naam <span className="font-normal text-muted">(mag leeg)</span></label>
+        <input id="new-rep-name" className="input min-h-11" placeholder={familyId ? `Mijn ${manifest?.families.find(f => f.id === familyId)?.name ?? ''}` : `Repertoire ${side === 'white' ? 'wit' : 'zwart'}`} value={name} onChange={e => setName(e.target.value)} />
+      </div>
+      <button className="btn btn-primary btn-key w-full" disabled={busy}>Aanmaken</button>
+      <button type="button" className="btn btn-quiet min-h-11 w-full" onClick={onCancel}>Annuleren</button>
+    </form>
   )
 }
 
