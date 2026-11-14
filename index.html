@@ -9,6 +9,13 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>SchaakRoute</title>
     <script>
+      // iPhone/iPad: Safari zoomt bij het tikken in een invoerveld in. maximum-scale=1 voorkomt dat;
+      // Safari laat inzoomen met je vingers dan nog steeds toe. Alleen op iOS: elders zou het knijpzoom blokkeren.
+      if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        document.querySelector('meta[name=viewport]').setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
+      }
+    </script>
+    <script>
       try {
         var t = localStorage.getItem('sr-theme') || 'system'
         if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')

@@ -188,7 +188,7 @@ button.chip { min-height: 2rem; }
 /* iOS Safari zoomt het hele scherm in zodra je in een veld tikt met tekst kleiner dan 16px.
    Op touchschermen daarom minstens 16px (dit wint van Tailwind-klassen als text-sm). Inzoomen met
    je vingers blijft gewoon mogelijk; we zetten zoom bewust niet uit. */
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 1023px) {
   input:not([type='range']):not([type='radio']):not([type='checkbox']):not([type='file']),
   textarea,
   select { font-size: max(16px, 1em); }

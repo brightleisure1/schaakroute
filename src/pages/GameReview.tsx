@@ -14,6 +14,7 @@ import {
 import { Board, MiniBoard } from '../components/Board'
 import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
+import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
 import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 
@@ -360,6 +361,48 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
   const opp = game.myColor === 'white' ? game.black : game.white
   const moveText = move ? `${formatLine([move.san], move.ply)}${['brilliant', 'great', 'blunder'].includes(move.cls) ? ` (${CLASS_INFO[move.cls].label.toLowerCase()})` : ''}` : ''
 
+  // Deelplaatje van de huidige zet, zoals de kaartjes van schaaksites
+  const [image, setImage] = useState<{ blob: Blob; url: string } | 'error' | null>(null)
+  useEffect(() => {
+    if (!(ply > 0 && move)) return
+    let url = ''
+    let cancelled = false
+    const c = new Chess()
+    for (const s of game.san.slice(0, ply)) c.move(s)
+    renderShareImage({
+      fen: c.fen(), orientation: move.side, from: move.uci.slice(0, 2), to: move.uci.slice(2, 4), cls: move.cls, moveText: move.san,
+      player: (move.side === 'white' ? game.white : game.black).name,
+      sub: `Zet ${Math.floor(move.ply / 2) + 1} · tegen ${(move.side === 'white' ? game.black : game.white).name} · ${fmtDate(game.playedAt)}`,
+    }).then(blob => {
+      if (cancelled) return
+      url = URL.createObjectURL(blob)
+      setImage({ blob, url })
+    }).catch(() => { if (!cancelled) setImage('error') })
+    return () => { cancelled = true; if (url) URL.revokeObjectURL(url) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const fileName = move ? `schaakroute-${move.san.replace(/[^a-zA-Z0-9]/g, '')}.png` : 'schaakroute.png'
+
+  async function shareImage() {
+    if (!image || image === 'error' || !move) return
+    const file = new File([image.blob], fileName, { type: 'image/png' })
+    const text = `${SHARE_TITLE[move.cls]} ${formatLine([move.san], move.ply)} tegen ${opp.name}\n${shareUrl(game, ply)}`
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'SchaakRoute', text })
+        onClose()
+        return
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return
+      }
+    }
+    // Geen deelmenu met plaatjes (bijv. op een computer): downloaden
+    const a = document.createElement('a')
+    a.href = image.url
+    a.download = fileName
+    a.click()
+    setStatus('Plaatje opgeslagen.')
+  }
+
   async function copy(text: string, done: string) {
     try {
       await navigator.clipboard.writeText(text)
@@ -384,16 +427,28 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="share-title">
       <div className="absolute inset-0 bg-black/40 animate-fade-in" aria-hidden onClick={onClose} />
-      <div className="safe-bottom relative w-full max-w-md rounded-t-3xl bg-surface p-4 shadow-2xl animate-fade-up sm:rounded-3xl">
+      <div className="safe-bottom relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-4 shadow-2xl animate-fade-up sm:rounded-3xl">
         <div className="mb-2 flex items-center justify-between">
           <h2 id="share-title" className="text-lg font-bold">Delen</h2>
           <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={onClose} aria-label="Sluiten"><X size={22} aria-hidden /></button>
         </div>
+        {ply > 0 && move && (
+          <div className="mb-3 overflow-hidden rounded-xl bg-surface-2" style={{ aspectRatio: '1200 / 630' }}>
+            {image && image !== 'error'
+              ? <img src={image.url} alt={`Deelplaatje: ${SHARE_TITLE[move.cls]} ${move.san}`} className="block h-full w-full" />
+              : <div className="flex h-full items-center justify-center text-sm text-muted">{image === 'error' ? 'Plaatje maken lukte niet; deel de link.' : 'Plaatje maken…'}</div>}
+          </div>
+        )}
         <div className="grid gap-2">
           {ply > 0 && move && (
-            <button ref={first} className="btn btn-primary min-h-12 justify-start" onClick={() => share(shareUrl(game, ply), `Bekijk ${moveText} uit mijn partij tegen ${opp.name}`)}>
-              <MoveClassIcon cls={move.cls} size={22} />Deze zet delen <span className="font-mono font-normal opacity-80">{formatLine([move.san], move.ply)}</span>
-            </button>
+            <>
+              <button ref={first} className="btn btn-primary min-h-12 justify-start" disabled={!image || image === 'error'} onClick={shareImage}>
+                <MoveClassIcon cls={move.cls} size={22} />Plaatje van deze zet delen
+              </button>
+              <button className="btn btn-ghost min-h-12 justify-start" onClick={() => share(shareUrl(game, ply), `Bekijk ${moveText} uit mijn partij tegen ${opp.name}`)}>
+                <Share2 size={20} aria-hidden />Link naar deze zet <span className="font-mono font-normal opacity-80">{formatLine([move.san], move.ply)}</span>
+              </button>
+            </>
           )}
           <button ref={ply > 0 && move ? undefined : first} className={`btn ${ply > 0 && move ? 'btn-ghost' : 'btn-primary'} min-h-12 justify-start`} onClick={() => share(shareUrl(game), `Bekijk mijn partij tegen ${opp.name}`)}>
             <Share2 size={20} aria-hidden />Hele partij delen
