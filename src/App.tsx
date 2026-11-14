@@ -49,7 +49,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
       { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat er gespeeld wordt en wat scoort' },
       { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen samenstellen' },
-      { to: '/analyse', label: 'Partij-analyse', icon: Microscope, desc: 'Je partijen zet voor zet laten beoordelen' },
+      { to: '/analyse', label: 'Partij-analyse', short: 'Analyse', icon: Microscope, mobile: true, desc: 'Je partijen zet voor zet laten beoordelen' },
       { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Je partijen van Lichess of Chess.com' },
     ],
   },
@@ -242,12 +242,12 @@ function Shell() {
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
           // Vaste tabbalk: de pagina eindigt erboven, dus hij dekt nooit iets af en verspringt niet
-          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
+          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex min-h-15 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${isActive ? 'text-brand-strong' : 'text-muted hover:text-ink'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex min-h-15 flex-col items-center justify-center gap-1 whitespace-nowrap text-[11px] font-semibold tracking-tight transition-colors max-[359px]:text-[10px] min-[400px]:text-xs min-[400px]:tracking-normal ${isActive ? 'text-brand-strong' : 'text-muted hover:text-ink'}`}>
                 {({ isActive }) => (
                   <>
-                    <span className={`relative flex h-7 w-14 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
+                    <span className={`relative flex h-7 w-12 items-center min-[400px]:w-14 justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
                       <n.icon size={22} strokeWidth={isActive ? 2.25 : 1.75} aria-hidden />
                       {n.badge && due > 0 && <span className="absolute -top-1.5 right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-accent px-1 text-xs font-extrabold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
                     </span>
@@ -283,8 +283,8 @@ function MoreTab() {
   }, [open])
   return (
     <>
-      <button ref={btn} className={`flex min-h-15 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${active || open ? 'text-brand-strong' : 'text-muted hover:text-ink'}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <span className={`flex h-7 w-14 items-center justify-center rounded-full transition-colors ${active || open ? 'bg-brand-soft' : ''}`}><Ellipsis size={22} strokeWidth={active || open ? 2.25 : 1.75} aria-hidden /></span>
+      <button ref={btn} className={`flex min-h-15 flex-col items-center justify-center gap-1 whitespace-nowrap text-[11px] font-semibold tracking-tight transition-colors max-[359px]:text-[10px] min-[400px]:text-xs min-[400px]:tracking-normal ${active || open ? 'text-brand-strong' : 'text-muted hover:text-ink'}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors min-[400px]:w-14 ${active || open ? 'bg-brand-soft' : ''}`}><Ellipsis size={22} strokeWidth={active || open ? 2.25 : 1.75} aria-hidden /></span>
         Meer
       </button>
       {open && (
