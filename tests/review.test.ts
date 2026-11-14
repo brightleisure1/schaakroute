@@ -94,7 +94,7 @@ describe('partijrating', () => {
     expect(estimateRating(90)).toBeGreaterThan(estimateRating(85))
     expect(estimateRating(85)).toBeGreaterThan(estimateRating(75))
     expect(estimateRating(30)).toBe(estimateRating(40))
-    expect(estimateRating(100)).toBeLessThanOrEqual(2200)
+    expect(estimateRating(100)).toBeLessThanOrEqual(2500)
     expect(estimateRating(80)).toBeGreaterThan(1450)
     expect(estimateRating(80)).toBeLessThan(1750)
   })
@@ -189,14 +189,13 @@ describe('briljant is streng', () => {
   it('een promotie is geen damesoffer', () => {
     expect(isSacrifice('8/P7/8/8/8/8/k7/r5K1 w - - 0 1', 'a7a8q')).toBe(false)
   })
-  it('een offer dat de tegenstander volgens Stockfish niet hoort te nemen is niet briljant', () => {
-    // 4.Lxf7+ in de Italiaan: als beste zet, maar de beste reactie slaat de loper niet
+  it('een offer is briljant, ook als de tegenstander het beter niet neemt; niet als je al ruim gewonnen stond', () => {
+    // 4.Lxf7+ in de Italiaan als beste zet
     const san = ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5', 'Bxf7+']
     const base: PosEval[] = san.map(() => ({ cp: 20 }))
     base[6] = { cp: 20, best: 'c4f7' }
-    const declined = classifyGame(san, [...base, { cp: 30, best: 'e8e7' }])
-    const taken = classifyGame(san, [...base, { cp: 30, best: 'e8f7' }])
-    expect(declined[6].cls).not.toBe('brilliant')
-    expect(taken[6].cls).toBe('brilliant')
-  })
-})
+    expect(classifyGame(san, [...base, { cp: 30, best: 'e8e7' }])[6].cls).toBe('brilliant')
+    const won: PosEval[] = san.map(() => ({ cp: 900 }))
+    won[6] = { cp: 900, best: 'c4f7' }
+    expect(classifyGame(san, [...won, { cp: 900, best: 'e8f7' }])[6].cls).not.toBe('brilliant')
+  })})

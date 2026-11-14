@@ -91,14 +91,41 @@ export interface SideSummary {
 const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 
 /** Winstkans van wit in procent, uit centipawns of mat (formule van Lichess) */
+/**
+ * Instelbare onderdelen van de beoordeling, zodat ze tegen echte Chess.com-reviews geijkt kunnen worden.
+ * k: steilheid van de winstkans-curve; clamp: boven deze centipawns telt het verschil niet meer;
+ * mate: een mat in N telt als ±(mateCp − N·mateStep) centipawns.
+ */
+export const REVIEW_MODEL = {
+  k: 0.00368208,
+  clamp: 1000,
+  mateCp: 0,
+  mateStep: 0,
+  // Briljant, afgestemd op een echte Chess.com-review (17…Lb3!! moet briljant zijn) en een steekproef van
+  // 88 Lichess-partijen (10 briljante zetten; zonder deze regels 39, met de strengste regels 2):
+  /** Hoeveel winstkans de offerzet hooguit mag kosten (de lichte Stockfish ziet een offer soms net iets minder goed) */
+  brilliantMaxLoss: 3,
+  /** Boven deze winstkans stond je al gewonnen (behalve bij een offer dat tot mat leidt) */
+  brilliantMaxWp: 90,
+  /** Of Stockfish het offer moet aannemen. Chess.com noemt ook een offer dat je beter niet kunt nemen briljant. */
+  brilliantNeedsAccept: false,
+}
+
+/** Winstkans van wit in procent, uit centipawns of mat (logistische curve, zie REVIEW_MODEL) */
 export function winPct(e: Pick<PosEval, 'cp' | 'mate'> | undefined): number {
   if (!e) return 50
-  if (e.mate !== undefined) return e.mate > 0 ? 100 : e.mate < 0 ? 0 : 50
-  if (e.cp === undefined) return 50
-  if (e.cp >= 10000) return 100
-  if (e.cp <= -10000) return 0
-  const cp = Math.max(-1000, Math.min(1000, e.cp))
-  return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
+  const M = REVIEW_MODEL
+  let cp: number
+  if (e.mate !== undefined) {
+    if (!M.mateCp) return e.mate > 0 ? 100 : e.mate < 0 ? 0 : 50
+    cp = Math.sign(e.mate || 1) * Math.max(M.clamp, M.mateCp - Math.abs(e.mate) * M.mateStep)
+  } else {
+    if (e.cp === undefined) return 50
+    if (e.cp >= 10000) return 100
+    if (e.cp <= -10000) return 0
+    cp = Math.max(-M.clamp, Math.min(M.clamp, e.cp))
+  }
+  return 50 + 50 * (2 / (1 + Math.exp(-M.k * cp)) - 1)
 }
 
 /** Nauwkeurigheid van één zet uit het verlies aan winstkans (formule van Lichess) */
@@ -175,8 +202,6 @@ export function sacrificedSquares(fenBefore: string, uci: string): string[] {
 
 // ---------------- Zetten beoordelen ----------------
 
-/** Boven deze winstkans (± +4,5) stond je al gewonnen: een offer is dan niet meer briljant */
-const BRILLIANT_MAX_WP = 85
 
 const sideAt = (ply: number): Side => (ply % 2 === 0 ? 'white' : 'black')
 const forSide = (wpWhite: number, side: Side) => (side === 'white' ? wpWhite : 100 - wpWhite)
@@ -222,17 +247,17 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
       const prev = out[ply - 1]
       // Gemist: de tegenstander gaf iets weg en jij profiteerde niet
       if ((cls === 'inaccuracy' || cls === 'mistake') && loss > 7 && prev && (prev.cls === 'mistake' || prev.cls === 'blunder' || prev.cls === 'miss')) cls = 'miss'
-      if ((cls === 'best' || cls === 'excellent') && forSide(wpAfter, side) >= 50) {
+      if ((cls === 'best' || cls === 'excellent' || (cls === 'good' && loss <= REVIEW_MODEL.brilliantMaxLoss)) && forSide(wpAfter, side) >= 50) {
         // Briljant is zeldzaam: precies de beste zet, een echt offer, geen gedwongen zet, en de stelling
         // was nog niet al gewonnen (behalve als het offer tot mat leidt)
         const matingSac = isBest && after.mate !== undefined && (side === 'white' ? after.mate > 0 : after.mate < 0)
-        const open = forSide(wpBefore, side) <= BRILLIANT_MAX_WP || matingSac
+        const open = forSide(wpBefore, side) <= REVIEW_MODEL.brilliantMaxWp || matingSac
         // Stockfish moet het offer bevestigen: de beste reactie van de tegenstander is het stuk slaan
         // (of het offer leidt tot mat). Een stuk dat niemand wil nemen is geen briljant offer.
-        const offered = isBest && legal > 2 && open ? sacrificedSquares(fen, uci) : []
+        const offered = loss <= REVIEW_MODEL.brilliantMaxLoss && legal > 2 && open ? sacrificedSquares(fen, uci) : []
         const accepted = !!after.best && offered.includes(after.best.slice(2, 4))
-        if (offered.length && (accepted || matingSac)) cls = 'brilliant'
-        else if (isBest && legal > 1 && (before.cp2 !== undefined || before.mate2 !== undefined)) {
+        if (offered.length && (accepted || matingSac || !REVIEW_MODEL.brilliantNeedsAccept)) cls = 'brilliant'
+        else if (cls !== 'good' && isBest && legal > 1 && (before.cp2 !== undefined || before.mate2 !== undefined)) {
           // Enige goede zet: de op één na beste zet is veel slechter en de stelling was nog niet beslist
           const second = forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side)
           const recapture = !!m.captured && !!prev && prev.uci.slice(2, 4) === m.to
@@ -246,10 +271,10 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): Revi
     let missedBrilliant = false
     if (cls !== 'book' && !isBest && loss >= 10 && legal > 2 && before.best && forSide(wpBefore, side) >= 50) {
       const mates = before.mate !== undefined && (side === 'white' ? before.mate > 0 : before.mate < 0)
-      if (forSide(wpBefore, side) <= BRILLIANT_MAX_WP || mates) {
+      if (forSide(wpBefore, side) <= REVIEW_MODEL.brilliantMaxWp || mates) {
         const offered = sacrificedSquares(fen, before.best)
         const reply = before.pv?.[1]
-        missedBrilliant = offered.length > 0 && ((!!reply && offered.includes(reply.slice(2, 4))) || mates)
+        missedBrilliant = offered.length > 0 && ((!!reply && offered.includes(reply.slice(2, 4))) || mates || !REVIEW_MODEL.brilliantNeedsAccept)
       }
     }
     const bestLine = before.pv?.length ? sanLine(fen, before.pv.slice(0, 6)) : []
@@ -287,9 +312,10 @@ export type RatingScale = 'lichess' | 'chesscom'
  * Geijkt met scripts/calibrate-game-rating.mjs: rated blitz- en rapidpartijen uit de Lichess-database,
  * ratings 600–2600, met dezelfde Stockfish-instelling als de app. Per groep spelers met ongeveer dezelfde
  * nauwkeurigheid is dit hun mediane rating. Dat is bewust voorzichtig: één goede partij maakt je niet
- * meteen 2400, want ook lager gerate spelers halen af en toe een hoge nauwkeurigheid.
+ * meteen 2400, want ook lager gerate spelers halen af en toe een hoge nauwkeurigheid. De bovenkant (96 → 2300,
+ * 98,5 → 2500) is bijgesteld op een echte Chess.com-review: daar gaf 96,0% een partijrating van 2050 (Chess.com-schaal).
  */
-export const RATING_CURVE: [number, number][] = [[49.7, 940], [58.3, 1070], [71.5, 1180], [78.2, 1520], [80.9, 1640], [84.2, 1790], [86.1, 1840], [88, 1960], [91.1, 2080], [95.7, 2120]]
+export const RATING_CURVE: [number, number][] = [[49.7, 940], [58.3, 1070], [71.5, 1180], [78.2, 1520], [80.9, 1640], [84.2, 1790], [86.1, 1840], [88, 1960], [91.1, 2080], [96, 2300], [98.5, 2500]]
 
 /** Lichess- naar Chess.com-rating (blitz en rapid), een benadering: Chess.com ligt een paar honderd punten lager */
 export const toChesscom = (lichess: number) => 1.15 * lichess - 600
