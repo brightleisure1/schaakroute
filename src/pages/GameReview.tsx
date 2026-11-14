@@ -648,24 +648,34 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
 
       {ready && (
         <section className="overflow-hidden rounded-[22px] border-2 border-line bg-surface" aria-label="Zetten per soort">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Aantal zetten per soort: jij links, je tegenstander rechts</caption>
-            <thead className="sr-only"><tr><th>{(me === 'white' ? game.white : game.black).name}</th><th>Soort</th><th>{(opp === 'white' ? game.white : game.black).name}</th></tr></thead>
-            <tbody className="divide-y divide-line">
-              {rows.map(k => {
-                const hot = k === 'blunder' && sum[me].counts[k] > 0
-                return (
-                  <tr key={k} className={hot ? 'bg-danger-soft' : undefined}>
-                    <td className={`w-14 py-2.5 text-center text-base font-bold tabular-nums ${hot ? 'text-danger-ink' : ''}`}>{sum[me].counts[k]}</td>
-                    <td className="py-2.5"><span className={`flex items-center justify-center gap-2 font-semibold ${hot ? 'text-danger-ink' : ''}`}><MoveClassIcon cls={k} size={20} />{CLASS_INFO[k].label}</span></td>
-                    <td className="w-14 py-2.5 text-center text-base tabular-nums text-muted">{sum[opp].counts[k]}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <p className="sr-only">Tik op een soort zet om naar de eerste te gaan: links jouw zetten, rechts die van je tegenstander.</p>
+          <ul className="divide-y divide-line">
+            {rows.map(k => {
+              const hot = k === 'blunder' && sum[me].counts[k] > 0
+              const mine = moves.find(m => m.side === me && m.cls === k)
+              const theirs = moves.find(m => m.side === opp && m.cls === k)
+              const label = CLASS_INFO[k].label.toLowerCase()
+              return (
+                <li key={k} className={`grid grid-cols-[1fr_3.5rem] ${hot ? 'bg-danger-soft' : ''}`}>
+                  <button className="grid min-h-12 grid-cols-[3.5rem_1fr_3.5rem] items-center text-sm enabled:hover:bg-surface-2 disabled:cursor-default" disabled={!mine && !theirs}
+                    onClick={() => { const m = mine ?? theirs; if (m) navigate(replayUrl(game, m.ply + 1)) }}
+                    aria-label={`${CLASS_INFO[k].label}: ${sum[me].counts[k]} van jou${mine ? `, ga naar je eerste ${label} zet` : theirs ? `, ga naar de eerste van je tegenstander` : ''}`}>
+                    <span className={`text-center text-base font-bold tabular-nums ${hot ? 'text-danger-ink' : ''}`}>{sum[me].counts[k]}</span>
+                    <span className={`flex items-center justify-center gap-2 font-semibold ${hot ? 'text-danger-ink' : ''}`}><MoveClassIcon cls={k} size={20} />{CLASS_INFO[k].label}</span>
+                    <span aria-hidden className="flex justify-center text-muted">{(mine || theirs) && <ChevronRight size={16} />}</span>
+                  </button>
+                  <button className="min-h-12 text-center text-base tabular-nums text-muted enabled:hover:bg-surface-2 disabled:cursor-default" disabled={!theirs}
+                    onClick={() => theirs && navigate(replayUrl(game, theirs.ply + 1))}
+                    aria-label={`${sum[opp].counts[k]} van je tegenstander${theirs ? `, ga naar de eerste ${label} zet` : ''}`}>{sum[opp].counts[k]}</button>
+                </li>
+              )
+            })}
+          </ul>
           {sum[me].missedBrilliants > 0 && (
-            <p className="flex items-center justify-center gap-2 border-t border-line px-3 py-2 text-sm"><MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zetten: <b>{sum[me].missedBrilliants}</b></p>
+            <button className="flex min-h-11 w-full items-center justify-center gap-2 border-t border-line px-3 py-2 text-sm hover:bg-surface-2"
+              onClick={() => { const m = moves.find(x => x.side === me && x.missedBrilliant); if (m) navigate(replayUrl(game, m.ply + 1)) }}>
+              <MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zetten: <b>{sum[me].missedBrilliants}</b><ChevronRight size={16} aria-hidden className="text-muted" />
+            </button>
           )}
         </section>
       )}
