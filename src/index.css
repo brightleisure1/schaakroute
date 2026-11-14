@@ -185,6 +185,15 @@ button.chip { min-height: 2rem; }
 }
 .input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
 
+/* iOS Safari zoomt het hele scherm in zodra je in een veld tikt met tekst kleiner dan 16px.
+   Op touchschermen daarom minstens 16px (dit wint van Tailwind-klassen als text-sm). Inzoomen met
+   je vingers blijft gewoon mogelijk; we zetten zoom bewust niet uit. */
+@media (pointer: coarse) {
+  input:not([type='range']):not([type='radio']):not([type='checkbox']):not([type='file']),
+  textarea,
+  select { font-size: max(16px, 1em); }
+}
+
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 @keyframes pop {
