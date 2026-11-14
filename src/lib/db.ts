@@ -148,6 +148,8 @@ export interface GameReviewRecord {
   analysedAt?: number
   /** Nauwkeurigheid van wit en zwart, als de analyse klaar is */
   accuracy?: { white: number; black: number }
+  /** Een grondigere analyse die nog bezig is; de bestaande beoordeling blijft tot die klaar is */
+  deep?: { depth: number; evals: PosEval[] }
   /** Via een deellink van iemand anders binnengekomen: telt niet mee bij je eigen briljante zetten */
   shared?: boolean
   /** Geschatte partijrating van wit en zwart (null: te kort voor een schatting) */

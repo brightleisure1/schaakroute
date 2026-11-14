@@ -17,8 +17,21 @@ import { MoveClassIcon } from '../components/MoveClassIcon'
 import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 
-/** Rekendiepte van Stockfish per stelling: een paar seconden per partij op een gewone laptop of telefoon */
-const DEPTH = 14
+/** Rekendiepte van Stockfish per stelling. Snel: een halve minuut per partij; grondig: een paar minuten. */
+const QUICK_DEPTH = 14
+const DEEP_DEPTH = 18
+const DEPTH_KEY = 'schaakroute.analyseDiepte'
+const validDepth = (d: number) => d === QUICK_DEPTH || d === DEEP_DEPTH
+/** Is de analyse van dit record compleet (op een geldige diepte)? */
+const isAnalysed = (r: GameReviewRecord) => validDepth(r.depth) && r.evals.length >= r.game.san.length + 1
+
+function readDepth(): number {
+  try {
+    return Number(localStorage.getItem(DEPTH_KEY)) === DEEP_DEPTH ? DEEP_DEPTH : QUICK_DEPTH
+  } catch {
+    return QUICK_DEPTH
+  }
+}
 
 const SPEED: Record<string, string> = {
   ultraBullet: 'Bullet', bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', classical: 'Klassiek', daily: 'Per dag', correspondence: 'Per dag',
@@ -105,12 +118,17 @@ export function GameReviewList() {
   }, [settings, source]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function open(g: ReviewGame) {
-    if (!(await db.reviews.get(g.id))) await db.reviews.put({ id: g.id, game: withOpening(g, names.data), evals: [], depth: DEPTH, savedAt: Date.now() })
+    if (!(await db.reviews.get(g.id))) await db.reviews.put({ id: g.id, game: withOpening(g, names.data), evals: [], depth: depthPref, savedAt: Date.now() })
     else await db.reviews.update(g.id, { savedAt: Date.now() })
     navigate(`/analyse/${encodeURIComponent(g.id)}`)
   }
 
   // Eén partij via een link of een geplakte PGN
+  const [depthPref, setDepthPref] = useState(readDepth)
+  function pickDepth(d: number) {
+    setDepthPref(d)
+    try { localStorage.setItem(DEPTH_KEY, String(d)) } catch { /* geen opslag */ }
+  }
   const [paste, setPaste] = useState('')
   const [pasteBusy, setPasteBusy] = useState(false)
   const [pasteErr, setPasteErr] = useState<string | null>(null)
@@ -163,6 +181,16 @@ export function GameReviewList() {
           <button className="btn btn-primary" disabled={busy || !username}>Partijen ophalen</button>
         </div>
         <p className="text-xs text-muted">Je laatste 30 partijen. Stockfish rekent alles op je eigen apparaat; er wordt niets naar ons gestuurd.</p>
+        <fieldset className="flex flex-wrap items-center gap-2 text-sm">
+          <legend className="sr-only">Hoe grondig analyseren</legend>
+          <span className="text-muted">Analyse:</span>
+          {[{ d: QUICK_DEPTH, label: 'Snel', hint: 'ongeveer een halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'een paar minuten, preciezer' }].map(o => (
+            <label key={o.d} className={`chip cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand ${depthPref === o.d ? 'chip-on' : ''}`}>
+              <input type="radio" name="review-depth" className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
+              {o.label} <span className="font-normal opacity-70">· {o.hint}</span>
+            </label>
+          ))}
+        </fieldset>
       </form>
 
       <form className="card space-y-2 p-4" onSubmit={openPasted}>
@@ -241,11 +269,11 @@ function GameList({ title, games, saved, onOpen, action }: { title: string; game
 
 // ---------------- Analyse van één partij ----------------
 
-async function evalPosition(fen: string): Promise<PosEval> {
+async function evalPosition(fen: string, depth = QUICK_DEPTH): Promise<PosEval> {
   const c = new Chess(fen)
   if (c.isCheckmate()) return { cp: c.turn() === 'w' ? -10000 : 10000 }
   if (c.isStalemate() || c.isInsufficientMaterial()) return { cp: 0 }
-  const a = await analyse(fen, { depth: DEPTH, multipv: 2 })
+  const a = await analyse(fen, { depth, multipv: 2 })
   if (!a?.lines[0]) throw new Error('Stockfish kon niet laden. Probeer de pagina opnieuw te laden.')
   const stm = c.turn() === 'w' ? 1 : -1
   const conv = (l: { cp?: number; mate?: number }) => (l.mate !== undefined ? { mate: stm * l.mate } : { cp: stm * (l.cp ?? 0) })
@@ -264,36 +292,52 @@ function fensOf(san: string[]): string[] {
   return out
 }
 
-/** Laat Stockfish de stellingen beoordelen die nog ontbreken, en bewaart tussendoor */
+interface EngineProgress { done: number; total: number; depth: number; deepening: boolean }
+
+/**
+ * Laat Stockfish de stellingen beoordelen die nog ontbreken, en bewaart tussendoor.
+ * Bij een grondigere analyse blijft de bestaande beoordeling zichtbaar tot de nieuwe klaar is.
+ */
 function useEngineReview(record: GameReviewRecord | undefined) {
   const [evals, setEvals] = useState<PosEval[] | null>(null)
+  const [progress, setProgress] = useState<EngineProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
   const id = record?.id
+  const deepDepth = record?.deep?.depth
   useEffect(() => {
     if (!record) return
     let cancelled = false
     const fens = fensOf(record.game.san)
-    const list = record.depth === DEPTH ? [...record.evals] : []
-    setEvals(list)
+    const base = validDepth(record.depth) ? [...record.evals] : []
+    const deep = record.deep
+    const depth = deep?.depth ?? (validDepth(record.depth) ? record.depth : QUICK_DEPTH)
+    const list = deep ? [...deep.evals] : base
+    // Tijdens een grondige analyse de oude, complete beoordeling laten staan
+    const keepOld = !!deep && base.length >= fens.length
+    setEvals(keepOld ? base : list)
     setError(null)
-    if (list.length >= fens.length) return
+    setProgress({ done: list.length, total: fens.length, depth, deepening: !!deep })
+    if (list.length >= fens.length && !deep) return
     ;(async () => {
       try {
         for (let i = list.length; i < fens.length && !cancelled; i++) {
-          list.push(await evalPosition(fens[i]))
+          list.push(await evalPosition(fens[i], depth))
           if (cancelled) return
-          setEvals([...list])
-          if (i % 8 === 0) await db.reviews.update(record.id, { evals: [...list], depth: DEPTH })
+          setProgress({ done: list.length, total: fens.length, depth, deepening: !!deep })
+          if (!keepOld) setEvals([...list])
+          if (i % 8 === 0) await db.reviews.update(record.id, deep ? { deep: { depth, evals: [...list] } } : { evals: [...list], depth })
         }
         if (cancelled) return
-        await db.reviews.update(record.id, { evals: list, depth: DEPTH, analysedAt: Date.now() })
+        setEvals([...list])
+        setProgress({ done: list.length, total: fens.length, depth, deepening: false })
+        await db.reviews.update(record.id, { evals: list, depth, analysedAt: Date.now(), deep: undefined })
       } catch (e) {
         if (!cancelled) setError((e as Error).message)
       }
     })()
     return () => { cancelled = true }
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
-  return { evals, error }
+  }, [id, deepDepth]) // eslint-disable-line react-hooks/exhaustive-deps
+  return { evals, error, progress }
 }
 
 // ---------------- Delen ----------------
@@ -377,7 +421,7 @@ export function SharedGameView() {
     if (!shared) return
     ;(async () => {
       const { game, ply } = shared
-      if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: DEPTH, savedAt: Date.now(), shared: true })
+      if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: readDepth(), savedAt: Date.now(), shared: true })
       navigate(`/analyse/${encodeURIComponent(game.id)}${ply ? `?zet=${ply}` : ''}`, { replace: true })
     })()
   }, [shared, navigate])
@@ -398,7 +442,7 @@ const ERRORS: MoveClass[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
 
 function ReviewBoard({ record }: { record: GameReviewRecord }) {
   const game = record.game
-  const { evals, error } = useEngineReview(record)
+  const { evals, error, progress } = useEngineReview(record)
   const names = useAsync(() => loadNames(), [])
   const fens = useMemo(() => fensOf(game.san), [game.san])
   const book = useMemo(() => {
@@ -482,17 +526,23 @@ function ReviewBoard({ record }: { record: GameReviewRecord }) {
         </div>
 
         <aside className="space-y-4">
-          {!ready && (
+          {(!ready || progress?.deepening) && (
             <div className="card space-y-2 p-4" aria-live="polite">
-              <div className="flex justify-between text-sm"><span className="font-semibold">Stockfish analyseert…</span><span className="tabular-nums text-muted">{done}/{fens.length}</span></div>
-              <ProgressBar value={done / fens.length} label="Voortgang van de analyse" />
-              {error ? <ErrorBox error={error} /> : <p className="text-xs text-muted">Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.</p>}
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold">{progress?.deepening ? `Grondige analyse (diepte ${progress.depth})…` : 'Stockfish analyseert…'}</span>
+                <span className="tabular-nums text-muted">{progress?.done ?? done}/{fens.length}</span>
+              </div>
+              <ProgressBar value={(progress?.done ?? done) / fens.length} label="Voortgang van de analyse" />
+              {error ? <ErrorBox error={error} /> : <p className="text-xs text-muted">{progress?.deepening
+                ? 'De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat en kan een paar minuten duren.'
+                : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.'}</p>}
             </div>
           )}
 
           <div className="max-lg:hidden"><MoveComment move={current} evalAfter={evalNow} ply={ply} ready={!!evals && done > ply} /></div>
 
-          {ready && <Summary moves={moves} game={game} onNextError={nextError} />}
+          {ready && <Summary moves={moves} game={game} onNextError={nextError} depth={record.depth}
+            onDeepen={record.depth < DEEP_DEPTH && !progress?.deepening ? () => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } }) : undefined} />}
 
           <EvalGraph evals={evals ?? []} total={total} ply={ply} moves={moves} onPick={go} />
 
@@ -581,7 +631,7 @@ function formatLine(san: string[], startPly: number): string {
   }).join(' ')
 }
 
-function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: ReviewGame; onNextError: () => void }) {
+function Summary({ moves, game, onNextError, depth, onDeepen }: { moves: ReviewedMove[]; game: ReviewGame; onNextError: () => void; depth: number; onDeepen?: () => void }) {
   const navigate = useNavigate()
   const w = summarize(moves, 'white', game.source)
   const b = summarize(moves, 'black', game.source)
@@ -624,7 +674,8 @@ function Summary({ moves, game, onNextError }: { moves: ReviewedMove[]; game: Re
           <button className="btn btn-ghost w-full" onClick={onNextError}><SkipForward size={18} aria-hidden />Naar je volgende fout</button>
         </div>
       )}
-      <p className="mt-3 text-center text-xs text-muted">{ENGINE_NAME} · diepte {DEPTH} · op je eigen apparaat</p>
+      <p className="mt-3 text-center text-xs text-muted">{ENGINE_NAME} · diepte {depth}{depth >= DEEP_DEPTH ? ' (grondig)' : ''} · op je eigen apparaat</p>
+      {onDeepen && <button className="btn btn-quiet mt-1 w-full text-sm" onClick={onDeepen}>Grondiger analyseren (diepte {DEEP_DEPTH}, duurt een paar minuten)</button>}
     </div>
   )
 }
@@ -711,7 +762,7 @@ function MistakeTrainer({ record }: { record: GameReviewRecord }) {
   const back = `/analyse/${encodeURIComponent(game.id)}`
   const names = useAsync(() => loadNames(), [])
   const fens = useMemo(() => fensOf(game.san), [game.san])
-  const analysed = record.depth === DEPTH && record.evals.length >= fens.length
+  const analysed = isAnalysed(record)
   const items = useMemo(() => {
     if (!names.data || !analysed) return null
     const ply = Math.max(bookInfo(game.san, names.data).ply, game.bookPly ?? 0)
@@ -905,7 +956,7 @@ function useHighlights(): FoundHighlight[] | null {
     const out: FoundHighlight[] = []
     for (const r of [...reviews].sort((a, b) => b.game.playedAt - a.game.playedAt)) {
       const g = r.game
-      if (r.depth !== DEPTH || r.evals.length < g.san.length + 1 || !isOwnGame(g, mine, r.shared)) continue
+      if (!isAnalysed(r) || !isOwnGame(g, mine, r.shared)) continue
       const book = Math.max(bookInfo(g.san, names.data).ply, g.bookPly ?? 0)
       const found = highlightsOf(classifyGame(g.san, r.evals, book), g.myColor)
       if (!found.length) continue
