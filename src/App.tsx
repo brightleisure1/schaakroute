@@ -24,6 +24,7 @@ const RepertoireTrain = lazy(() => import('./pages/Repertoire').then(m => ({ def
 const Statistics = lazy(() => import('./pages/Statistics').then(m => ({ default: m.Statistics })))
 const ImportGames = lazy(() => import('./pages/ImportGames').then(m => ({ default: m.ImportGames })))
 const GameReviewList = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewList })))
+const BrilliantsView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.BrilliantsView })))
 const SharedGameView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.SharedGameView })))
 const MistakeTrainerView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.MistakeTrainerView })))
 const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
@@ -64,7 +65,7 @@ interface NavItem { to: string; label: string; short?: string; icon: LucideIcon;
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
-const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/)/
+const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/(?!briljant))/
 
 /**
  * Zet --bottom-nav op de pagina: de ruimte die de tabbalk inneemt. Vastgeplakte knoppen blijven erboven
@@ -227,6 +228,7 @@ function Shell() {
               <Route path="/statistieken" element={<Statistics />} />
               <Route path="/import" element={<ImportGames />} />
               <Route path="/analyse" element={<GameReviewList />} />
+              <Route path="/analyse/briljant" element={<BrilliantsView />} />
               <Route path="/analyse/:id" element={<GameReviewView />} />
               <Route path="/analyse/:id/fouten" element={<MistakeTrainerView />} />
               <Route path="/delen/:code" element={<SharedGameView />} />

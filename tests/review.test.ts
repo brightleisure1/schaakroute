@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, highlightsOf, isOwnGame, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -163,5 +163,20 @@ describe('delen', () => {
     const pgn = gameToPgn(game)
     expect(pgn).toContain('[White "Anna"]')
     expect(pgn).toContain('2. g4 Qh4#')
+  })
+})
+
+describe('briljante zetten bijhouden', () => {
+  it('verzamelt alleen jouw briljante, geweldige en gemiste briljante zetten', () => {
+    const mk = (ply: number, cls: string, missed = false) => ({ ply, side: ply % 2 ? 'black' : 'white', cls, missedBrilliant: missed }) as unknown as Parameters<typeof highlightsOf>[0][number]
+    const moves = [mk(0, 'brilliant'), mk(1, 'brilliant'), mk(2, 'great'), mk(4, 'mistake', true), mk(6, 'best')]
+    expect(highlightsOf(moves, 'white').map(h => [h.kind, h.move.ply])).toEqual([['brilliant', 0], ['great', 2], ['missed', 4]])
+  })
+  it('telt alleen partijen waarin jij speelde', () => {
+    const g = gameFromPgn('[White "Morphy"]\n[Black "Duke"]\n\n1. e4 e5 *', [])
+    expect(isOwnGame(g, ['devin'])).toBe(false)
+    expect(isOwnGame({ ...g, white: { name: 'Devin' } }, ['devin'])).toBe(true)
+    expect(isOwnGame(g, [])).toBe(true)
+    expect(isOwnGame(g, [], true)).toBe(false)
   })
 })

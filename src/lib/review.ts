@@ -559,3 +559,33 @@ export function gameToPgn(g: ReviewGame): string {
   if (g.opening) c.setHeader('Opening', g.opening)
   return c.pgn()
 }
+
+// ---------------- Hoogtepunten bijhouden ----------------
+
+export type HighlightKind = 'brilliant' | 'great' | 'missed'
+
+export interface Highlight {
+  kind: HighlightKind
+  move: ReviewedMove
+}
+
+/** Jouw briljante en geweldige zetten in een partij, en de briljante zetten die je miste */
+export function highlightsOf(moves: ReviewedMove[], myColor: Side): Highlight[] {
+  const out: Highlight[] = []
+  for (const m of moves) {
+    if (m.side !== myColor) continue
+    if (m.cls === 'brilliant' || m.cls === 'great') out.push({ kind: m.cls, move: m })
+    else if (m.missedBrilliant) out.push({ kind: 'missed', move: m })
+  }
+  return out
+}
+
+/**
+ * Is de speler aan jouw kant echt jij? Met bekende gebruikersnamen moet de naam kloppen
+ * (een geplakte partij van Morphy telt dan niet mee); zonder namen telt alles behalve gedeelde partijen.
+ */
+export function isOwnGame(g: ReviewGame, myNames: string[], shared = false): boolean {
+  const names = myNames.map(n => n.toLowerCase())
+  const player = (g.myColor === 'white' ? g.white : g.black).name.toLowerCase()
+  return names.length ? names.includes(player) : !shared
+}

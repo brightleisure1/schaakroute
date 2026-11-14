@@ -8,10 +8,10 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
-  type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
+  CLASS_INFO, CLASS_ORDER, MIN_RATED_MOVES, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, estimateRating, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  type Highlight, type HighlightKind, type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
-import { Board } from '../components/Board'
+import { Board, MiniBoard } from '../components/Board'
 import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
 import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, Spinner, Tabs, plural, useSettings } from '../components/ui'
@@ -62,6 +62,7 @@ export function GameReviewList() {
   const [err, setErr] = useState<string | null>(null)
   const [shownFor, setShownFor] = useState('')
   const names = useAsync(() => loadNames(), [])
+  const brilliants = useHighlights()?.filter(h => h.kind === 'brilliant').length ?? 0
   const saved = useLiveQuery(() => db.reviews.orderBy('savedAt').reverse().toArray(), [], [] as GameReviewRecord[])
   const savedById = useMemo(() => new Map(saved.map(r => [r.id, r])), [saved])
 
@@ -151,7 +152,8 @@ export function GameReviewList() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Partij-analyse" subtitle="Vul je gebruikersnaam in, kies een partij en zie per zet hoe goed hij was: van briljant tot blunder." />
+      <PageHeader title="Partij-analyse" subtitle="Vul je gebruikersnaam in, kies een partij en zie per zet hoe goed hij was: van briljant tot blunder."
+        actions={<Link className="btn btn-ghost" to="/analyse/briljant"><MoveClassIcon cls="brilliant" size={20} />Mijn briljante zetten{brilliants ? <span className="font-normal text-muted">({brilliants})</span> : null}</Link>} />
       <form className="card space-y-3 p-4" onSubmit={load}>
         <Tabs value={source} onChange={pickSource} options={[{ value: 'lichess', label: 'Lichess' }, { value: 'chesscom', label: 'Chess.com' }]} />
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -375,7 +377,7 @@ export function SharedGameView() {
     if (!shared) return
     ;(async () => {
       const { game, ply } = shared
-      if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: DEPTH, savedAt: Date.now() })
+      if (!(await db.reviews.get(game.id))) await db.reviews.put({ id: game.id, game, evals: [], depth: DEPTH, savedAt: Date.now(), shared: true })
       navigate(`/analyse/${encodeURIComponent(game.id)}${ply ? `?zet=${ply}` : ''}`, { replace: true })
     })()
   }, [shared, navigate])
@@ -521,14 +523,17 @@ function PlayerRow({ p, side }: { p: { name: string; rating?: number }; side: Si
   )
 }
 
-function SquareBadge({ square, cls, orientation }: { square: string; cls: MoveClass; orientation: Side }) {
+function SquareBadge({ square, cls, orientation, size = 26 }: { square: string; cls: MoveClass; orientation: Side; size?: number }) {
   const f = 'abcdefgh'.indexOf(square[0])
   const r = Number(square[1])
   const col = orientation === 'white' ? f : 7 - f
   const row = orientation === 'white' ? 8 - r : r - 1
   return (
-    <div className="pointer-events-none absolute z-10" style={{ left: `calc(${(col + 1) * 12.5}% - 1.3rem)`, top: `calc(${row * 12.5}% - 0.2rem)` }}>
-      <span className="block animate-pop"><MoveClassIcon cls={cls} size={26} ring /></span>
+    <div className="pointer-events-none absolute z-10" style={size < 26
+      // Klein bord: binnen het veld houden, zodat het icoontje aan de rand niet wegvalt
+      ? { left: `calc(${(col + 1) * 12.5}% - ${size + 1}px)`, top: `calc(${row * 12.5}% + 1px)` }
+      : { left: `calc(${(col + 1) * 12.5}% - 1.3rem)`, top: `calc(${row * 12.5}% - 0.2rem)` }}>
+      <span className="block animate-pop"><MoveClassIcon cls={cls} size={size} ring /></span>
     </div>
   )
 }
@@ -882,5 +887,99 @@ function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
         )}
       </aside>
     </div>
+  )
+}
+
+// ---------------- Briljante zetten bijhouden ----------------
+
+interface FoundHighlight extends Highlight { record: GameReviewRecord; fenBefore: string; fenAfter: string }
+
+/** Alle hoogtepunten uit je geanalyseerde partijen, nieuwste partij eerst */
+function useHighlights(): FoundHighlight[] | null {
+  const settings = useSettings()
+  const names = useAsync(() => loadNames(), [])
+  const reviews = useLiveQuery(() => db.reviews.toArray(), [])
+  return useMemo(() => {
+    if (!settings || !names.data || !reviews) return null
+    const mine = [settings.lichessUser, settings.chesscomUser].filter((n): n is string => !!n)
+    const out: FoundHighlight[] = []
+    for (const r of [...reviews].sort((a, b) => b.game.playedAt - a.game.playedAt)) {
+      const g = r.game
+      if (r.depth !== DEPTH || r.evals.length < g.san.length + 1 || !isOwnGame(g, mine, r.shared)) continue
+      const book = Math.max(bookInfo(g.san, names.data).ply, g.bookPly ?? 0)
+      const found = highlightsOf(classifyGame(g.san, r.evals, book), g.myColor)
+      if (!found.length) continue
+      const fens = fensOf(g.san)
+      for (const h of found) out.push({ ...h, record: r, fenBefore: fens[h.move.ply], fenAfter: fens[h.move.ply + 1] })
+    }
+    return out
+  }, [settings, names.data, reviews])
+}
+
+const HIGHLIGHT_TABS = [
+  { value: 'brilliant', label: 'Briljant' },
+  { value: 'great', label: 'Geweldig' },
+  { value: 'missed', label: 'Gemist' },
+] as const
+
+export function BrilliantsView() {
+  const all = useHighlights()
+  const [tab, setTab] = useState<HighlightKind>('brilliant')
+  if (!all) return <Spinner label="Briljante zetten zoeken…" />
+  const count = (k: HighlightKind) => all.filter(h => h.kind === k).length
+  const shown = all.filter(h => h.kind === tab)
+  const games = new Set(all.map(h => h.record.id)).size
+  return (
+    <div className="space-y-5">
+      <PageHeader back="/analyse" title="Mijn briljante zetten"
+        subtitle="Je beste momenten uit je geanalyseerde partijen. Tik op een stelling om de partij op die zet te openen." />
+      <div className="grid grid-cols-3 gap-2 sm:max-w-md">
+        {HIGHLIGHT_TABS.map(t => (
+          <div key={t.value} className="card flex flex-col items-center gap-1 p-3 text-center">
+            <span className={t.value === 'missed' ? 'opacity-45 grayscale' : undefined}><MoveClassIcon cls={t.value === 'missed' ? 'brilliant' : t.value} size={26} /></span>
+            <span className="text-2xl font-extrabold tabular-nums">{count(t.value)}</span>
+            <span className="text-xs text-muted">{t.value === 'missed' ? 'gemist' : t.label.toLowerCase()}</span>
+          </div>
+        ))}
+      </div>
+      <Tabs value={tab} onChange={setTab} options={HIGHLIGHT_TABS.map(t => ({ value: t.value, label: `${t.label} (${count(t.value)})` }))} />
+      {shown.length === 0 ? (
+        <Empty title={tab === 'missed' ? 'Geen gemiste briljante zetten' : `Nog geen ${tab === 'brilliant' ? 'briljante' : 'geweldige'} zetten`}
+          action={<Link className="btn btn-primary" to="/analyse">Partijen analyseren</Link>}>
+          {all.length || games ? 'Analyseer meer partijen; elke briljante zet die je speelt komt hier vanzelf bij.' : 'Analyseer je partijen; elke briljante zet die je speelt komt hier vanzelf bij.'}
+        </Empty>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {shown.map(h => <HighlightCard key={`${h.record.id}-${h.move.ply}`} h={h} />)}
+        </ul>
+      )}
+      <p className="text-xs text-muted">Alleen zetten uit partijen waarin jij speelde ({plural(games, 'partij', 'partijen')} met hoogtepunten). Gedeelde partijen van anderen tellen niet mee.</p>
+    </div>
+  )
+}
+
+function HighlightCard({ h }: { h: FoundHighlight }) {
+  const g = h.record.game
+  const opp = g.myColor === 'white' ? g.black : g.white
+  const missed = h.kind === 'missed'
+  // Gemist: de stelling vóór je zet, zodat je de briljante zet zelf kunt zien; anders de stelling na je zet
+  const fen = missed ? h.fenBefore : h.fenAfter
+  const to = `/analyse/${encodeURIComponent(g.id)}?zet=${h.move.ply + 1}`
+  return (
+    <li>
+      <Link to={to} className="card block overflow-hidden p-0 transition hover:shadow-md">
+        <div className="relative">
+          <MiniBoard fen={fen} orientation={g.myColor} id={`hl-${g.id}-${h.move.ply}`} />
+          {!missed && <SquareBadge square={h.move.uci.slice(2, 4)} cls={h.kind as MoveClass} orientation={g.myColor} size={15} />}
+        </div>
+        <div className="p-3">
+          <div className="flex items-center gap-1.5 font-bold">
+            {missed ? <>Briljant was <span className="font-mono">{h.move.bestSan}</span></> : <span className="font-mono">{formatLine([h.move.san], h.move.ply)}</span>}
+          </div>
+          {missed && <div className="text-xs text-muted">je speelde <span className="font-mono">{h.move.san}</span></div>}
+          <div className="truncate text-xs text-muted">tegen {opp.name} · {fmtDate(g.playedAt)}</div>
+        </div>
+      </Link>
+    </li>
   )
 }
