@@ -101,11 +101,30 @@ export const REVIEW_MODEL = {
   clamp: 1000,
   mateCp: 0,
   mateStep: 0,
+  // Zetbeoordeling zoals Chess.com: 'expected points' hangen af van de rating van wie zet. Afgestemd zoals in het
+  // openbare project mtureyen/chessy (6.158 echte Chess.com-labels): de winkans-curve van Lichess, bij rating 500
+  // 0,35× zo steil en bij 2000 0,8× (daartussen lineair), en evaluaties tot ±15 pionnen tellen mee.
+  epSlopeAt500: 0.35,
+  epSlopeAt2000: 0.8,
+  epCap: 1500,
+  /** Beste: de topzet van de engine, of een zet die minder dan dit kost (procentpunten) */
+  bestMaxLoss: 0.05,
+  /** Blunder alleen als je daarna echt slecht staat (je winkans onder dit percentage), anders 'fout' */
+  blunderMaxWinAfter: 30,
+  /** Geweldig: de op één na beste zet is minstens zoveel procentpunt slechter … */
+  greatGap: 14,
+  /** … en de zet straft een fout af: de tegenstander verloor met zijn vorige zet minstens zoveel */
+  greatMinOpponentLoss: 5,
+  /** Gemist: de tegenstander verloor minstens zoveel, en jij geeft daarvan tussen min en max keer terug */
+  missMinOpponentLoss: 12,
+  missGivesBackMin: 0.3,
+  missGivesBackMax: 2,
   // Briljant, afgestemd op een echte Chess.com-review (17…Lb3!! moet briljant zijn) en een steekproef van
   // 88 Lichess-partijen (10 briljante zetten; zonder deze regels 39, met de strengste regels 2):
   /** Hoeveel winstkans de offerzet hooguit mag kosten (de lichte Stockfish ziet een offer soms net iets minder goed) */
-  brilliantMaxLoss: 3,
-  /** Boven deze winstkans stond je al gewonnen (behalve bij een offer dat tot mat leidt) */
+  brilliantMaxLoss: 2,
+  /** Je stond al gewonnen als de op één na beste zet je minstens deze winstkans geeft (Chess.com: "niet compleet
+   *  gewonnen als je de zet niet had gevonden"); behalve bij een offer dat tot mat leidt */
   brilliantMaxWp: 90,
   /** Of Stockfish het offer moet aannemen. Chess.com noemt ook een offer dat je beter niet kunt nemen briljant. */
   brilliantNeedsAccept: false,
@@ -126,6 +145,22 @@ export function winPct(e: Pick<PosEval, 'cp' | 'mate'> | undefined): number {
     cp = Math.max(-M.clamp, Math.min(M.clamp, e.cp))
   }
   return 50 + 50 * (2 / (1 + Math.exp(-M.k * cp)) - 1)
+}
+
+/** Rating van wie zet → steilheid van de curve (Chess.com: een pion is voor een beginner minder waard dan voor een meester) */
+function epSlope(rating: number | undefined): number {
+  const M = REVIEW_MODEL
+  const r = rating !== undefined && Number.isFinite(rating) ? rating : 1500
+  const t = Math.min(1, Math.max(0, (r - 500) / 1500))
+  return 0.00368208 * (M.epSlopeAt500 + t * (M.epSlopeAt2000 - M.epSlopeAt500))
+}
+
+/** Expected points van wit in procent (0–100), voor een speler met deze rating */
+export function expectedPoints(e: Pick<PosEval, 'cp' | 'mate'> | undefined, rating?: number): number {
+  if (!e) return 50
+  const cap = REVIEW_MODEL.epCap
+  const cp = e.mate !== undefined ? (e.mate > 0 ? cap : e.mate < 0 ? -cap : 0) : Math.max(-cap, Math.min(cap, e.cp ?? 0))
+  return 100 / (1 + Math.exp(-epSlope(rating) * cp))
 }
 
 /** Nauwkeurigheid van één zet uit het verlies aan winstkans (formule van Lichess) */
@@ -219,62 +254,76 @@ function sanLine(fen: string, uci: string[]): string[] {
  * Beoordeelt alle zetten. `evals[i]` is het oordeel over de stelling vóór zet i (evals.length = san.length + 1).
  * `bookPly`: zoveel halve zetten aan het begin zijn theorie.
  */
-export function classifyGame(san: string[], evals: PosEval[], bookPly = 0): ReviewedMove[] {
+/** Ratings van wit en zwart op Chess.com-schaal; ontbreekt er een, dan geldt 1500 */
+export interface ClassifyOptions { ratings?: { white?: number; black?: number } }
+
+/** De ratings uit een partij, omgerekend naar Chess.com-schaal (daar is het model op afgestemd) */
+export function reviewRatings(g: Pick<ReviewGame, 'source' | 'white' | 'black'>): ClassifyOptions['ratings'] {
+  const conv = (r?: number) => (r === undefined ? undefined : g.source === 'lichess' ? Math.round(toChesscom(r)) : r)
+  return { white: conv(g.white.rating), black: conv(g.black.rating) }
+}
+
+export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts: ClassifyOptions = {}): ReviewedMove[] {
+  const M = REVIEW_MODEL
   const c = new Chess(START_FEN)
   const out: ReviewedMove[] = []
+  const epLosses: number[] = []
   for (let ply = 0; ply < san.length && ply + 1 < evals.length; ply++) {
     const fen = c.fen()
     const legal = c.moves().length
+    const inCheck = c.inCheck()
     const m = c.move(san[ply])
     const uci = m.from + m.to + (m.promotion ?? '')
     const side = sideAt(ply)
+    const rating = opts.ratings?.[side]
     const before = evals[ply]
     const after = evals[ply + 1]
+    // Winstkans (Lichess) voor nauwkeurigheid en grafiek; expected points (rating-afhankelijk) voor het oordeel
     const wpBefore = winPct(before)
     const wpAfter = winPct(after)
     const loss = Math.max(0, forSide(wpBefore, side) - forSide(wpAfter, side))
+    const epLoss = Math.max(0, forSide(expectedPoints(before, rating), side) - forSide(expectedPoints(after, rating), side))
+    epLosses.push(epLoss)
     const isBest = !!before.best && before.best === uci
-    let cls: MoveClass
-    if (ply < bookPly) cls = 'book'
-    else if (isBest || loss <= 0.5) cls = 'best'
-    else if (loss <= 2) cls = 'excellent'
-    else if (loss <= 5) cls = 'good'
-    else if (loss <= 10) cls = 'inaccuracy'
-    else if (loss <= 20) cls = 'mistake'
-    else cls = 'blunder'
+    const prev = out[ply - 1]
+    const oppLoss = ply > 0 ? epLosses[ply - 1] : 0
+    const moverWpAfter = forSide(wpAfter, side)
+    const second = before.cp2 !== undefined || before.mate2 !== undefined ? forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side) : undefined
 
-    if (cls !== 'book') {
-      const prev = out[ply - 1]
-      // Gemist: de tegenstander gaf iets weg en jij profiteerde niet
-      if ((cls === 'inaccuracy' || cls === 'mistake') && loss > 7 && prev && (prev.cls === 'mistake' || prev.cls === 'blunder' || prev.cls === 'miss')) cls = 'miss'
-      if ((cls === 'best' || cls === 'excellent' || (cls === 'good' && loss <= REVIEW_MODEL.brilliantMaxLoss)) && forSide(wpAfter, side) >= 50) {
-        // Briljant is zeldzaam: precies de beste zet, een echt offer, geen gedwongen zet, en de stelling
-        // was nog niet al gewonnen (behalve als het offer tot mat leidt)
-        const matingSac = isBest && after.mate !== undefined && (side === 'white' ? after.mate > 0 : after.mate < 0)
-        const open = forSide(wpBefore, side) <= REVIEW_MODEL.brilliantMaxWp || matingSac
-        // Stockfish moet het offer bevestigen: de beste reactie van de tegenstander is het stuk slaan
-        // (of het offer leidt tot mat). Een stuk dat niemand wil nemen is geen briljant offer.
-        const offered = loss <= REVIEW_MODEL.brilliantMaxLoss && legal > 2 && open ? sacrificedSquares(fen, uci) : []
-        const accepted = !!after.best && offered.includes(after.best.slice(2, 4))
-        if (offered.length && (accepted || matingSac || !REVIEW_MODEL.brilliantNeedsAccept)) cls = 'brilliant'
-        else if (cls !== 'good' && isBest && legal > 1 && (before.cp2 !== undefined || before.mate2 !== undefined)) {
-          // Enige goede zet: de op één na beste zet is veel slechter en de stelling was nog niet beslist
-          const second = forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side)
-          const recapture = !!m.captured && !!prev && prev.uci.slice(2, 4) === m.to
-          if (forSide(wpBefore, side) - second >= 20 && forSide(wpBefore, side) < 95 && !recapture) cls = 'great'
-        }
-      }
+    let cls: MoveClass
+    if (legal === 1) cls = 'best' // Chess.com kent geen 'gedwongen': de enige zet is ook de beste
+    else if (ply < bookPly) cls = 'book'
+    else {
+      // Briljant: een goed stukoffer, (bijna) de beste zet, je staat daarna niet slechter, en je stond niet al
+      // compleet gewonnen zonder deze zet (gemeten aan de op één na beste zet), behalve bij een offer dat tot mat leidt
+      const matingSac = isBest && after.mate !== undefined && (side === 'white' ? after.mate > 0 : after.mate < 0)
+      const withoutIt = second ?? forSide(wpBefore, side)
+      const open = withoutIt < M.brilliantMaxWp || matingSac
+      const offered = epLoss < M.brilliantMaxLoss && !inCheck && !m.promotion && legal > 2 && moverWpAfter >= 50 && open ? sacrificedSquares(fen, uci) : []
+      const accepted = !!after.best && offered.includes(after.best.slice(2, 4))
+      const recapture = !!m.captured && !!prev && prev.uci.slice(2, 4) === m.to
+      if (offered.length && (accepted || matingSac || !M.brilliantNeedsAccept)) cls = 'brilliant'
+      // Geweldig: de enige goede zet, en hij straft een fout van de tegenstander af
+      else if (isBest && !recapture && !inCheck && second !== undefined && forSide(wpBefore, side) - second >= M.greatGap && oppLoss >= M.greatMinOpponentLoss) cls = 'great'
+      else if (isBest || epLoss < M.bestMaxLoss) cls = 'best'
+      // Gemist: de tegenstander gaf iets weg en jij geeft het (grotendeels) terug
+      else if (epLoss >= 5 && oppLoss >= M.missMinOpponentLoss && epLoss >= oppLoss * M.missGivesBackMin && epLoss <= oppLoss * M.missGivesBackMax) cls = 'miss'
+      else if (epLoss < 2) cls = 'excellent'
+      else if (epLoss < 5) cls = 'good'
+      else if (epLoss < 10) cls = 'inaccuracy'
+      // Blunder: kost veel én je staat daarna echt slecht; anders 'fout'
+      else if (epLoss < 20 || moverWpAfter >= M.blunderMaxWinAfter) cls = 'mistake'
+      else cls = 'blunder'
     }
 
-    // Gemiste briljante zet: de beste zet was een offer en jij speelde iets duidelijk slechters
-    // Ook hier moet Stockfish het offer bevestigen: in de beste lijn slaat de tegenstander het stuk (of het wordt mat)
+    // Gemiste briljante zet: de beste zet was een offer dat Stockfish aanneemt (of tot mat leidt), en jij speelde iets duidelijk slechters
     let missedBrilliant = false
-    if (cls !== 'book' && !isBest && loss >= 10 && legal > 2 && before.best && forSide(wpBefore, side) >= 50) {
+    if (cls !== 'book' && !isBest && epLoss >= 10 && legal > 2 && !inCheck && before.best && forSide(wpBefore, side) >= 50) {
       const mates = before.mate !== undefined && (side === 'white' ? before.mate > 0 : before.mate < 0)
-      if (forSide(wpBefore, side) <= REVIEW_MODEL.brilliantMaxWp || mates) {
+      if ((second ?? forSide(wpBefore, side)) < M.brilliantMaxWp || mates) {
         const offered = sacrificedSquares(fen, before.best)
         const reply = before.pv?.[1]
-        missedBrilliant = offered.length > 0 && ((!!reply && offered.includes(reply.slice(2, 4))) || mates || !REVIEW_MODEL.brilliantNeedsAccept)
+        missedBrilliant = offered.length > 0 && ((!!reply && offered.includes(reply.slice(2, 4))) || mates || !M.brilliantNeedsAccept)
       }
     }
     const bestLine = before.pv?.length ? sanLine(fen, before.pv.slice(0, 6)) : []

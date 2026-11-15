@@ -55,7 +55,7 @@ describe('zetten beoordelen', () => {
   ]
   const moves = classifyGame(san, evals, 2)
   it('geeft iedere zet een oordeel', () => {
-    expect(moves.map(m => m.cls)).toEqual(['book', 'book', 'good', 'best', 'best', 'blunder', 'best'])
+    expect(moves.map(m => m.cls)).toEqual(['book', 'book', 'excellent', 'best', 'best', 'blunder', 'best'])
   })
   it('noemt bij een blunder de beste zet', () => {
     expect(moves[5].bestSan).toBe('g6')
@@ -199,3 +199,31 @@ describe('briljant is streng', () => {
     won[6] = { cp: 900, best: 'c4f7' }
     expect(classifyGame(san, [...won, { cp: 900, best: 'e8f7' }])[6].cls).not.toBe('brilliant')
   })})
+
+describe('zetbeoordeling zoals Chess.com', () => {
+  // 1.e4 e5 2.Nf3 Nc6 met zelfgekozen evaluaties
+  const san = ['e4', 'e5', 'Nf3', 'Nc6']
+  it('een blunder waarna je nog goed staat is een fout', () => {
+    // wit gaat van +9 naar +3: veel verloren, maar nog steeds beter
+    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 900, best: 'e7e5' }, { cp: 900, best: 'f1c4' }, { cp: 300, best: 'b8c6' }, { cp: 300 }]
+    const m = classifyGame(san, e, 0, { ratings: { white: 2000, black: 2000 } })
+    expect(m[2].cls).toBe('mistake')
+  })
+  it('dezelfde zet weegt zwaarder bij een hogere rating', () => {
+    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'e7e5' }, { cp: 30, best: 'd2d4' }, { cp: -120, best: 'b8c6' }, { cp: -120 }]
+    const low = classifyGame(san, e, 0, { ratings: { white: 500, black: 500 } })[2].cls
+    const high = classifyGame(san, e, 0, { ratings: { white: 2200, black: 2200 } })[2].cls
+    const order = ['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder']
+    expect(order.indexOf(high)).toBeGreaterThan(order.indexOf(low))
+  })
+  it('gemist: de tegenstander geeft iets weg en jij geeft het terug', () => {
+    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'd7d5' }, { cp: 400, best: 'd1h5' }, { cp: 30, best: 'b8c6' }, { cp: 30 }]
+    expect(classifyGame(san, e, 0, { ratings: { white: 1500, black: 1500 } })[2].cls).toBe('miss')
+  })
+  it('een gedwongen zet is altijd de beste', () => {
+    // zwart staat schaak en heeft maar één zet
+    const fenSan = ['e4', 'f6', 'Qh5+', 'g6']
+    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 80, best: 'e7e5' }, { cp: 80, best: 'h5g6' }, { cp: 300, best: 'g7g6' }, { cp: 300 }]
+    expect(classifyGame(fenSan, e)[3].cls).toBe('best')
+  })
+})

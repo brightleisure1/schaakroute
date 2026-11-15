@@ -8,7 +8,7 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, ENGINE_NAME, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, ENGINE_NAME, reviewRatings, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type Highlight, type HighlightKind, type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board, MiniBoard } from '../components/Board'
@@ -556,7 +556,7 @@ function useReview(record: GameReviewRecord) {
   }, [names.data, game])
   const done = evals ? Math.min(evals.length, fens.length) : 0
   const ready = done >= fens.length
-  const moves = useMemo(() => (evals ? classifyGame(game.san, evals, book.ply) : []), [evals, game.san, book.ply])
+  const moves = useMemo(() => (evals ? classifyGame(game.san, evals, book.ply, { ratings: reviewRatings(game) }) : []), [evals, game, book.ply])
   // Cijfers bewaren voor de partijlijst, met dezelfde theorielengte als hier
   useEffect(() => {
     if (!ready || !names.data || !moves.length) return
@@ -946,7 +946,7 @@ function MistakeTrainer({ record }: { record: GameReviewRecord }) {
   const items = useMemo(() => {
     if (!names.data || !analysed) return null
     const ply = Math.max(bookInfo(game.san, names.data).ply, game.bookPly ?? 0)
-    return mistakeItems(classifyGame(game.san, record.evals, ply), game.myColor, fens)
+    return mistakeItems(classifyGame(game.san, record.evals, ply, { ratings: reviewRatings(game) }), game.myColor, fens)
   }, [names.data, analysed, game, record.evals, fens])
   const [round, setRound] = useState(0)
   const [queue, setQueue] = useState<number[] | null>(null)
@@ -1138,7 +1138,7 @@ function useHighlights(): FoundHighlight[] | null {
       const g = r.game
       if (!isAnalysed(r) || !isOwnGame(g, mine, r.shared)) continue
       const book = Math.max(bookInfo(g.san, names.data).ply, g.bookPly ?? 0)
-      const found = highlightsOf(classifyGame(g.san, r.evals, book), g.myColor)
+      const found = highlightsOf(classifyGame(g.san, r.evals, book, { ratings: reviewRatings(g) }), g.myColor)
       if (!found.length) continue
       const fens = fensOf(g.san)
       for (const h of found) out.push({ ...h, record: r, fenBefore: fens[h.move.ply], fenAfter: fens[h.move.ply + 1] })
