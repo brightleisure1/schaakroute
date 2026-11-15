@@ -20,6 +20,8 @@ const CACHE = join(DIR, '.cache')
 const DEPTH = Number(process.env.DEPTH ?? 14)
 const LOG: string[] = []
 const log = (...a: unknown[]) => { const line = a.map(String).join(' '); LOG.push(line); process.stdout.write(line + '\n') }
+const EXAMPLES: string[] = []
+const DECIDED: Record<string, number[]> = {}
 const NOTABLE: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder']
 type Label = MoveClass | 'quiet'
 
@@ -93,6 +95,49 @@ function report(title: string, s: ReturnType<typeof score>) {
   return `${title}: zelfde label ${(s.agreement * 100).toFixed(1)}% van de zetten, gemiddelde F1 opvallende zetten ${s.macro.toFixed(3)}\n${rows.join('\n')}`
 }
 
+/** Verwarringstabel (Chess.com → wij) en het verlies aan winstkans per Chess.com-soort, om te zien waar het misgaat */
+function diagnose(games: Game[]) {
+  const classes: Label[] = [...NOTABLE, 'quiet']
+  const conf: Record<string, Record<string, number>> = Object.fromEntries(classes.map(a => [a, Object.fromEntries(classes.map(b => [b, 0]))]))
+  const losses: Record<string, number[]> = Object.fromEntries(classes.map(a => [a, []]))
+  const byRating: Record<string, Record<string, number[]>> = {}
+  for (const g of games) {
+    const moves = classifyGame(g.san, g.evals, g.book, { ratings: g.ratings })
+    moves.forEach((m, i) => {
+      const ref: Label = g.labels[i] && NOTABLE.includes(g.labels[i]!) ? g.labels[i]! : 'quiet'
+      const ours: Label = NOTABLE.includes(m.cls) ? m.cls : 'quiet'
+      conf[ref][ours]++
+      {
+        const sgn = m.side === 'white' ? 1 : -1
+        const cpOf = (e: PosEval) => (e.mate != null ? Math.sign(e.mate) * 20000 : (e.cp ?? 0))
+        const b = sgn * cpOf(g.evals[i]), a = sgn * cpOf(g.evals[i + 1])
+        if (Math.abs(b) >= 500 && i >= g.book && m.uci !== g.evals[i].best) {
+          const key = `${b > 0 ? 'win' : 'lose'} ${ref}`
+          ;(DECIDED[key] ??= []).push(Math.min(5000, b - a))
+          if (b < 0) (DECIDED[`rel ${key}`] ??= []).push(Math.round((100 * Math.min(5000, b - a)) / Math.abs(b)))
+        }
+      }
+      if (ref !== ours && ref !== 'quiet' && ours === 'quiet' && i >= g.book) {
+        const ev = (e: PosEval) => (e.mate != null ? `M${e.mate}` : String(e.cp ?? '?'))
+        const r = m.side === 'white' ? g.ratings.white : g.ratings.black
+        EXAMPLES.push(`${ref.padEnd(10)} ${g.name} ${Math.floor(i / 2) + 1}${i % 2 ? '...' : '.'} ${m.san} (${r}) eval ${ev(g.evals[i])} → ${ev(g.evals[i + 1])} · 2e lijn ${g.evals[i].mate2 != null ? 'M' + g.evals[i].mate2 : g.evals[i].cp2} · beste ${m.bestSan} · wp ${m.wpBefore.toFixed(0)}→${m.wpAfter.toFixed(0)} verlies ${m.loss.toFixed(1)}`)
+      }
+      if (i >= g.book) losses[ref].push(m.loss)
+      const r = m.side === 'white' ? g.ratings.white : g.ratings.black
+      const band = r == null ? '?' : r < 1000 ? '<1000' : r < 1600 ? '1000-1599' : r < 2000 ? '1600-1999' : '2000+'
+      if ((ref === 'inaccuracy' || ref === 'mistake' || ref === 'blunder') && i >= g.book) ((byRating[band] ??= {})[ref] ??= []).push(m.loss)
+    })
+  }
+  const q = (xs: number[], p: number) => { if (!xs.length) return NaN; const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))] }
+  const short = (c: string) => c.slice(0, 5)
+  const head = '  ref\\wij     ' + classes.map(c => short(c).padStart(6)).join('')
+  const rows = classes.map(a => '  ' + a.padEnd(11) + classes.map(b => String(conf[a][b]).padStart(6)).join(''))
+  const lossRows = classes.map(a => `  ${a.padEnd(11)} n ${String(losses[a].length).padStart(4)} · verlies winstkans p10 ${q(losses[a], 0.1).toFixed(1)} · p50 ${q(losses[a], 0.5).toFixed(1)} · p90 ${q(losses[a], 0.9).toFixed(1)}`)
+  const bandRows = Object.entries(byRating).sort().map(([band, per]) => `  ${band.padEnd(10)} ` + ['inaccuracy', 'mistake', 'blunder'].map(k => `${k} p50 ${q(per[k] ?? [], 0.5).toFixed(1)} (n ${(per[k] ?? []).length})`).join(' · '))
+  const decRows = Object.entries(DECIDED).sort().map(([k, xs]) => `  ${k.padEnd(16)} n ${String(xs.length).padStart(4)} · cp-verlies p10 ${q(xs, 0.1)} · p25 ${q(xs, 0.25)} · p50 ${q(xs, 0.5)} · p75 ${q(xs, 0.75)} · p90 ${q(xs, 0.9)}`)
+  return `Beslist (|eval| ≥ 5 pionnen, niet de beste zet): centipawns verlies per Chess.com-soort\n${decRows.join('\n')}\n\nVerwarringstabel (rij = Chess.com, kolom = wij)\n${head}\n${rows.join('\n')}\n\nVerlies aan winstkans (procentpunten) per Chess.com-soort\n${lossRows.join('\n')}\n\nMediaan verlies per ratinggroep\n${bandRows.join('\n')}`
+}
+
 it('zetbeoordeling trainen op Chess.com-reviews', async () => {
   if (!existsSync(DIR)) throw new Error(`Map ${DIR} bestaat niet`)
   mkdirSync(CACHE, { recursive: true })
@@ -125,17 +170,24 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
   const base = { ...REVIEW_MODEL }
   const before = score(games)
   log(report('Nu', before))
+  log('\n' + diagnose(games))
+  writeFileSync(join(DIR, 'examples.txt'), EXAMPLES.sort().join('\n'))
   if (process.env.FIT === '0' || !games.length) { writeFileSync(join(DIR, 'fit-report.txt'), LOG.join('\n')); return }
 
   // Coördinaat-zoektocht: per instelling de beste waarde kiezen, een paar rondes
   const grid: Record<string, number[]> = {
-    epSlopeAt500: [0.2, 0.35, 0.6, 0.8, 1, 1.2, 1.5, 2],
+    epSlopeAt500: [0.15, 0.25, 0.35, 0.5, 0.7, 1, 1.2, 1.5],
     epSlopeAt2000: [0.5, 0.8, 1, 1.2, 1.5, 2],
-    epCap: [1000, 1500, 2000, 3000, 5000],
+    epCap: [1000, 1500, 2000, 3000, 5000, 10000],
     blunderMaxWinAfter: [20, 30, 40, 50, 101],
-    greatGap: [8, 10, 14, 18, 24],
+    greatInCheck: [0, 1],
+    greatRecapture: [0, 1],
+    greatEp: [0, 1],
+    greatGap: [3, 5, 8, 10, 14, 18, 24],
     greatMinOpponentLoss: [0, 2, 5, 10],
     missMinOpponentLoss: [8, 12, 16, 24],
+    losingCp: [0, 300, 500, 700, 1000],
+    losingMistakeCp: [100, 150, 200, 300, 400],
     brilliantMaxLoss: [1, 2, 3, 5],
     brilliantMaxWp: [85, 90, 95, 99],
   }
@@ -145,7 +197,16 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
   const fit = (set: Game[]) => {
     Object.assign(REVIEW_MODEL, base)
     let best = objective(score(set))
-    for (let round = 0; round < 3; round++) {
+    // Steilheid en bovengrens werken samen (vlakker + hoger = ook verlies tellen in beslisste stellingen): samen zoeken
+    const joint = { a: [0.15, 0.25, 0.35, 0.5, 0.7, 1], b: [0.5, 0.8, 1.2, 2], c: [1500, 3000, 5000, 10000] }
+    let bj = [M.epSlopeAt500, M.epSlopeAt2000, M.epCap] as number[]
+    for (const a of joint.a) for (const b of joint.b) for (const c of joint.c) {
+      Object.assign(M, { epSlopeAt500: a, epSlopeAt2000: b, epCap: c })
+      const o = objective(score(set))
+      if (o > best + 1e-9) { best = o; bj = [a, b, c] }
+    }
+    Object.assign(M, { epSlopeAt500: bj[0], epSlopeAt2000: bj[1], epCap: bj[2] })
+    for (let round = 0; round < 2; round++) {
       for (const [k, values] of Object.entries(grid)) {
         let bestV = M[k] as number
         for (const v of values) {
@@ -158,18 +219,20 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
     }
   }
   // Eerlijke controle: afstemmen op alle partijen behalve één, en meten op die ene
-  if (games.length >= 3) {
-    const held: Game[] = []
-    const scores: { base: number; tuned: number }[] = []
-    for (const g of games) {
+  // Eerlijke controle in 5 delen: afstemmen op 4/5 van de partijen en meten op het vijfde deel dat buiten de training bleef
+  if (games.length >= 5) {
+    const K = 5
+    const scores: { base: number; tuned: number; agreeBase: number; agreeTuned: number }[] = []
+    for (let k = 0; k < K; k++) {
+      const test = games.filter((_, i) => i % K === k)
       Object.assign(REVIEW_MODEL, base)
-      const b = score([g]).macro
-      fit(games.filter(x => x !== g))
-      scores.push({ base: b, tuned: score([g]).macro })
-      held.push(g)
+      const b = score(test)
+      fit(games.filter((_, i) => i % K !== k))
+      const t = score(test)
+      scores.push({ base: b.macro, tuned: t.macro, agreeBase: b.agreement, agreeTuned: t.agreement })
     }
     const avg = (xs: number[]) => xs.reduce((a, x) => a + x, 0) / xs.length
-    log(`\nControle (steeds één partij buiten de training): F1 opvallende zetten ${avg(scores.map(x => x.base)).toFixed(3)} → ${avg(scores.map(x => x.tuned)).toFixed(3)}; beter bij ${scores.filter(x => x.tuned > x.base).length} van ${scores.length} partijen`)
+    log(`\nControle (steeds 1/5 van de partijen buiten de training): F1 opvallende zetten ${avg(scores.map(x => x.base)).toFixed(3)} → ${avg(scores.map(x => x.tuned)).toFixed(3)}; zelfde label ${(avg(scores.map(x => x.agreeBase)) * 100).toFixed(1)}% → ${(avg(scores.map(x => x.agreeTuned)) * 100).toFixed(1)}%; beter in ${scores.filter(x => x.tuned > x.base).length} van ${K} delen`)
   }
   fit(games)
   const after = score(games)

@@ -103,22 +103,31 @@ export const REVIEW_MODEL = {
   mateStep: 0,
   // Zetbeoordeling zoals Chess.com: 'expected points' hangen af van de rating van wie zet (de winkans-curve van
   // Lichess, bij rating 500 en 2000 met deze factor steiler, daartussen lineair; evaluaties tot ±15 pionnen).
-  // Getraind met npm run fit:classifier op 10 echte Chess.com-reviews (665 halve zetten, ratings ±250–2000):
-  // F1 op opvallende zetten 0,30 → 0,57; met steeds één partij buiten de training 0,21 → 0,44 (beter bij 8 van 10).
-  // De waarde bij 2000 rust op weinig partijen en maakt weinig uit (0,56–0,57); bewust voorzichtig gekozen.
+  // Getraind met npm run fit:classifier op 29 echte Chess.com-reviews (2058 halve zetten, ratings ±250–2300):
+  // F1 op opvallende zetten 0,51 → 0,58; met steeds 1/5 van de partijen buiten de training 0,50 → 0,54
+  // (beter in 4 van 5 delen). Eerder, op 10 partijen: 0,30 → 0,57.
   epSlopeAt500: 1,
-  epSlopeAt2000: 1.2,
-  epCap: 1500,
+  epSlopeAt2000: 2,
+  epCap: 1000,
   /** Beste: de topzet van de engine, of een zet die minder dan dit kost (procentpunten) */
   bestMaxLoss: 0.05,
   /** Blunder alleen als je daarna echt slecht staat (je winkans onder dit percentage), anders 'fout' */
   blunderMaxWinAfter: 30,
   /** Geweldig: de op één na beste zet is minstens zoveel procentpunt slechter … */
-  greatGap: 8,
+  greatGap: 10,
   /** … en de zet straft een fout af: de tegenstander verloor met zijn vorige zet minstens zoveel */
-  greatMinOpponentLoss: 2,
+  greatMinOpponentLoss: 0,
+  /** Geweldig mag ook als antwoord op schaak (1) of als terugslaan (1); 0 = uitgesloten */
+  greatInCheck: 1,
+  greatRecapture: 0,
+  /** Chess.com noemt een zet in een al verloren stelling (je staat minstens losingCp centipawns achter) een fout
+   *  zodra die nog minstens losingMistakeCp kost, ook al verandert je winstkans nauwelijks; 0 = uit */
+  losingCp: 300,
+  losingMistakeCp: 200,
+  /** Het verschil met de op één na beste zet meten in expected points (1, rating-afhankelijk) of in winstkans (0) */
+  greatEp: 1,
   /** Gemist: de tegenstander verloor minstens zoveel, en jij geeft daarvan tussen min en max keer terug */
-  missMinOpponentLoss: 12,
+  missMinOpponentLoss: 16,
   missGivesBackMin: 0.3,
   missGivesBackMax: 2,
   // Briljant, afgestemd op een echte Chess.com-review (17…Lb3!! moet briljant zijn) en een steekproef van
@@ -265,6 +274,12 @@ export function reviewRatings(g: Pick<ReviewGame, 'source' | 'white' | 'black'>)
   return { white: conv(g.white.rating), black: conv(g.black.rating) }
 }
 
+/** Evaluatie in centipawns vanuit `side`; mat in N telt als 20000 − 100·N (sneller mat = groter verschil) */
+function forSideCp(e: PosEval, side: Side): number {
+  const cp = e.mate !== undefined ? Math.sign(e.mate || 1) * (20000 - 100 * Math.abs(e.mate)) : (e.cp ?? 0)
+  return side === 'white' ? cp : -cp
+}
+
 export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts: ClassifyOptions = {}): ReviewedMove[] {
   const M = REVIEW_MODEL
   const c = new Chess(START_FEN)
@@ -292,6 +307,11 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
     const moverWpAfter = forSide(wpAfter, side)
     const second = before.cp2 !== undefined || before.mate2 !== undefined ? forSide(winPct({ cp: before.cp2, mate: before.mate2 }), side) : undefined
 
+    /** Hoeveel de op één na beste zet slechter is dan de gespeelde (beste) zet */
+    const greatGap = () => M.greatEp
+      ? forSide(expectedPoints(before, rating), side) - forSide(expectedPoints({ cp: before.cp2, mate: before.mate2 }, rating), side)
+      : forSide(wpBefore, side) - (second ?? 0)
+
     let cls: MoveClass
     if (legal === 1) cls = 'best' // Chess.com kent geen 'gedwongen': de enige zet is ook de beste
     else if (ply < bookPly) cls = 'book'
@@ -306,7 +326,7 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
       const recapture = !!m.captured && !!prev && prev.uci.slice(2, 4) === m.to
       if (offered.length && (accepted || matingSac || !M.brilliantNeedsAccept)) cls = 'brilliant'
       // Geweldig: de enige goede zet, en hij straft een fout van de tegenstander af
-      else if (isBest && !recapture && !inCheck && second !== undefined && forSide(wpBefore, side) - second >= M.greatGap && oppLoss >= M.greatMinOpponentLoss) cls = 'great'
+      else if (isBest && (M.greatRecapture || !recapture) && (M.greatInCheck || !inCheck) && second !== undefined && greatGap() >= M.greatGap && oppLoss >= M.greatMinOpponentLoss) cls = 'great'
       else if (isBest || epLoss < M.bestMaxLoss) cls = 'best'
       // Gemist: de tegenstander gaf iets weg en jij geeft het (grotendeels) terug
       else if (epLoss >= 5 && oppLoss >= M.missMinOpponentLoss && epLoss >= oppLoss * M.missGivesBackMin && epLoss <= oppLoss * M.missGivesBackMax) cls = 'miss'
@@ -316,6 +336,10 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
       // Blunder: kost veel én je staat daarna echt slecht; anders 'fout'
       else if (epLoss < 20 || moverWpAfter >= M.blunderMaxWinAfter) cls = 'mistake'
       else cls = 'blunder'
+      if (M.losingCp && !isBest && (cls === 'excellent' || cls === 'good' || cls === 'inaccuracy')) {
+        const cpBefore = forSideCp(before, side)
+        if (cpBefore <= -M.losingCp && cpBefore - forSideCp(after, side) >= M.losingMistakeCp) cls = 'mistake'
+      }
     }
 
     // Gemiste briljante zet: de beste zet was een offer dat Stockfish aanneemt (of tot mat leidt), en jij speelde iets duidelijk slechters

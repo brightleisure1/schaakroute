@@ -204,8 +204,8 @@ describe('zetbeoordeling zoals Chess.com', () => {
   // 1.e4 e5 2.Nf3 Nc6 met zelfgekozen evaluaties
   const san = ['e4', 'e5', 'Nf3', 'Nc6']
   it('een blunder waarna je nog goed staat is een fout', () => {
-    // wit gaat van +9 naar +3: veel verloren, maar nog steeds beter
-    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 900, best: 'e7e5' }, { cp: 900, best: 'f1c4' }, { cp: 300, best: 'b8c6' }, { cp: 300 }]
+    // wit gaat van +9 naar +1: veel verloren, maar nog steeds beter
+    const e: PosEval[] = [{ cp: 900, best: 'e2e4' }, { cp: 900, best: 'e7e5' }, { cp: 900, best: 'f1c4' }, { cp: 100, best: 'b8c6' }, { cp: 100 }]
     const m = classifyGame(san, e, 0, { ratings: { white: 2000, black: 2000 } })
     expect(m[2].cls).toBe('mistake')
   })
@@ -215,6 +215,11 @@ describe('zetbeoordeling zoals Chess.com', () => {
     const high = classifyGame(san, e, 0, { ratings: { white: 2200, black: 2200 } })[2].cls // fout
     const order = ['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder']
     expect(order.indexOf(high)).toBeGreaterThan(order.indexOf(low))
+  })
+  it('in een verloren stelling is nog meer weggeven een fout', () => {
+    // zwart staat al −6 en verliest nog 3 pionnen: de winstkans verandert nauwelijks, Chess.com noemt het toch een fout
+    const e: PosEval[] = [{ cp: 600, best: 'e2e4' }, { cp: 600, best: 'e7e5' }, { cp: 600, best: 'g1f3' }, { cp: 600, best: 'g8f6' }, { cp: 900 }]
+    expect(classifyGame(san, e, 0, { ratings: { white: 1500, black: 1500 } })[3].cls).toBe('mistake')
   })
   it('gemist: de tegenstander geeft iets weg en jij geeft het terug', () => {
     const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'd7d5' }, { cp: 400, best: 'd1h5' }, { cp: 30, best: 'b8c6' }, { cp: 30 }]
