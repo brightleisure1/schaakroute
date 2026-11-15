@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, highlightsOf, isOwnGame, parseGameLink, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, highlightsOf, isOwnGame, parseGameLink, chesscomReview, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -225,5 +225,14 @@ describe('zetbeoordeling zoals Chess.com', () => {
     const fenSan = ['e4', 'f6', 'Qh5+', 'g6']
     const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 80, best: 'e7e5' }, { cp: 80, best: 'h5g6' }, { cp: 300, best: 'g7g6' }, { cp: 300 }]
     expect(classifyGame(fenSan, e)[3].cls).toBe('best')
+  })
+})
+
+describe('Chess.com Game Review-PGN', () => {
+  it('leest het oordeel per zet en de ratings', () => {
+    const pgn = '[White "A"]\n[Black "B"]\n[WhiteElo "2000"]\n[BlackElo "502"]\n\n1. e4 c5 2. Bb5 $6 {[%c_effect b5;square;b5;type;Inaccuracy;persistent;true]} 2... a6 3. Bc4 Nc6 $3 {[%c_effect c6;square;c6;type;Brilliant;persistent;true]} 4. Qf3 Nd4 $1 {[%c_effect d4;square;d4;type;GreatFind;persistent;true]} *'
+    const r = chesscomReview(pgn)
+    expect(r.labels).toEqual([null, null, 'inaccuracy', null, null, 'brilliant', null, 'great'])
+    expect(r.ratings).toEqual({ white: 2000, black: 502 })
   })
 })

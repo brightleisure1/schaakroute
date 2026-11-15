@@ -12,3 +12,4 @@ tsconfig.tsbuildinfo
 
 # Impeccable-werkbestanden (lokaal)
 .impeccable/
+data-raw/chesscom-reviews/

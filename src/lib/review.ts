@@ -709,3 +709,49 @@ export function isOwnGame(g: ReviewGame, myNames: string[], shared = false): boo
   const player = (g.myColor === 'white' ? g.white : g.black).name.toLowerCase()
   return names.length ? names.includes(player) : !shared
 }
+
+// ---------------- Chess.com-labels uit een Game Review-PGN ----------------
+
+/** Hoe Chess.com de soorten in een PGN noemt ({[%c_effect …;type;Mistake;…]}) */
+const CHESSCOM_TYPES: Record<string, MoveClass> = {
+  Brilliant: 'brilliant', GreatFind: 'great', Great: 'great', BestMove: 'best', Best: 'best', Excellent: 'excellent', Good: 'good',
+  Book: 'book', Inaccuracy: 'inaccuracy', Mistake: 'mistake', Miss: 'miss', MissedWin: 'miss', Blunder: 'blunder',
+}
+
+export interface ChesscomReview {
+  san: string[]
+  /** Label per halve zet; null = Chess.com zet er geen teken bij (beste, uitstekend, goed of theorie) */
+  labels: (MoveClass | null)[]
+  ratings: { white?: number; black?: number }
+  /** Soorten die we niet kennen, om nieuwe namen op te sporen */
+  unknownTypes: string[]
+}
+
+/** Leest een PGN uit Chess.com Game Review (Delen → PGN) met het oordeel per zet */
+export function chesscomReview(pgn: string): ChesscomReview {
+  const c = new Chess()
+  c.loadPgn(pgn.trim())
+  const comments = c.getComments()
+  const h = c.getHeaders()
+  const san = c.history()
+  const replay = new Chess()
+  const labels: (MoveClass | null)[] = []
+  const unknownTypes = new Set<string>()
+  const used = new Set<number>()
+  for (const s of san) {
+    replay.move(s)
+    const fen = replay.fen()
+    const i = comments.findIndex((x, k) => !used.has(k) && x.fen === fen)
+    let label: MoveClass | null = null
+    if (i >= 0) {
+      used.add(i)
+      for (const t of comments[i].comment.matchAll(/type;([A-Za-z]+)/g)) {
+        if (CHESSCOM_TYPES[t[1]]) label = CHESSCOM_TYPES[t[1]]
+        else if (!/^(Winner|Checkmate|Draw|Resign|Timeout)/.test(t[1])) unknownTypes.add(t[1])
+      }
+    }
+    labels.push(label)
+  }
+  const num = (x?: string) => (x && Number(x) ? Number(x) : undefined)
+  return { san, labels, ratings: { white: num(h.WhiteElo), black: num(h.BlackElo) }, unknownTypes: [...unknownTypes] }
+}
