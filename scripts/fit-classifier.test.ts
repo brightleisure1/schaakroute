@@ -105,6 +105,8 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
     let r
     try { r = chesscomReview(t) } catch { log(`overgeslagen (geen geldige PGN): ${name}`); continue }
     if (r.unknownTypes.length) log(`${name}: onbekende soorten ${r.unknownTypes.join(', ')}`)
+    // Zonder één enkel label is er geen Game Review gedraaid: dan zou alles als 'geen fout' tellen
+    if (!r.labels.some(Boolean)) { log(`overgeslagen (geen labels, eerst Game Review draaien): ${name}`); continue }
     const key = createHash('sha1').update(r.san.join(' ')).digest('hex').slice(0, 16)
     const file = join(CACHE, `${key}-d${DEPTH}.json`)
     let evals: PosEval[]
