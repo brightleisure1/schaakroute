@@ -101,20 +101,22 @@ export const REVIEW_MODEL = {
   clamp: 1000,
   mateCp: 0,
   mateStep: 0,
-  // Zetbeoordeling zoals Chess.com: 'expected points' hangen af van de rating van wie zet. Afgestemd zoals in het
-  // openbare project mtureyen/chessy (6.158 echte Chess.com-labels): de winkans-curve van Lichess, bij rating 500
-  // 0,35× zo steil en bij 2000 0,8× (daartussen lineair), en evaluaties tot ±15 pionnen tellen mee.
-  epSlopeAt500: 0.35,
-  epSlopeAt2000: 0.8,
+  // Zetbeoordeling zoals Chess.com: 'expected points' hangen af van de rating van wie zet (de winkans-curve van
+  // Lichess, bij rating 500 en 2000 met deze factor steiler, daartussen lineair; evaluaties tot ±15 pionnen).
+  // Getraind met npm run fit:classifier op 10 echte Chess.com-reviews (665 halve zetten, ratings ±250–2000):
+  // F1 op opvallende zetten 0,30 → 0,57; met steeds één partij buiten de training 0,21 → 0,44 (beter bij 8 van 10).
+  // De waarde bij 2000 rust op weinig partijen en maakt weinig uit (0,56–0,57); bewust voorzichtig gekozen.
+  epSlopeAt500: 1,
+  epSlopeAt2000: 1.2,
   epCap: 1500,
   /** Beste: de topzet van de engine, of een zet die minder dan dit kost (procentpunten) */
   bestMaxLoss: 0.05,
   /** Blunder alleen als je daarna echt slecht staat (je winkans onder dit percentage), anders 'fout' */
   blunderMaxWinAfter: 30,
   /** Geweldig: de op één na beste zet is minstens zoveel procentpunt slechter … */
-  greatGap: 14,
+  greatGap: 8,
   /** … en de zet straft een fout af: de tegenstander verloor met zijn vorige zet minstens zoveel */
-  greatMinOpponentLoss: 5,
+  greatMinOpponentLoss: 2,
   /** Gemist: de tegenstander verloor minstens zoveel, en jij geeft daarvan tussen min en max keer terug */
   missMinOpponentLoss: 12,
   missGivesBackMin: 0.3,
@@ -122,7 +124,7 @@ export const REVIEW_MODEL = {
   // Briljant, afgestemd op een echte Chess.com-review (17…Lb3!! moet briljant zijn) en een steekproef van
   // 88 Lichess-partijen (10 briljante zetten; zonder deze regels 39, met de strengste regels 2):
   /** Hoeveel winstkans de offerzet hooguit mag kosten (de lichte Stockfish ziet een offer soms net iets minder goed) */
-  brilliantMaxLoss: 2,
+  brilliantMaxLoss: 5,
   /** Je stond al gewonnen als de op één na beste zet je minstens deze winstkans geeft (Chess.com: "niet compleet
    *  gewonnen als je de zet niet had gevonden"); behalve bij een offer dat tot mat leidt */
   brilliantMaxWp: 90,

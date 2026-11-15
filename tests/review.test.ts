@@ -55,7 +55,7 @@ describe('zetten beoordelen', () => {
   ]
   const moves = classifyGame(san, evals, 2)
   it('geeft iedere zet een oordeel', () => {
-    expect(moves.map(m => m.cls)).toEqual(['book', 'book', 'excellent', 'best', 'best', 'blunder', 'best'])
+    expect(moves.map(m => m.cls)).toEqual(['book', 'book', 'good', 'best', 'best', 'blunder', 'best'])
   })
   it('noemt bij een blunder de beste zet', () => {
     expect(moves[5].bestSan).toBe('g6')
@@ -70,7 +70,7 @@ describe('zetten beoordelen', () => {
     // 1…e5 kost zwart veel; wit profiteert niet met 2.Nf3 (beter was Qh5) en geeft het voordeel terug
     const s = ['e4', 'e5', 'Nf3', 'Nc6']
     const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'd7d5' }, { cp: 250, best: 'd1h5' }, { cp: 40, best: 'b8c6' }, { cp: 40, best: 'f1b5' }]
-    expect(classifyGame(s, e).map(m => m.cls)).toEqual(['best', 'mistake', 'miss', 'best'])
+    expect(classifyGame(s, e).map(m => m.cls)).toEqual(['best', 'blunder', 'miss', 'best'])
   })
 })
 
@@ -210,9 +210,9 @@ describe('zetbeoordeling zoals Chess.com', () => {
     expect(m[2].cls).toBe('mistake')
   })
   it('dezelfde zet weegt zwaarder bij een hogere rating', () => {
-    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'e7e5' }, { cp: 30, best: 'd2d4' }, { cp: -120, best: 'b8c6' }, { cp: -120 }]
-    const low = classifyGame(san, e, 0, { ratings: { white: 500, black: 500 } })[2].cls
-    const high = classifyGame(san, e, 0, { ratings: { white: 2200, black: 2200 } })[2].cls
+    const e: PosEval[] = [{ cp: 30, best: 'e2e4' }, { cp: 30, best: 'e7e5' }, { cp: 30, best: 'd2d4' }, { cp: -70, best: 'b8c6' }, { cp: -70 }]
+    const low = classifyGame(san, e, 0, { ratings: { white: 500, black: 500 } })[2].cls // onnauwkeurig
+    const high = classifyGame(san, e, 0, { ratings: { white: 2200, black: 2200 } })[2].cls // fout
     const order = ['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder']
     expect(order.indexOf(high)).toBeGreaterThan(order.indexOf(low))
   })

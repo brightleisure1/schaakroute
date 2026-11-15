@@ -129,8 +129,8 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
 
   // Coördinaat-zoektocht: per instelling de beste waarde kiezen, een paar rondes
   const grid: Record<string, number[]> = {
-    epSlopeAt500: [0.2, 0.3, 0.35, 0.45, 0.6, 0.8, 1],
-    epSlopeAt2000: [0.5, 0.65, 0.8, 1, 1.2, 1.5],
+    epSlopeAt500: [0.2, 0.35, 0.6, 0.8, 1, 1.2, 1.5, 2],
+    epSlopeAt2000: [0.5, 0.8, 1, 1.2, 1.5, 2],
     epCap: [1000, 1500, 2000, 3000, 5000],
     blunderMaxWinAfter: [20, 30, 40, 50, 101],
     greatGap: [8, 10, 14, 18, 24],
@@ -140,18 +140,38 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
     brilliantMaxWp: [85, 90, 95, 99],
   }
   const objective = (s: ReturnType<typeof score>) => s.macro + 0.25 * s.agreement
-  let best = objective(before)
-  for (let round = 0; round < 3; round++) {
-    for (const [k, values] of Object.entries(grid)) {
-      let bestV = (REVIEW_MODEL as Record<string, number | boolean>)[k] as number
-      for (const v of values) {
-        ;(REVIEW_MODEL as Record<string, number | boolean>)[k] = v
-        const o = objective(score(games))
-        if (o > best + 1e-9) { best = o; bestV = v }
+  const M = REVIEW_MODEL as Record<string, number | boolean>
+  /** Coördinaat-zoektocht op een set partijen; laat REVIEW_MODEL op de beste instellingen staan */
+  const fit = (set: Game[]) => {
+    Object.assign(REVIEW_MODEL, base)
+    let best = objective(score(set))
+    for (let round = 0; round < 3; round++) {
+      for (const [k, values] of Object.entries(grid)) {
+        let bestV = M[k] as number
+        for (const v of values) {
+          M[k] = v
+          const o = objective(score(set))
+          if (o > best + 1e-9) { best = o; bestV = v }
+        }
+        M[k] = bestV
       }
-      ;(REVIEW_MODEL as Record<string, number | boolean>)[k] = bestV
     }
   }
+  // Eerlijke controle: afstemmen op alle partijen behalve één, en meten op die ene
+  if (games.length >= 3) {
+    const held: Game[] = []
+    const scores: { base: number; tuned: number }[] = []
+    for (const g of games) {
+      Object.assign(REVIEW_MODEL, base)
+      const b = score([g]).macro
+      fit(games.filter(x => x !== g))
+      scores.push({ base: b, tuned: score([g]).macro })
+      held.push(g)
+    }
+    const avg = (xs: number[]) => xs.reduce((a, x) => a + x, 0) / xs.length
+    log(`\nControle (steeds één partij buiten de training): F1 opvallende zetten ${avg(scores.map(x => x.base)).toFixed(3)} → ${avg(scores.map(x => x.tuned)).toFixed(3)}; beter bij ${scores.filter(x => x.tuned > x.base).length} van ${scores.length} partijen`)
+  }
+  fit(games)
   const after = score(games)
   log('\n' + report('Na afstemmen', after))
   const changed = Object.fromEntries(Object.keys(grid).filter(k => (REVIEW_MODEL as Record<string, unknown>)[k] !== (base as Record<string, unknown>)[k]).map(k => [k, (REVIEW_MODEL as Record<string, unknown>)[k]]))
