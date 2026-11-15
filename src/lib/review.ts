@@ -752,6 +752,26 @@ export function chesscomReview(pgn: string): ChesscomReview {
     }
     labels.push(label)
   }
+  // Sommige zetten hebben alleen een teken zonder opmerking (zoals $9 voor 'gemist'): die ook lezen
+  const nags = movetextNags(pgn)
+  nags.forEach((n, i) => { if (labels[i] === null && n !== undefined && CHESSCOM_NAGS[n]) labels[i] = CHESSCOM_NAGS[n] })
   const num = (x?: string) => (x && Number(x) ? Number(x) : undefined)
   return { san, labels, ratings: { white: num(h.WhiteElo), black: num(h.BlackElo) }, unknownTypes: [...unknownTypes] }
+}
+
+/** Tekens die Chess.com achter een zet zet: $1 = !, $2 = ?, $3 = !!, $4 = ??, $6 = ?!, $9 = gemist */
+const CHESSCOM_NAGS: Record<number, MoveClass> = { 1: 'great', 2: 'mistake', 3: 'brilliant', 4: 'blunder', 6: 'inaccuracy', 9: 'miss' }
+
+/** Het eerste teken ($n) na elke halve zet in de zettentekst */
+function movetextNags(pgn: string): (number | undefined)[] {
+  const body = pgn.replace(/^\s*\[[^\]]*\]\s*$/gm, '').replace(/\{[^}]*\}/g, ' ').replace(/\([^()]*\)/g, ' ')
+  const out: (number | undefined)[] = []
+  for (const tok of body.split(/\s+/)) {
+    if (!tok || /^\d+\.+$/.test(tok) || /^(1-0|0-1|1\/2-1\/2|\*)$/.test(tok)) continue
+    const nag = tok.match(/^\$(\d+)$/)
+    if (nag) { if (out.length && out[out.length - 1] === undefined) out[out.length - 1] = Number(nag[1]); continue }
+    const move = tok.replace(/^\d+\.+/, '')
+    if (move) out.push(undefined)
+  }
+  return out
 }

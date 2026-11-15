@@ -236,3 +236,10 @@ describe('Chess.com Game Review-PGN', () => {
     expect(r.ratings).toEqual({ white: 2000, black: 502 })
   })
 })
+
+describe('Chess.com-tekens zonder opmerking', () => {
+  it('$9 is gemist, $4 blunder', () => {
+    const r = chesscomReview('[White "A"]\n[Black "B"]\n\n1. e4 e5 2. Qh5 $2 {[%c_effect h5;square;h5;type;Mistake;persistent;true]} 2... Nc6 $9 3. Bc4 $4 {[%c_effect c4;square;c4;type;Blunder;persistent;true]} 3... Nf6 $4 *')
+    expect(r.labels).toEqual([null, null, 'mistake', 'miss', 'blunder', 'blunder'])
+  })
+})
