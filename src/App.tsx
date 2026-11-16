@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { deviceLang, setLang, type Lang } from './lib/i18n'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -386,6 +387,17 @@ function MoreTab() {
   )
 }
 
+/**
+ * Zet de taal vóór de app tekent, en tekent alles opnieuw als je van taal wisselt.
+ * Nog niets gekozen: bestaande gebruikers houden Nederlands, nieuwe krijgen de taal van hun apparaat.
+ */
+function LangShell() {
+  const s = useSettings()
+  const lang: Lang = s?.language ?? (s?.onboarded ? 'nl' : deviceLang())
+  setLang(lang)
+  return <Shell key={lang} />
+}
+
 export default function App() {
   return (
     <HashRouter>
@@ -393,7 +405,7 @@ export default function App() {
       <PersistStorage />
       <RouteMemory />
       <ScrollTop />
-      <Shell />
+      <LangShell />
     </HashRouter>
   )
 }

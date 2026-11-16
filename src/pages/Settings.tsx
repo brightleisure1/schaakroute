@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { BookMarked, Cpu, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
+import { BookMarked, Cpu, Languages, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
 import { db, saveSettings, type UserSettings } from '../lib/db'
 import { analyse, engineStatus } from '../lib/engine'
 import { exportBackup, importBackup, summarizeBackup } from '../lib/progress'
 import { useManifest } from '../lib/hooks'
 import { PageHeader, Spinner, useSettings } from '../components/ui'
+import { getLang } from '../lib/i18n'
 import { SuccessNote } from '../components/PieceMotion'
 import { ActionRow, ExpandRow, FileRow, LinkRow, SettingsGroup, SwitchRow } from '../components/SettingsList'
 
@@ -20,7 +21,7 @@ const STRENGTHS: { value: UserSettings['strength']; label: string; elo: number }
 const THEMES = [['system', 'Systeem'], ['light', 'Licht'], ['dark', 'Donker']] as const
 const MINUTES = [5, 10, 15, 20] as const
 
-type Panel = 'rating' | 'minutes' | 'theme' | 'lichess' | 'wipe'
+type Panel = 'rating' | 'minutes' | 'theme' | 'language' | 'lichess' | 'wipe'
 
 const dateNl = (d: Date | number) => new Date(d).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
 const dateShort = (d: number) => new Date(d).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
@@ -142,6 +143,13 @@ export function Settings() {
         <ExpandRow id="weergave" open={open === 'theme'} onToggle={() => toggle('theme')} icon={SunMoon} label="Weergave" value={themeLabel}>
           <div className="grid grid-cols-3 gap-2" role="group" aria-label="Weergave">
             {THEMES.map(([v, l]) => <KeyChoice key={v} on={s.theme === v} onClick={() => set({ theme: v })}>{l}</KeyChoice>)}
+          </div>
+        </ExpandRow>
+        {/* Taal: de namen staan altijd in hun eigen taal, zodat je ze herkent ook als je de andere taal niet leest */}
+        <ExpandRow id="taal" open={open === 'language'} onToggle={() => toggle('language')} icon={Languages} label="Taal · Language" value={getLang() === 'en' ? 'English' : 'Nederlands'}>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Taal · Language">
+            <KeyChoice on={getLang() === 'nl'} onClick={() => set({ language: 'nl' })}><span lang="nl">Nederlands</span></KeyChoice>
+            <KeyChoice on={getLang() === 'en'} onClick={() => set({ language: 'en' })}><span lang="en">English</span></KeyChoice>
           </div>
         </ExpandRow>
         <div>

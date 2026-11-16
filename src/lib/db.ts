@@ -15,6 +15,8 @@ export interface UserSettings {
   openings: string[] // family ids
   dailyMinutes: 5 | 10 | 15 | 20
   theme: 'system' | 'light' | 'dark'
+  /** Taal van de app; leeg = Nederlands voor bestaande gebruikers, anders de taal van het apparaat */
+  language?: 'nl' | 'en'
   engineEnabled: boolean
   lichessToken?: string
   lichessUser?: string
