@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, highlightsOf, isOwnGame, parseGameLink, chesscomReview, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, type PosEval } from '../src/lib/review'
+import { bookInfo, chesscomGame, classifyGame, decodeShare, encodeShare, estimateRating, explainMove, formatScore, gameFromPgn, gameToPgn, highlightsOf, isOwnGame, parseGameLink, chesscomReview, gameAccuracy, isSacrifice, moveAccuracy, summarize, winPct, modelProbs, MODEL_LABELS, CLASS_ORDER, type MoveModel, type PosEval } from '../src/lib/review'
+import MODEL from '../src/lib/move-model.json'
 
 const ITALIAN_BC5 = 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
@@ -246,5 +247,24 @@ describe('Chess.com-tekens zonder opmerking', () => {
   it('$9 is gemist, $4 blunder', () => {
     const r = chesscomReview('[White "A"]\n[Black "B"]\n\n1. e4 e5 2. Qh5 $2 {[%c_effect h5;square;h5;type;Mistake;persistent;true]} 2... Nc6 $9 3. Bc4 $4 {[%c_effect c4;square;c4;type;Blunder;persistent;true]} 3... Nf6 $4 *')
     expect(r.labels).toEqual([null, null, 'mistake', 'miss', 'blunder', 'blunder'])
+  })
+})
+
+describe('lerend model', () => {
+  const model = MODEL as unknown as MoveModel
+  it('geeft per soort een kans, samen 1', () => {
+    const p = modelProbs(model, Array(model.features).fill(0))
+    expect(p).toHaveLength(MODEL_LABELS.length)
+    expect(p.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6)
+  })
+  it('levert per zet precies zoveel kenmerken als het model verwacht', () => {
+    const san = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6']
+    const evals: PosEval[] = [...san.map((_, i): PosEval => ({ cp: 20 - 10 * i, best: 'e2e4', cp2: 0 })), { cp: -50 }]
+    const feats: number[][] = []
+    const moves = classifyGame(san, evals, 0, { features: feats, model: null })
+    expect(feats.filter(f => f.length).every(f => f.length === model.features)).toBe(true)
+    const withModel = classifyGame(san, evals, 0)
+    expect(withModel).toHaveLength(moves.length)
+    expect(withModel.every(m => CLASS_ORDER.includes(m.cls))).toBe(true)
   })
 })

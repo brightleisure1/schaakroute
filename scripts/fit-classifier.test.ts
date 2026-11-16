@@ -3,6 +3,8 @@
 // Zet PGN's uit Chess.com Game Review (Delen → PGN) in data-raw/chesscom-reviews/*.pgn (meerdere partijen per
 // bestand mag). Die map gaat niet mee in git. Daarna: npm run fit:classifier
 //   DEPTH=14 (standaard, zoals 'Snel' in de app) of DEPTH=18 ('Grondig')
+//   ENGINE=full de volledige Stockfish in plaats van de lichte
+//   MODEL=1 het lerende model trainen (beslisbomen) en controleren in 5 delen
 //   FIT=0 alleen meten, niet zoeken naar betere instellingen
 // Per partij wordt de Stockfish-analyse bewaard in data-raw/chesscom-reviews/.cache, dus elke partij hoeft maar
 // één keer geanalyseerd te worden. Uitkomst: overeenkomst per soort, en de beste instellingen voor REVIEW_MODEL.
@@ -13,11 +15,13 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { Chess } from 'chess.js'
-import { REVIEW_MODEL, bookInfo, chesscomReview, classifyGame, type MoveClass, type PosEval } from '../src/lib/review'
+import { MODEL_LABELS, REVIEW_MODEL, bookInfo, chesscomReview, classifyGame, type MoveClass, type MoveModel, type PosEval } from '../src/lib/review'
 
 const DIR = 'data-raw/chesscom-reviews'
 const CACHE = join(DIR, '.cache')
 const DEPTH = Number(process.env.DEPTH ?? 14)
+/** ENGINE=full: de volledige Stockfish (≈100 MB, zoals Chess.com) in plaats van de lichte uit de app */
+const FULL = process.env.ENGINE === 'full'
 const LOG: string[] = []
 const log = (...a: unknown[]) => { const line = a.map(String).join(' '); LOG.push(line); process.stdout.write(line + '\n') }
 const EXAMPLES: string[] = []
@@ -26,7 +30,7 @@ const NOTABLE: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'mi
 type Label = MoveClass | 'quiet'
 
 function engine() {
-  const sf = spawn('node', ['node_modules/stockfish/bin/stockfish-19-lite-single.js'])
+  const sf = spawn('node', [FULL ? 'node_modules/stockfish/bin/stockfish-19-single.js' : 'node_modules/stockfish/bin/stockfish-19-lite-single.js'])
   let buf = ''
   let waiter: ((l: string) => void) | null = null
   sf.stdout.on('data', d => {
@@ -67,11 +71,11 @@ function engine() {
 
 interface Game { name: string; san: string[]; labels: (MoveClass | null)[]; ratings: { white?: number; black?: number }; evals: PosEval[]; book: number }
 
-function score(games: Game[]) {
+function score(games: Game[], model: MoveModel | null = null) {
   const per: Record<string, { tp: number; fp: number; fn: number }> = Object.fromEntries(NOTABLE.map(k => [k, { tp: 0, fp: 0, fn: 0 }]))
   let same = 0, total = 0
   for (const g of games) {
-    const moves = classifyGame(g.san, g.evals, g.book, { ratings: g.ratings })
+    const moves = classifyGame(g.san, g.evals, g.book, { ratings: g.ratings, model })
     moves.forEach((m, i) => {
       const ref: Label = g.labels[i] && NOTABLE.includes(g.labels[i]!) ? g.labels[i]! : 'quiet'
       const ours: Label = NOTABLE.includes(m.cls) ? m.cls : 'quiet'
@@ -102,7 +106,7 @@ function diagnose(games: Game[]) {
   const losses: Record<string, number[]> = Object.fromEntries(classes.map(a => [a, []]))
   const byRating: Record<string, Record<string, number[]>> = {}
   for (const g of games) {
-    const moves = classifyGame(g.san, g.evals, g.book, { ratings: g.ratings })
+    const moves = classifyGame(g.san, g.evals, g.book, { ratings: g.ratings, model: null })
     moves.forEach((m, i) => {
       const ref: Label = g.labels[i] && NOTABLE.includes(g.labels[i]!) ? g.labels[i]! : 'quiet'
       const ours: Label = NOTABLE.includes(m.cls) ? m.cls : 'quiet'
@@ -138,6 +142,135 @@ function diagnose(games: Game[]) {
   return `Beslist (|eval| ≥ 5 pionnen, niet de beste zet): centipawns verlies per Chess.com-soort\n${decRows.join('\n')}\n\nVerwarringstabel (rij = Chess.com, kolom = wij)\n${head}\n${rows.join('\n')}\n\nVerlies aan winstkans (procentpunten) per Chess.com-soort\n${lossRows.join('\n')}\n\nMediaan verlies per ratinggroep\n${bandRows.join('\n')}`
 }
 
+
+// ---------------- Lerend model: gradient-boosted beslisbomen ----------------
+
+interface Sample { x: number[]; y: number; game: number }
+
+function samplesOf(games: Game[]): Sample[] {
+  const out: Sample[] = []
+  games.forEach((g, gi) => {
+    const feats: number[][] = []
+    classifyGame(g.san, g.evals, g.book, { ratings: g.ratings, features: feats, model: null })
+    feats.forEach((x, i) => {
+      if (!x.length) return
+      const l = g.labels[i]
+      const y = l && (MODEL_LABELS as readonly string[]).includes(l) ? MODEL_LABELS.indexOf(l as (typeof MODEL_LABELS)[number]) : 0
+      out.push({ x, y, game: gi })
+    })
+  })
+  return out
+}
+
+interface GbdtOpts { rounds: number; depth: number; rate: number; minLeaf: number; lambda: number; weightPow: number }
+
+function trainGbdt(data: Sample[], o: GbdtOpts): MoveModel {
+  const K = MODEL_LABELS.length
+  const F = data[0].x.length
+  const n = data.length
+  // Drempels per kenmerk: kwantielen
+  const cuts: number[][] = []
+  for (let f = 0; f < F; f++) {
+    const vals = [...new Set(data.map(d => d.x[f]))].sort((a, b) => a - b)
+    const c: number[] = []
+    if (vals.length <= 33) for (let i = 0; i + 1 < vals.length; i++) c.push((vals[i] + vals[i + 1]) / 2)
+    else for (let q = 1; q < 32; q++) { const v = vals[Math.floor((q / 32) * vals.length)]; if (c[c.length - 1] !== v) c.push(v) }
+    cuts.push(c)
+  }
+  const bin = data.map(d => d.x.map((v, f) => { const c = cuts[f]; let lo = 0, hi = c.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (v <= c[mid]) hi = mid; else lo = mid + 1 } return lo }))
+  const counts = Array(K).fill(0); data.forEach(d => counts[d.y]++)
+  const w = data.map(d => Math.pow(n / (K * Math.max(1, counts[d.y])), o.weightPow))
+  const wsum = Array(K).fill(0); data.forEach((d, i) => { wsum[d.y] += w[i] })
+  const tot = wsum.reduce((a, b) => a + b, 0)
+  const bias = wsum.map(v => Math.log(Math.max(1e-6, v / tot)))
+  const z = data.map(() => bias.slice())
+  const trees: number[][][][] = []
+  for (let r = 0; r < o.rounds; r++) {
+    const P = z.map(zz => { const m = Math.max(...zz); const e = zz.map(v => Math.exp(v - m)); const s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s) })
+    const round: number[][][] = []
+    for (let k = 0; k < K; k++) {
+      const g = data.map((d, i) => w[i] * (P[i][k] - (d.y === k ? 1 : 0)))
+      const h = data.map((_, i) => w[i] * Math.max(1e-6, P[i][k] * (1 - P[i][k])))
+      const nodes: number[][] = []
+      const build = (idx: number[], depth: number): number => {
+        let G = 0, H = 0
+        for (const i of idx) { G += g[i]; H += h[i] }
+        const me = nodes.length
+        nodes.push([-1, -G / (H + o.lambda)])
+        if (depth >= o.depth || idx.length < 2 * o.minLeaf) return me
+        let best = { gain: 1e-9, f: -1, b: -1 }
+        const parent = (G * G) / (H + o.lambda)
+        for (let f = 0; f < F; f++) {
+          const nb = cuts[f].length + 1
+          if (nb < 2) continue
+          const hg = new Float64Array(nb), hh = new Float64Array(nb), hc = new Int32Array(nb)
+          for (const i of idx) { const b = bin[i][f]; hg[b] += g[i]; hh[b] += h[i]; hc[b]++ }
+          let lg = 0, lh = 0, lc = 0
+          for (let b = 0; b < nb - 1; b++) {
+            lg += hg[b]; lh += hh[b]; lc += hc[b]
+            if (lc < o.minLeaf || idx.length - lc < o.minLeaf) continue
+            const gain = (lg * lg) / (lh + o.lambda) + ((G - lg) * (G - lg)) / (H - lh + o.lambda) - parent
+            if (gain > best.gain) best = { gain, f, b }
+          }
+        }
+        if (best.f < 0) return me
+        const left = idx.filter(i => bin[i][best.f] <= best.b)
+        const right = idx.filter(i => bin[i][best.f] > best.b)
+        const l = build(left, depth + 1)
+        const rr = build(right, depth + 1)
+        nodes[me] = [best.f, cuts[best.f][best.b], l, rr]
+        return me
+      }
+      build(data.map((_, i) => i), 0)
+      round.push(nodes)
+    }
+    trees.push(round)
+    const tv = (t: number[][], x: number[]) => { let i = 0; for (;;) { const nd = t[i]; if (nd[0] < 0) return nd[1]; i = x[nd[0]] <= nd[1] ? nd[2] : nd[3] } }
+    data.forEach((d, i) => round.forEach((t, k) => { z[i][k] += o.rate * tv(t, d.x) }))
+  }
+  return { features: F, bias, rate: o.rate, trees: trees.map(r => r.map(t => t.map(nd => nd.map(v => (Number.isInteger(v) ? v : Number(v.toPrecision(5))))))) }
+}
+
+function fitModel(games: Game[]) {
+  const all = samplesOf(games)
+  const K = 5
+  const folds = games.map((_, i) => i % K)
+  const configs: GbdtOpts[] = [
+    { rounds: 120, depth: 3, rate: 0.1, minLeaf: 20, lambda: 1, weightPow: 0.3 },
+    { rounds: 120, depth: 3, rate: 0.1, minLeaf: 20, lambda: 1, weightPow: 0.4 },
+    { rounds: 200, depth: 4, rate: 0.05, minLeaf: 30, lambda: 2, weightPow: 0.3 },
+  ]
+  const rules: ReturnType<typeof score>[] = []
+  for (let k = 0; k < K; k++) rules.push(score(games.filter((_, i) => folds[i] === k), null))
+  const avg = (xs: number[]) => xs.reduce((a, x) => a + x, 0) / xs.length
+  log(`\nLerend model, controle in 5 delen (steeds 1/5 van de partijen buiten de training)`)
+  log(`  vaste regels:  F1 ${avg(rules.map(r => r.macro)).toFixed(3)} · zelfde label ${(avg(rules.map(r => r.agreement)) * 100).toFixed(1)}%`)
+  let bestCfg = configs[0], bestF1 = -1
+  for (const cfg of configs) {
+    const res: ReturnType<typeof score>[] = []
+    for (let k = 0; k < K; k++) {
+      const model = trainGbdt(all.filter(s => folds[s.game] !== k), cfg)
+      res.push(score(games.filter((_, i) => folds[i] === k), model))
+    }
+    const f1 = avg(res.map(r => r.macro))
+    log(`  model ${JSON.stringify(cfg)}: F1 ${f1.toFixed(3)} · zelfde label ${(avg(res.map(r => r.agreement)) * 100).toFixed(1)}% · beter in ${res.filter((r, k) => r.macro > rules[k].macro).length} van ${K}`)
+    if (f1 > bestF1) { bestF1 = f1; bestCfg = cfg }
+  }
+  // Per soort voor de beste instelling (over alle delen samen, steeds buiten de training gemeten)
+  const per: Record<string, { tp: number; fp: number; fn: number }> = Object.fromEntries(NOTABLE.map(k => [k, { tp: 0, fp: 0, fn: 0 }]))
+  for (let k = 0; k < K; k++) {
+    const model = trainGbdt(all.filter(s => folds[s.game] !== k), bestCfg)
+    const sc = score(games.filter((_, i) => folds[i] === k), model)
+    for (const c of NOTABLE) { per[c].tp += sc.per[c].tp; per[c].fp += sc.per[c].fp; per[c].fn += sc.per[c].fn }
+  }
+  log('  per soort (buiten de training):')
+  for (const c of NOTABLE) { const { tp, fp, fn } = per[c]; log(`    ${c.padEnd(11)} Chess.com ${String(tp + fn).padStart(4)} · model ${String(tp + fp).padStart(4)} · gelijk ${String(tp).padStart(4)} · F1 ${((2 * tp) / Math.max(1, 2 * tp + fp + fn)).toFixed(2)}`) }
+  const final = trainGbdt(all, bestCfg)
+  writeFileSync(join(DIR, 'move-model.json'), JSON.stringify(final))
+  writeFileSync(join(DIR, 'move-model-cv.json'), JSON.stringify({ games: games.length, moves: all.length, cfg: bestCfg, cvF1: bestF1, rulesF1: avg(rules.map(r => r.macro)) }, null, 2))
+  log(`\nModel opgeslagen in ${DIR}/move-model.json (${(JSON.stringify(final).length / 1024).toFixed(0)} kB)`)
+}
+
 it('zetbeoordeling trainen op Chess.com-reviews', async () => {
   if (!existsSync(DIR)) throw new Error(`Map ${DIR} bestaat niet`)
   mkdirSync(CACHE, { recursive: true })
@@ -153,7 +286,7 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
     // Zonder één enkel label is er geen Game Review gedraaid: dan zou alles als 'geen fout' tellen
     if (!r.labels.some(Boolean)) { log(`overgeslagen (geen labels, eerst Game Review draaien): ${name}`); continue }
     const key = createHash('sha1').update(r.san.join(' ')).digest('hex').slice(0, 16)
-    const file = join(CACHE, `${key}-d${DEPTH}.json`)
+    const file = join(CACHE, `${key}-d${DEPTH}${FULL ? '-full' : ''}.json`)
     let evals: PosEval[]
     if (existsSync(file)) evals = JSON.parse(readFileSync(file, 'utf8'))
     else {
@@ -166,12 +299,13 @@ it('zetbeoordeling trainen op Chess.com-reviews', async () => {
     games.push({ name, san: r.san, labels: r.labels, ratings: r.ratings, evals, book: bookInfo(r.san, names).ply })
   }
   sf.kill()
-  log(`\n${games.length} partijen, ${games.reduce((a, g) => a + g.san.length, 0)} halve zetten, diepte ${DEPTH}\n`)
+  log(`\n${games.length} partijen, ${games.reduce((a, g) => a + g.san.length, 0)} halve zetten, diepte ${DEPTH}${FULL ? ', volledige Stockfish' : ''}\n`)
   const base = { ...REVIEW_MODEL }
   const before = score(games)
   log(report('Nu', before))
   log('\n' + diagnose(games))
   writeFileSync(join(DIR, 'examples.txt'), EXAMPLES.sort().join('\n'))
+  if (process.env.MODEL === '1') { fitModel(games); writeFileSync(join(DIR, 'fit-report.txt'), LOG.join('\n')); return }
   if (process.env.FIT === '0' || !games.length) { writeFileSync(join(DIR, 'fit-report.txt'), LOG.join('\n')); return }
 
   // Coördinaat-zoektocht: per instelling de beste waarde kiezen, een paar rondes

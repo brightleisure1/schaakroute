@@ -1,6 +1,7 @@
 import { Chess, type Square } from 'chess.js'
 import { START_FEN, parseUci } from './chess'
 import type { Side } from './types'
+import MOVE_MODEL_JSON from './move-model.json'
 
 // Partij-analyse: haalt je laatste partijen op (Lichess of Chess.com, gratis openbare API's zonder sleutel),
 // laat Stockfish lokaal iedere stelling beoordelen en geeft iedere zet een oordeel, van briljant tot blunder.
@@ -103,6 +104,8 @@ export const REVIEW_MODEL = {
   mateStep: 0,
   // Zetbeoordeling zoals Chess.com: 'expected points' hangen af van de rating van wie zet (de winkans-curve van
   // Lichess, bij rating 500 en 2000 met deze factor steiler, daartussen lineair; evaluaties tot ±15 pionnen).
+  // Daarbovenop beslist een lerend model (move-model.json, MODEL=1 npm run fit:classifier) over alle labels behalve
+  // briljant: op 90 partijen buiten de training F1 0,54 → 0,575 en zelfde label 82,0% → 84,0% (beter in 4 van 5 delen).
   // Getraind met npm run fit:classifier op 29 echte Chess.com-reviews (2058 halve zetten, ratings ±250–2300):
   // F1 op opvallende zetten 0,51 → 0,58; met steeds 1/5 van de partijen buiten de training 0,50 → 0,54
   // (beter in 4 van 5 delen). Eerder, op 10 partijen: 0,30 → 0,57.
@@ -266,7 +269,49 @@ function sanLine(fen: string, uci: string[]): string[] {
  * `bookPly`: zoveel halve zetten aan het begin zijn theorie.
  */
 /** Ratings van wit en zwart op Chess.com-schaal; ontbreekt er een, dan geldt 1500 */
-export interface ClassifyOptions { ratings?: { white?: number; black?: number } }
+export interface ClassifyOptions {
+  ratings?: { white?: number; black?: number }
+  /** Verzamelt per zet de kenmerken voor het lerende model (leeg bij theorie en gedwongen zetten) */
+  features?: number[][]
+  /** Het lerende model; standaard het meegeleverde, null = alleen de vaste regels */
+  model?: MoveModel | null
+}
+
+/** Wat het lerende model kan voorspellen; 'quiet' = geen opvallende zet (beste, uitstekend of goed) */
+export const MODEL_LABELS = ['quiet', 'brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder'] as const
+export type ModelLabel = (typeof MODEL_LABELS)[number]
+
+/** Gradient-boosted beslisbomen: per ronde één boom per soort; knoop = [kenmerk, drempel, links, rechts] of [-1, waarde] */
+export interface MoveModel {
+  features: number
+  bias: number[]
+  rate: number
+  trees: (number[][])[][]
+}
+
+function treeValue(tree: number[][], x: number[]): number {
+  let i = 0
+  for (;;) {
+    const n = tree[i]
+    if (n[0] < 0) return n[1]
+    i = x[n[0]] <= n[1] ? n[2] : n[3]
+  }
+}
+
+/** Kans per soort (softmax over de scores van alle bomen) */
+export function modelProbs(model: MoveModel, x: number[]): number[] {
+  const z = model.bias.slice()
+  for (const round of model.trees) round.forEach((t, k) => { z[k] += model.rate * treeValue(t, x) })
+  const m = Math.max(...z)
+  const e = z.map(v => Math.exp(v - m))
+  const sum = e.reduce((a, b) => a + b, 0)
+  return e.map(v => v / sum)
+}
+
+/** Het meegeleverde lerende model (getraind met npm run fit:classifier); leeg = alleen de vaste regels */
+const MOVE_MODEL: MoveModel | null = (MOVE_MODEL_JSON as { trees?: unknown[] }).trees?.length ? (MOVE_MODEL_JSON as MoveModel) : null
+
+const MATERIAL: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 
 /** De ratings uit een partij, omgerekend naar Chess.com-schaal (daar is het model op afgestemd) */
 export function reviewRatings(g: Pick<ReviewGame, 'source' | 'white' | 'black'>): ClassifyOptions['ratings'] {
@@ -285,6 +330,9 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
   const c = new Chess(START_FEN)
   const out: ReviewedMove[] = []
   const epLosses: number[] = []
+  const lossesWp: number[] = []
+  const ruleCls: MoveClass[] = []
+  const model = opts.model === undefined ? MOVE_MODEL : opts.model
   for (let ply = 0; ply < san.length && ply + 1 < evals.length; ply++) {
     const fen = c.fen()
     const legal = c.moves().length
@@ -311,6 +359,28 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
     const greatGap = () => M.greatEp
       ? forSide(expectedPoints(before, rating), side) - forSide(expectedPoints({ cp: before.cp2, mate: before.mate2 }, rating), side)
       : forSide(wpBefore, side) - (second ?? 0)
+
+    /** Kenmerken voor het lerende model, steeds vanuit wie zet */
+    const moveFeatures = (): number[] => {
+      const clip = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+      const cpB = forSideCp(before, side), cpA = forSideCp(after, side)
+      const mateOf = (e: PosEval) => (e.mate === undefined ? 0 : Math.sign(side === 'white' ? e.mate : -e.mate))
+      const hasSecond = before.cp2 !== undefined || before.mate2 !== undefined
+      const second2 = hasSecond ? forSideCp({ cp: before.cp2, mate: before.mate2 }, side) : cpB
+      const epGap = hasSecond ? forSide(expectedPoints(before, rating), side) - forSide(expectedPoints({ cp: before.cp2, mate: before.mate2 }, rating), side) : -1
+      let total = 0, balance = 0
+      for (const row of c.board()) for (const pc of row) if (pc) { total += MATERIAL[pc.type]; balance += (pc.color === (side === 'white' ? 'w' : 'b') ? 1 : -1) * MATERIAL[pc.type] }
+      const opp = side === 'white' ? opts.ratings?.black : opts.ratings?.white
+      const recapture = !!m.captured && !!prev && prev.uci.slice(2, 4) === m.to
+      return [
+        epLoss, loss, clip(cpB, -3000, 3000), clip(cpA, -3000, 3000), clip(cpB - cpA, -1000, 3000),
+        forSide(wpBefore, side), moverWpAfter, rating ?? 1500, opp ?? 1500, oppLoss, ply > 0 ? lossesWp[ply - 1] : 0,
+        epGap, hasSecond ? forSide(wpBefore, side) - (second ?? 0) : -1, isBest ? 1 : 0, legal, inCheck ? 1 : 0,
+        m.captured ? MATERIAL[m.captured] : 0, recapture ? 1 : 0, sacrificedSquares(fen, uci).length ? 1 : 0, m.promotion ? 1 : 0,
+        ply, total, balance, CLASS_ORDER.indexOf(cls), mateOf(before), mateOf(after), clip(second2, -3000, 3000),
+        ply > 0 ? CLASS_ORDER.indexOf(ruleCls[ply - 1]) : -1,
+      ]
+    }
 
     let cls: MoveClass
     if (legal === 1) cls = 'best' // Chess.com kent geen 'gedwongen': de enige zet is ook de beste
@@ -341,6 +411,22 @@ export function classifyGame(san: string[], evals: PosEval[], bookPly = 0, opts:
         if (cpBefore <= -M.losingCp && cpBefore - forSideCp(after, side) >= M.losingMistakeCp) cls = 'mistake'
       }
     }
+
+    ruleCls.push(cls)
+    lossesWp.push(loss)
+    if ((opts.features || model) && cls !== 'book' && legal > 1) {
+      const f = moveFeatures()
+      opts.features?.push(f)
+      if (model && f.length === model.features) {
+        // Briljant blijft aan de vaste regels (offer-herkenning): daar heeft het model te weinig voorbeelden voor
+        const p = modelProbs(model, f)
+        const bi = MODEL_LABELS.indexOf('brilliant')
+        if (cls !== 'brilliant') p[bi] = -1
+        const label = cls === 'brilliant' ? 'brilliant' : MODEL_LABELS[p.indexOf(Math.max(...p))]
+        if (label !== 'quiet') cls = label
+        else if (!(cls === 'best' || cls === 'excellent' || cls === 'good')) cls = isBest || epLoss < M.bestMaxLoss ? 'best' : epLoss < 2 ? 'excellent' : 'good'
+      }
+    } else opts.features?.push([])
 
     // Gemiste briljante zet: de beste zet was een offer dat Stockfish aanneemt (of tot mat leidt), en jij speelde iets duidelijk slechters
     let missedBrilliant = false
