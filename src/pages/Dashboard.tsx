@@ -12,6 +12,7 @@ import { MiniBoard } from '../components/Board'
 import { CropBoard } from '../components/CropBoard'
 import { ProgressBar, Spinner, useSettings, sideLabel, plural } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
+import type { FamilyFile, Variation } from '../lib/types'
 
 export function Dashboard() {
   const settings = useSettings()
@@ -21,9 +22,14 @@ export function Dashboard() {
   const xp = useLiveQuery(() => totalXp(), [], 0)
   const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
   const todayAct = useLiveQuery(() => db.daily.get(today()), [])
+  // Nieuwe gebruiker (ontwerp 16a): nog niets getraind, dus geen XP, geen dagen, geen posities en geen varianten
+  const firstTime = useLiveQuery(async () => {
+    const [x, days, cardCount, progressCount] = await Promise.all([totalXp(), db.daily.count(), db.cards.count(), db.progress.count()])
+    return x === 0 && days === 0 && cardCount === 0 && progressCount === 0
+  }, [])
   const now = Date.now()
 
-  if (!settings) return <Spinner />
+  if (!settings || firstTime === undefined) return <Spinner />
   const cardList = [...cards.values()]
   const due = cardList.filter(c => !c.suspended && c.dueAt <= now).length
   const learnedPositions = cardList.filter(c => c.correct > 0).length
@@ -46,6 +52,9 @@ export function Dashboard() {
         </div>
       )}
 
+      {firstTime ? (
+        <FirstTraining minutes={settings.dailyMinutes} file={heroFile} variation={heroVar} />
+      ) : (
       <section className="card grid grid-cols-[minmax(0,1fr)] gap-y-5 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_296px] lg:items-center lg:gap-x-12 lg:p-10">
         {/* Telefoon: tekst, bord, knoppen onder elkaar. Desktop: tekst en knoppen links, bord rechts */}
         <div className="contents lg:flex lg:flex-col lg:gap-7">
@@ -78,6 +87,7 @@ export function Dashboard() {
           </Link>
         )}
       </section>
+      )}
 
       <section>
         <div className="mb-3 flex items-baseline justify-between">
@@ -87,7 +97,7 @@ export function Dashboard() {
         {families.loading ? <Spinner /> : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {famStats.map(({ f, p }) => (
-              <Link key={f.family.id} to={`/opening/${f.family.id}`} className="card flex flex-col p-2.5 transition hover:border-brand sm:p-3">
+              <Link key={f.family.id} to={`/opening/${f.family.id}`} className="tap flex flex-col p-2.5 sm:p-3">
                 <CropBoard epd={f.family.rootEpd} uci={f.family.rootUci} orientation={f.family.side} inset={4} />
                 <div className="px-0.5 pt-2.5">
                   <div className="text-xs font-semibold text-muted">{sideLabel(f.family.side)} · {f.family.ecoRange}</div>
@@ -116,6 +126,47 @@ export function Dashboard() {
   )
 }
 
+/** Eerste keer (ontwerp 16a): uitnodiging voor de eerste training, de variant die je gaat leren en hoe het werkt */
+function FirstTraining({ minutes, file, variation }: { minutes: number; file?: FamilyFile; variation?: Variation }) {
+  return (
+    <>
+      <section className="card flex flex-col gap-4 p-5 sm:p-8 lg:p-10" aria-labelledby="eerste-training-title">
+        <div>
+          <h1 id="eerste-training-title" className="text-[1.75rem] font-extrabold leading-[1.12] tracking-[-0.02em] lg:text-4xl">Klaar voor je eerste training?</h1>
+          <p className="mt-1.5 text-base text-muted lg:text-lg">Die duurt {minutes} minuten. Daarna ken je je eerste variant.</p>
+        </div>
+        {file && variation && (
+          <div className="flex items-center gap-3.5 rounded-[14px] border-2 border-line bg-bg p-3 lg:max-w-xl">
+            <div className="w-[104px] shrink-0 sm:w-28"><CropBoard epd={file.family.rootEpd} uci={file.family.rootUci} orientation={file.family.side} inset={4} coordsFrom="never" /></div>
+            <div className="min-w-0">
+              <span className="inline-block rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-accent-ink">Je eerste variant</span>
+              <div className="mt-1 text-lg font-bold leading-tight" title={displayName(variation, file.family.name)}>{variation.path[0] ?? displayName(variation, file.family.name)}</div>
+              <div className="mt-0.5 text-sm text-muted">{file.family.name} · met {file.family.side === 'white' ? 'wit' : 'zwart'}</div>
+            </div>
+          </div>
+        )}
+        <Link to="/dagelijks" className="btn btn-primary w-full gap-2.5! lg:w-auto lg:self-start lg:px-8!"><Sun size={20} aria-hidden />Start je eerste training</Link>
+      </section>
+
+      <section className="card p-4 sm:p-5" aria-label="Zo werkt het">
+        <ol className="grid grid-cols-3 gap-2 text-center">
+          {[
+            { title: 'Leer', text: 'Speel de variant na met pijlen' },
+            { title: 'Herhaal', text: 'Hij komt morgen terug' },
+            { title: 'Beheers', text: 'Na een week zit hij vast' },
+          ].map((step, i) => (
+            <li key={step.title} className="flex flex-col items-center gap-1">
+              <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft font-extrabold text-brand-strong">{i + 1}</span>
+              <span className="font-bold"><span className="sr-only">Stap {i + 1}: </span>{step.title}</span>
+              <span className="text-[13px] leading-snug text-muted">{step.text}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </>
+  )
+}
+
 function TopStat({ icon, tone, label, value, hint }: { icon: React.ReactNode; tone: string; label: string; value: React.ReactNode; hint: string }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -141,7 +192,7 @@ function DaySegments({ minutes, goal }: { minutes: number; goal: number }) {
 
 function QuickLink({ to, icon, title, text }: { to: string; icon: React.ReactNode; title: string; text: string }) {
   return (
-    <Link to={to} className="card flex flex-col gap-2 p-3.5 transition hover:border-brand lg:flex-row lg:items-center lg:gap-3">
+    <Link to={to} className="tap flex flex-col gap-2 p-3.5 lg:flex-row lg:items-center lg:gap-3">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong" aria-hidden>{icon}</span>
       <span className="min-w-0"><span className="block font-semibold">{title}</span><span className="block text-sm leading-snug text-muted">{text}</span></span>
     </Link>

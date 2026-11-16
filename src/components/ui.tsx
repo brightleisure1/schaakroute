@@ -77,7 +77,7 @@ export function Spinner({ label = 'Laden…' }: { label?: string }) {
 }
 
 export function ErrorBox({ error }: { error: unknown }) {
-  return <div className="card border-danger bg-danger-soft p-4 text-sm text-danger-ink">{String((error as Error)?.message ?? error)}</div>
+  return <div className="card border-danger! bg-danger-soft! p-4 text-sm text-danger-ink">{String((error as Error)?.message ?? error)}</div>
 }
 
 const CONFETTI_COLORS = ['#2f7d4f', '#d99a2b', '#e9b44c', '#3a6ea5', '#c0453a', '#8fae86']

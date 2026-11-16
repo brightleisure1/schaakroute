@@ -54,7 +54,7 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Hoe sterk speel je?</h2>
       <div className="grid gap-2 sm:grid-cols-2">
         {STRENGTHS.map(s => (
-          <button key={s.value} aria-pressed={strength === s.value} className={`card p-4 text-left transition ${strength === s.value ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={() => { setStrength(s.value); setElo(s.elo) }}>
+          <button key={s.value} aria-pressed={strength === s.value} className={`tap p-4 text-left ${strength === s.value ? 'tap-on' : ''}`} onClick={() => { setStrength(s.value); setElo(s.elo) }}>
             <div className="font-semibold">{s.label}</div>
             <div className="text-sm text-muted">{s.text}</div>
           </button>
@@ -69,7 +69,7 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Met welke kleur wil je oefenen?</h2>
       <div className="grid grid-cols-3 gap-2">
         {(['white', 'black', 'both'] as const).map(s => (
-          <button key={s} aria-pressed={sides === s} className={`card flex flex-col items-center gap-1 p-4 text-center font-semibold ${sides === s ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => { setSides(s); setOpenings(o => o.filter(id => s === 'both' || manifest.families.find(f => f.id === id)?.side === s)) }}>
+          <button key={s} aria-pressed={sides === s} className={`tap flex flex-col items-center gap-1 p-4 text-center font-semibold ${sides === s ? 'tap-on' : ''}`} onClick={() => { setSides(s); setOpenings(o => o.filter(id => s === 'both' || manifest.families.find(f => f.id === id)?.side === s)) }}>
             <span aria-hidden className="flex gap-1">{s !== 'black' && <ChessKing size={28} strokeWidth={1.5} />}{s !== 'white' && <ChessKing size={28} strokeWidth={1.5} className="fill-current" />}</span>
             {s === 'white' ? 'Wit' : s === 'black' ? 'Zwart' : 'Beide'}
           </button>
@@ -81,7 +81,7 @@ export function Onboarding() {
       <h2 className="text-xl font-bold">Hoeveel minuten per dag?</h2>
       <div className="grid grid-cols-4 gap-2">
         {([5, 10, 15, 20] as const).map(m => (
-          <button key={m} aria-pressed={minutes === m} className={`card p-4 text-center ${minutes === m ? 'border-brand ring-2 ring-brand/30' : ''}`} onClick={() => setMinutes(m)}>
+          <button key={m} aria-pressed={minutes === m} className={`tap p-4 text-center ${minutes === m ? 'tap-on' : ''}`} onClick={() => setMinutes(m)}>
             <div className="text-2xl font-bold">{m}</div>
             <div className="text-xs text-muted">minuten</div>
           </button>
@@ -90,6 +90,7 @@ export function Onboarding() {
       <p className="text-sm text-muted">Geen account nodig. Alles blijft op dit apparaat.</p>
     </div>,
   ]
+  const needOpening = !openings.length && (step === 2 || step === steps.length - 1)
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -104,9 +105,10 @@ export function Onboarding() {
         <button className="btn btn-ghost min-h-11" onClick={() => setStep(s => s - 1)} disabled={step === 0}>Vorige</button>
         <span className="text-sm text-muted">Stap {step + 1} van {steps.length}</span>
         {step < steps.length - 1
-          ? <button className="btn btn-primary min-h-11" onClick={() => setStep(s => s + 1)} disabled={step === 2 && !openings.length}>Volgende</button>
-          : <button className="btn btn-primary min-h-11" onClick={finish} disabled={!openings.length}>Aan de slag</button>}
+          ? <button className="btn btn-primary" onClick={() => setStep(s => s + 1)} disabled={needOpening} aria-describedby={needOpening ? 'onboarding-reason' : undefined}>Volgende</button>
+          : <button className="btn btn-primary" onClick={finish} disabled={needOpening} aria-describedby={needOpening ? 'onboarding-reason' : undefined}>Aan de slag</button>}
       </div>
+      {needOpening && <p id="onboarding-reason" className="btn-reason text-right max-sm:pb-2">Kies eerst minstens één opening.</p>}
     </div>
   )
 }

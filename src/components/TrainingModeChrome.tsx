@@ -146,8 +146,11 @@ export function PillChoice<T extends string | number>({ legend, value, onChange,
 }
 
 /** Vaste onderbalk met de hoofdactie (telefoon); op een groot scherm gewoon onder de inhoud */
-export function BottomAction({ children, tone }: { children: ReactNode; tone?: 'good' | 'bad' }) {
-  const toneCls = tone === 'good' ? 'max-lg:bg-brand-soft max-lg:border-brand lg:bg-brand-soft lg:border-brand' : tone === 'bad' ? 'max-lg:bg-danger-soft max-lg:border-danger lg:bg-danger-soft lg:border-danger' : 'max-lg:bg-bg max-lg:border-line lg:border-transparent'
+export function BottomAction({ children, tone }: { children: ReactNode; tone?: 'good' | 'near' | 'bad' }) {
+  const toneCls = tone === 'good' ? 'max-lg:bg-brand-soft max-lg:border-brand lg:bg-brand-soft lg:border-brand'
+    : tone === 'near' ? 'max-lg:bg-accent-soft max-lg:border-accent lg:bg-accent-soft lg:border-accent'
+    : tone === 'bad' ? 'max-lg:bg-danger-soft max-lg:border-danger lg:bg-danger-soft lg:border-danger'
+    : 'max-lg:bg-bg max-lg:border-line lg:border-transparent'
   return (
     <div className={`sticky bottom-0 z-10 -mx-4 flex flex-col gap-2.5 border-t-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3.5 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:rounded-2xl lg:border-2 lg:p-4 ${toneCls} ${tone ? '' : 'lg:p-0'}`}>
       {children}

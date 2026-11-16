@@ -175,7 +175,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
               const score = masteryScore(c)
               const title = v?.path[v.path.length - 1] ?? f?.family.name ?? 'Positie'
               return (
-                <button key={c.id} className="card flex flex-col gap-3 p-2.5 text-left transition hover:border-brand sm:p-3" onClick={() => startWith([c], true)} aria-label={`Oefen ${title}, beheersing ${score}%`}>
+                <button key={c.id} className="tap flex flex-col gap-3 p-2.5 text-left sm:p-3" onClick={() => startWith([c], true)} aria-label={`Oefen ${title}, beheersing ${score}%`}>
                   <CropBoard epd={c.epd} uci={c.lineUci} orientation={c.side} inset={4} />
                   <span className="block w-full px-0.5">
                     <span className="flex items-center justify-between gap-2"><span className="truncate font-bold">{title}</span>{c.lapses > 0 && <span className="shrink-0 rounded-full bg-danger-soft px-2 text-xs font-bold text-danger-ink">{c.lapses}× fout</span>}</span>

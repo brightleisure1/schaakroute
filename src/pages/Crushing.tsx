@@ -82,7 +82,7 @@ export function Crushing() {
       {puzzles.loading ? <><div>{heading}</div><Spinner /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
         <>
           <div>{heading}</div>
-          <Empty title="Geen puzzels in dit bereik" action={<button type="button" className="btn btn-primary btn-key" onClick={() => setSheet(true)}>Filters aanpassen</button>}>
+          <Empty title="Geen puzzels in dit bereik" action={<button type="button" className="btn btn-primary" onClick={() => setSheet(true)}>Filters aanpassen</button>}>
             Kies een breder niveau of een andere variant.
           </Empty>
         </>
@@ -101,7 +101,7 @@ export function Crushing() {
         open={sheet}
         onClose={() => setSheet(false)}
         title="Opening en filters"
-        footer={<button type="button" className="btn btn-primary btn-key w-full" onClick={() => setSheet(false)}>Klaar</button>}
+        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>Klaar</button>}
       >
         <div>
           <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>

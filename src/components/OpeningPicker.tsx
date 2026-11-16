@@ -99,7 +99,7 @@ function OpeningSection({ title, families, value, onToggle }: { title?: string; 
 
 function OpeningCard({ family: f, selected, onToggle }: { family: FamilySummary; selected: boolean; onToggle: () => void }) {
   return (
-    <button aria-pressed={selected} className={`card relative flex flex-col gap-2 p-2 text-left transition ${selected ? 'border-brand ring-2 ring-brand/30' : 'hover:border-brand'}`} onClick={onToggle}>
+    <button aria-pressed={selected} className={`tap relative flex flex-col gap-2 p-2 text-left ${selected ? 'tap-on' : ''}`} onClick={onToggle}>
       <CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} />
       <span aria-hidden className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-md border shadow-sm ${selected ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface'}`}>{selected && <Check size={16} strokeWidth={3} />}</span>
       <span className="block min-w-0 px-1 pb-1">

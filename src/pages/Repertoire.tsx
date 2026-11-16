@@ -59,7 +59,7 @@ export function RepertoireList() {
               <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-[19px] bg-brand-soft text-brand-strong"><ChessKnight size={34} strokeWidth={1.75} /></span>
               <h2 className="mt-2 text-lg font-extrabold tracking-tight">Nog geen repertoire</h2>
               <p className="max-w-[280px] text-sm leading-snug text-muted">Bundel de varianten die jij echt speelt en train alleen die.</p>
-              <button className="btn btn-primary btn-key mt-3 w-full" onClick={() => setCreating(true)}><Plus size={20} strokeWidth={2.5} aria-hidden />Nieuw repertoire</button>
+              <button className="btn btn-primary mt-3 w-full" onClick={() => setCreating(true)}><Plus size={20} strokeWidth={2.5} aria-hidden />Nieuw repertoire</button>
             </section>
           )) : (
             <ul className="space-y-3">
@@ -141,7 +141,7 @@ function NewRepertoire({ onCancel }: { onCancel: () => void }) {
         <label htmlFor="new-rep-name" className="mb-1 block text-sm font-semibold">Naam <span className="font-normal text-muted">(mag leeg)</span></label>
         <input id="new-rep-name" className="input min-h-11" placeholder={familyId ? `Mijn ${manifest?.families.find(f => f.id === familyId)?.name ?? ''}` : `Repertoire ${side === 'white' ? 'wit' : 'zwart'}`} value={name} onChange={e => setName(e.target.value)} />
       </div>
-      <button className="btn btn-primary btn-key w-full" disabled={busy}>Aanmaken</button>
+      <button className="btn btn-primary w-full" disabled={busy}>Aanmaken</button>
       <button type="button" className="btn btn-quiet min-h-11 w-full" onClick={onCancel}>Annuleren</button>
     </form>
   )

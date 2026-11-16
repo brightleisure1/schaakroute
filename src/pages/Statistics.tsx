@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Brain, Check, Flame, Lock, Timer, X, type LucideIcon } from 'lucide-react'
+import { Brain, ChartColumn, ChartNoAxesCombined, Check, ChessKnight, Flame, Lock, Sun, Timer, X, type LucideIcon } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, today, type DailyActivity } from '../lib/db'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
@@ -8,7 +8,7 @@ import { BADGES, levelFromXp } from '../lib/gamification'
 import { streak, totalXp } from '../lib/progress'
 import { stageOf } from '../lib/srs'
 import { displayName } from '../lib/data'
-import { Empty, PageHeader, ProgressBar, Spinner, Stars, Tabs, nf, pct } from '../components/ui'
+import { PageHeader, ProgressBar, Spinner, Stars, Tabs, nf, pct } from '../components/ui'
 import { IconTile, type Tone } from '../components/SettingsList'
 
 // Uitsluitend echte, lokaal opgeslagen gebruikersgegevens. Lege toestanden in plaats van voorbeelddata.
@@ -26,6 +26,37 @@ function lastDays(n: number) {
   return out
 }
 const CARD = 'rounded-[18px] border-2 border-line bg-surface p-4'
+
+/** Eerste keer (ontwerp 16b): één uitnodiging en wat er straks komt, in plaats van lege grafieken */
+function FirstTimeStats() {
+  const soon: { icon: LucideIcon; label: string }[] = [
+    { icon: ChartColumn, label: 'Goed en fout per dag' },
+    { icon: Brain, label: 'Geleerde posities' },
+    { icon: ChartNoAxesCombined, label: 'Beheersing per opening' },
+  ]
+  return (
+    <div className="space-y-5 lg:max-w-xl">
+      <section className={`${CARD} flex flex-col items-center gap-2 p-5! text-center`} aria-labelledby="stats-first-title">
+        <span aria-hidden className="mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand-strong"><ChessKnight size={30} strokeWidth={1.75} /></span>
+        <h2 id="stats-first-title" className="text-lg font-extrabold">Hier komt je voortgang</h2>
+        <p className="max-w-sm text-sm leading-snug text-muted">Na je eerste training zie je hier je reeks, je goede zetten en wat je hebt geleerd.</p>
+        <Link to="/dagelijks" className="btn btn-primary mt-2 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>
+      </section>
+      <section aria-labelledby="stats-soon-title">
+        <h2 id="stats-soon-title" className="mb-2 px-0.5 text-xs font-bold uppercase tracking-[0.05em] text-muted">Komt vrij na je eerste training</h2>
+        <ul className="divide-y-2 divide-line overflow-hidden rounded-[18px] border-2 border-line bg-surface">
+          {soon.map(({ icon: Icon, label }) => (
+            <li key={label} className="flex min-h-15 items-center gap-3 px-3.5 py-3 text-muted">
+              <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2"><Icon size={18} /></span>
+              <span className="min-w-0 flex-1 font-semibold">{label}<span className="sr-only"> (nog op slot)</span></span>
+              <Lock size={16} aria-hidden className="shrink-0" />
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  )
+}
 const shortDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 
 export function Statistics() {
@@ -55,7 +86,7 @@ export function Statistics() {
     return (
       <div>
         <PageHeader title="Statistieken" />
-        <Empty title="Nog geen trainingsgegevens" action={<Link to="/dagelijks" className="btn btn-primary">Start je eerste training</Link>}>Statistieken worden opgebouwd uit je eigen trainingen. Er worden geen voorbeeldcijfers getoond.</Empty>
+        <FirstTimeStats />
       </div>
     )
   }

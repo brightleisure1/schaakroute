@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
@@ -67,6 +67,9 @@ export function GameReviewList() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [shownFor, setShownFor] = useState('')
+  // Is je naam al bekend (gedeeld met Mijn partijen), dan staat hij er al; met "wijzig" pas je hem aan (ontwerp 16e)
+  const [editing, setEditing] = useState(false)
+  const reasonId = useId()
   const names = useAsync(() => loadNames(), [])
   const brilliants = useHighlights()?.filter(h => h.kind === 'brilliant').length ?? 0
   const saved = useLiveQuery(() => db.reviews.orderBy('savedAt').reverse().toArray(), [], [] as GameReviewRecord[])
@@ -74,13 +77,14 @@ export function GameReviewList() {
 
   const stored = source === 'lichess' ? settings?.lichessUser : settings?.chesscomUser
   const username = (name ?? stored ?? '').trim()
+  const known = !!stored && name === null && !editing
 
   // Alleen het antwoord op het laatste verzoek telt (bij wisselen van tabblad loopt een ouder verzoek soms nog)
   const request = useRef(0)
 
   function pickSource(s: 'lichess' | 'chesscom') {
     request.current++
-    setSource(s); setName(null); setGames(null); setErr(null); setBusy(false)
+    setSource(s); setName(null); setEditing(false); setGames(null); setErr(null); setBusy(false)
     try { localStorage.setItem(SOURCE_KEY, s) } catch { /* geen opslag */ }
   }
 
@@ -194,7 +198,10 @@ export function GameReviewList() {
                   ))}
                 </div>
               </fieldset>
-              <button className="btn btn-primary btn-key w-full" disabled={pasteBusy || !paste.trim()}><Search size={20} strokeWidth={2.25} aria-hidden />{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
+              <div>
+                <button className="btn btn-primary w-full" disabled={pasteBusy || !paste.trim()} aria-describedby={!paste.trim() ? reasonId : undefined}><Search size={20} strokeWidth={2.25} aria-hidden />{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
+                {!paste.trim() && <p id={reasonId} className="btn-reason">Plak eerst een link of PGN.</p>}
+              </div>
               {pasteErr && <ErrorBox error={pasteErr} />}
               {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
               <p className="text-[13px] leading-snug text-muted">Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.</p>
@@ -202,8 +209,19 @@ export function GameReviewList() {
             </form>
           ) : (
             <form className="space-y-3" onSubmit={load}>
-              <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={`Gebruikersnaam op ${SOURCE_NAME[source]}`} placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`}
-                autoComplete="username" autoCapitalize="none" spellCheck={false} value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
+              {known ? (
+                <div className="flex min-h-[3.75rem] items-center gap-3 rounded-[14px] border-2 border-line bg-surface py-2 pl-2.5 pr-1.5 shadow-[0_3px_0_var(--line)]">
+                  <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-brand-strong"><User size={18} strokeWidth={2.25} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs text-muted">{SOURCE_NAME[source]}<span className="sr-only">, gebruikersnaam</span></span>
+                    <span className="block truncate font-bold">{stored}</span>
+                  </span>
+                  <button type="button" className="min-h-11 rounded-lg px-2.5 text-sm font-bold text-brand-strong hover:bg-brand-soft" onClick={() => { setEditing(true); setName(stored ?? '') }} aria-label={`Gebruikersnaam ${stored} wijzigen`}>wijzig</button>
+                </div>
+              ) : (
+                <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={`Gebruikersnaam op ${SOURCE_NAME[source]}`} placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`}
+                  autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus={editing} value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
+              )}
               <fieldset>
                 <legend className="sr-only">Hoe grondig analyseren</legend>
                 <div className="grid grid-cols-2 gap-2">
@@ -216,7 +234,11 @@ export function GameReviewList() {
                   ))}
                 </div>
               </fieldset>
-              <button className="btn btn-primary btn-key w-full" disabled={busy || !username}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+              <div>
+                <button className="btn btn-primary w-full" disabled={busy || !username} aria-describedby={!username ? reasonId : undefined}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+                {!username && <p id={reasonId} className="btn-reason">Vul eerst je gebruikersnaam in.</p>}
+              </div>
+              {known && <p className="text-[13px] leading-snug text-muted">Dezelfde naam geldt voor <Link to="/import" className="underline">Mijn partijen</Link>. Je vult hem één keer in.</p>}
               <Note icon={lockIcon}>Je laatste 30 partijen. Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
             </form>
           )}
@@ -687,11 +709,11 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
 
       <div className={`grid gap-2 ${myErrors > 0 ? 'grid-cols-[1.4fr_1fr]' : 'grid-cols-1'} ${STICKY_ACTIONS}`}>
         {myErrors > 0 && (
-          <button className="btn btn-primary btn-key" disabled={!ready} onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}>
+          <button className="btn btn-primary" disabled={!ready} onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}>
             <Dumbbell size={20} aria-hidden />Train je {plural(myErrors, 'fout', 'fouten')}
           </button>
         )}
-        <Link to={replayUrl(game)} className={myErrors > 0 ? 'tap flex min-h-[54px] items-center justify-center gap-2 font-bold' : 'btn btn-primary btn-key'}>
+        <Link to={replayUrl(game)} className={myErrors > 0 ? 'tap flex min-h-[54px] items-center justify-center gap-2 font-bold' : 'btn btn-primary'}>
           <Play size={18} aria-hidden />Naspelen
         </Link>
       </div>
@@ -778,8 +800,8 @@ function ReviewReplay({ record }: { record: GameReviewRecord }) {
           <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply - 1)} disabled={ply === 0} aria-label="Vorige zet"><ChevronLeft size={22} aria-hidden /></button>
           <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply + 1)} disabled={ply === total} aria-label="Volgende zet"><ChevronRight size={22} aria-hidden /></button>
           {nextError
-            ? <button className="btn btn-primary btn-key" onClick={() => setPly(nextError.ply + 1)}><SkipForward size={20} aria-hidden />Volgende fout</button>
-            : <button className="btn btn-primary btn-key" onClick={close}>Naar het overzicht</button>}
+            ? <button className="btn btn-primary" onClick={() => setPly(nextError.ply + 1)}><SkipForward size={20} aria-hidden />Volgende fout</button>
+            : <button className="btn btn-primary" onClick={close}>Naar het overzicht</button>}
         </div>
       </div>
       {sharing && <ShareDialog game={game} ply={ply} move={current} onClose={() => setSharing(false)} />}
@@ -1198,7 +1220,7 @@ function HighlightCard({ h }: { h: FoundHighlight }) {
   const to = replayUrl(g, h.move.ply + 1)
   return (
     <li>
-      <Link to={to} className="card block overflow-hidden p-0 transition hover:shadow-md">
+      <Link to={to} className="tap block overflow-hidden p-0">
         <div className="relative">
           <MiniBoard fen={fen} orientation={g.myColor} id={`hl-${g.id}-${h.move.ply}`} />
           {!missed && <SquareBadge square={h.move.uci.slice(2, 4)} cls={h.kind as MoveClass} orientation={g.myColor} size={15} />}

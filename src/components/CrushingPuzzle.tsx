@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Chess } from 'chess.js'
-import { Check, ExternalLink, Eye, Lightbulb, Swords, X } from 'lucide-react'
+import { Check, ExternalLink, Eye, Keyboard, Lightbulb, Swords, X } from 'lucide-react'
 import { Board } from './Board'
-import { MoveInput, TypeToggle, useTypingOpen } from './MoveInput'
+import { MoveInput, useTypingOpen } from './MoveInput'
 import { MoveList } from './Trainer'
 import { EvalButton } from './EvalButton'
 import { BadgesEarned } from './ui'
@@ -27,6 +27,9 @@ const TONE: Record<Tone, string> = {
   hint: 'bg-accent-soft text-accent-ink',
   reveal: 'bg-info-soft text-info-ink',
 }
+
+/** Tweede knop onder het bord: icoon boven de tekst, zodat drie knoppen naast elkaar passen */
+const KEY = 'tap flex min-h-16 flex-col items-center justify-center gap-1 rounded-[14px]! px-2 py-2 text-sm font-bold disabled:opacity-50'
 
 const waiting = (): Msg => ({ tone: 'wait', title: 'Kijk goed…', body: 'Je tegenstander staat op het punt een fout te maken.' })
 
@@ -206,14 +209,17 @@ export function CrushingPuzzle({ puzzle, familyId, heading, onDone, onNext, next
 
         {!done && (
           <>
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2.5">
-              <button type="button" className="tap flex min-h-13 items-center justify-center gap-2 rounded-[14px]! px-4 font-bold disabled:opacity-50" onClick={hint} disabled={!userTurn}>
-                <Lightbulb size={18} aria-hidden className="text-muted" />Hint
+            {/* Drie gelijke toetsen (ontwerp 16g): het toetsenbord-icoon is een echte knop "Typ zet" geworden */}
+            <div className="grid grid-cols-3 gap-2.5">
+              <button type="button" className={KEY} onClick={hint} disabled={!userTurn}>
+                <Lightbulb size={20} aria-hidden className="text-muted" />Hint
               </button>
-              <button type="button" className="tap flex min-h-13 items-center justify-center gap-2 rounded-[14px]! px-4 font-bold disabled:opacity-50" onClick={reveal} disabled={!userTurn}>
-                <Eye size={18} aria-hidden className="text-muted" />Toon zet
+              <button type="button" className={KEY} onClick={reveal} disabled={!userTurn}>
+                <Eye size={20} aria-hidden className="text-muted" />Toon zet
               </button>
-              <TypeToggle open={typing} onToggle={() => { setFocusTyping(!typing); setTyping(!typing) }} />
+              <button type="button" className={`${KEY} ${typing ? 'tap-on' : ''}`} aria-expanded={typing} onClick={() => { setFocusTyping(!typing); setTyping(!typing) }}>
+                <Keyboard size={20} aria-hidden className={typing ? 'text-brand-strong' : 'text-muted'} />Typ zet
+              </button>
             </div>
             {typing && <MoveInput fen={fens[ply]} enabled={userTurn} onMove={onMove} autoFocus={focusTyping} />}
           </>
@@ -249,7 +255,7 @@ export function CrushingPuzzle({ puzzle, familyId, heading, onDone, onNext, next
               </div>
             </div>
             <BottomAction>
-              <button type="button" className="btn btn-primary btn-key w-full" onClick={onNext} autoFocus>{nextLabel}</button>
+              <button type="button" className="btn btn-primary w-full" onClick={onNext} autoFocus>{nextLabel}</button>
             </BottomAction>
           </>
         )}

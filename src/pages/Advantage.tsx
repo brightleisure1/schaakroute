@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Check, Star, X } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { Chess } from 'chess.js'
 import type { Arrow } from 'react-chessboard'
 import { loadNames, loadStats } from '../lib/data'
@@ -146,7 +146,7 @@ export function Advantage() {
         open={sheet}
         onClose={() => setSheet(false)}
         title="Opening en modus"
-        footer={<button type="button" className="btn btn-primary btn-key w-full" onClick={() => setSheet(false)}>Klaar</button>}
+        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>Klaar</button>}
       >
         <div>
           <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>
@@ -294,7 +294,7 @@ const MARGIN = 0.03
 const ARROW_PICK = 'rgba(47,125,79,0.85)'
 const ARROW_BEST = 'rgba(58,110,165,0.85)'
 
-interface Choice { uci: string; san: string; score: number; n: number; allLevels: boolean; name: string }
+interface Choice { uci: string; san: string; score: number; n: number; allLevels: boolean; name: string; freq: number }
 
 /** Korte naam van de stelling na een zet ("Italian Game: Classical Variation, Giuoco Pianissimo" → "Giuoco Pianissimo") */
 const shortName = (full: string) => full.split(/[:,]\s*/).pop()?.trim() || full
@@ -362,11 +362,9 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
         const full = names[epdOf(after.fen())]?.[1]
         if (full && full !== here) name = shortName(full)
       } catch { /* zet niet speelbaar: zonder naam */ }
-      if (!name) {
-        const freq = bandTotal ? bandCount(x.m, band) / bandTotal : pos ? x.m[2] / pos.n : 0
-        name = `${pct(freq)} van de partijen`
-      }
-      return { uci: x.m[0], san: x.m[1], score: x.s.score, n: x.n, allLevels: x.allLevels, name }
+      // Hoe vaak de zet gespeeld wordt (op jouw niveau, anders over alle niveaus): staat op elke kaart (ontwerp 16c)
+      const freq = bandTotal ? bandCount(x.m, band) / bandTotal : pos ? x.m[2] / pos.n : 0
+      return { uci: x.m[0], san: x.m[1], score: x.s.score, n: x.n, allLevels: x.allLevels, name, freq }
     })
   }, [picks, fen, names, here, pos, band])
 
@@ -415,6 +413,13 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
   const picked = choices.find(c => c.uci === choice)
   const correct = !!picked && picked.score >= bestScore - MARGIN
   const bestSan = candidates[0]?.m[1]
+  // Na Controleer: "Bijna" als je keuze dicht bij de beste zit (oranje), anders rood
+  const gap = picked ? bestScore - picked.score : 0
+  const near = !!picked && !correct && gap <= 0.06
+  const mostPlayed = !!picked && choices.every(c => c.freq <= picked.freq)
+  const feedback = !picked ? null : correct
+    ? { lead: 'Goed gekozen.', text: `${picked.san} scoort ${pct(picked.score)} over ${nf(picked.n)} partijen, ${picked.uci === bestUci ? 'het best van deze zetten' : 'een van de best scorende keuzes'}.` }
+    : { lead: near ? 'Bijna.' : 'Niet de beste.', text: `${picked.san} ${mostPlayed ? 'wordt het meest gespeeld' : `scoort ${pct(picked.score)}`}, maar ${bestSan} scoort op jouw niveau ${Math.round(gap * 100)} procentpunt beter. Je speelt verder met jouw zet.` }
 
   function check() {
     if (!picked || checked) return
@@ -457,7 +462,7 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
       <>
         {top}
         {heading}
-        <Empty title="Te weinig partijen" action={<button type="button" className="btn btn-primary btn-key" onClick={onOpenSheet}>Andere opening kiezen</button>}>
+        <Empty title="Te weinig partijen" action={<button type="button" className="btn btn-primary" onClick={onOpenSheet}>Andere opening kiezen</button>}>
           Voor deze opening zijn er op jouw niveau te weinig partijen in de steekproef om een vraag te stellen.
         </Empty>
       </>
@@ -487,35 +492,38 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
               {choices.map((c, i) => {
                 const selected = choice === c.uci
                 const isBest = c.uci === bestUci
+                // Voor Controleer alleen de keuze; daarna groen voor de beste (en een goede keuze), oranje of rood voor een mindere keuze
                 const state = !checked ? (selected ? 'tap-on' : '')
-                  : selected ? (correct ? 'tap-on' : 'border-danger! bg-danger-soft! shadow-[0_3px_0_var(--danger)]!')
-                  : isBest ? 'border-brand!' : 'opacity-80'
-                const verdict = checked ? `, score ${pct(c.score)} over ${nf(c.n)} partijen${isBest ? ', best scorend' : ''}${selected ? ', jouw keuze' : ''}` : ''
+                  : selected && !correct ? (near ? 'border-accent! bg-accent-soft! shadow-[0_3px_0_var(--accent)]!' : 'border-danger! bg-danger-soft! shadow-[0_3px_0_var(--danger)]!')
+                  : selected || isBest ? 'tap-on' : ''
+                const scoreCls = selected && !correct ? (near ? 'text-accent-ink' : 'text-danger-ink') : selected || isBest ? 'text-brand-strong' : 'text-ink'
+                const verdict = checked ? `, score ${pct(c.score)} over ${nf(c.n)} partijen${isBest ? ', beste keuze' : ''}${selected ? ', jouw keuze' : ''}` : ''
                 return (
                   <button
                     key={c.uci}
                     type="button"
-                    className={`tap grid min-h-[3.75rem] w-full grid-cols-[4.25rem_minmax(0,1fr)_2.75rem] items-center gap-2.5 rounded-[14px]! px-3 py-2.5 text-left ${state}`}
+                    className={`tap grid min-h-[3.75rem] w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[14px]! px-3.5 py-2.5 text-left ${state}`}
                     aria-pressed={selected}
                     aria-disabled={checked || undefined}
-                    aria-label={`${c.san}, ${c.name}${verdict}`}
+                    aria-label={`${c.san}${c.name ? `, ${c.name}` : ''}, ${pct(c.freq)} van de partijen${verdict}`}
                     aria-keyshortcuts={String(i + 1)}
                     onClick={() => { if (!checked) setChoice(c.uci) }}
                   >
-                    <span className="flex items-center gap-1 text-[17px] font-extrabold">
-                      {c.san}
-                      {checked && isBest && <Star size={13} aria-hidden className="shrink-0 fill-star text-star" />}
-                      {checked && selected && (correct ? <Check size={16} strokeWidth={3} aria-hidden className="shrink-0 text-brand-strong" /> : <X size={16} strokeWidth={3} aria-hidden className="shrink-0 text-danger-ink" />)}
-                    </span>
+                    <span className="text-[17px] font-extrabold">{c.san}</span>
                     <span className="min-w-0">
-                      <span className={`block truncate text-xs ${selected && (!checked || correct) ? 'text-brand-strong' : 'text-muted'}`}>
-                        {c.name}{checked && <> · {nf(c.n)} partijen{c.allLevels ? ' (alle niveaus)' : ''}</>}
-                      </span>
-                      <span className={`mt-1 block h-2 overflow-hidden rounded-full ${selected ? 'bg-surface' : 'bg-surface-2'} ${checked ? '' : 'invisible'}`} aria-hidden>
-                        <span className={`block h-full rounded-full transition-[width] duration-500 ${selected && correct ? 'bg-brand' : selected ? 'bg-danger' : 'bg-info'}`} style={{ width: checked ? `${Math.round(c.score * 100)}%` : 0 }} />
+                      {c.name && <span className={`block truncate text-sm font-bold ${selected && !checked ? 'text-brand-strong' : ''}`}>{c.name}</span>}
+                      <span className="block truncate text-xs text-muted">
+                        {pct(c.freq)} van de partijen
+                        {checked && selected && ' · jouw keuze'}
+                        {checked && isBest && <> · <b className="font-bold text-brand-strong">beste keuze</b></>}
                       </span>
                     </span>
-                    <span className="text-right text-sm font-bold tabular-nums" aria-hidden>{checked ? pct(c.score) : ''}</span>
+                    {checked && (
+                      <span className="text-right animate-fade-in" aria-hidden>
+                        <span className={`block text-lg font-extrabold leading-tight tabular-nums ${scoreCls}`}>{pct(c.score)}</span>
+                        <span className="block text-[11px] leading-none text-muted">score</span>
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -537,26 +545,26 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
 
           {finished ? (
             <BottomAction>
-              <button type="button" className="btn btn-primary btn-key w-full" onClick={onRestart} autoFocus>Nog een ronde</button>
+              <button type="button" className="btn btn-primary w-full" onClick={onRestart} autoFocus>Nog een ronde</button>
               <button type="button" className="tap flex min-h-12 w-full items-center justify-center rounded-[14px]! px-4 font-bold" onClick={onClose}>Sluiten</button>
             </BottomAction>
           ) : (
-            <BottomAction tone={checked ? (correct ? 'good' : 'bad') : undefined}>
-              {checked && picked && (
-                <p className={`text-sm font-semibold ${correct ? 'text-brand-strong' : 'text-danger-ink'}`} role="status">
-                  {correct
-                    ? `Goed gekozen! ${picked.san} scoort ${pct(picked.score)} over ${nf(picked.n)} partijen, een van de best scorende keuzes.`
-                    : `${picked.san} scoort ${pct(picked.score)}; ${bestSan} scoort ${pct(bestScore)} op jouw niveau. Je speelt verder met jouw zet.`}
+            <BottomAction tone={checked ? (correct ? 'good' : near ? 'near' : 'bad') : undefined}>
+              {checked && feedback && (
+                <p className="text-[15px] leading-snug" role="status">
+                  <b className={correct ? 'text-brand-strong' : near ? 'text-accent-ink' : 'text-danger-ink'}>{feedback.lead}</b> {feedback.text}
                 </p>
               )}
               <button
                 type="button"
-                className="btn btn-primary btn-key w-full"
+                className="btn btn-primary w-full"
                 onClick={checked ? next : check}
                 disabled={!checked && (!picked || !userTurn || lineEnded)}
+                aria-describedby={!checked && !picked && userTurn && !lineEnded ? 'advantage-reason' : undefined}
               >
                 {checked ? (asked >= QUESTIONS ? 'Bekijk je resultaat' : 'Volgende') : 'Controleer'}
               </button>
+              {!checked && !picked && userTurn && !lineEnded && <p id="advantage-reason" className="btn-reason mt-0! text-center">Kies eerst een zet.</p>}
             </BottomAction>
           )}
         </div>

@@ -130,10 +130,12 @@ table, .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
+/* Vaste set (ontwerp 16h). Kaart met alleen inhoud: rand 2px, geen onderrand, hoeken 18.
+   Kaarten waar je op tikt zijn .tap (met onderrand), een gekozen kaart is .tap.tap-on. */
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 1.125rem;
 }
 
 .btn {
@@ -150,10 +152,42 @@ table, .tabular-nums {
 }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.45; pointer-events: none; }
-.btn-primary { background: var(--brand); color: var(--on-brand); }
+/* Hoofdknop (16h): groen met een onderrand van 4px, hoogte 54, hoeken 14, 16px vet. Eén per scherm. */
+.btn-primary {
+  min-height: 3.375rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 0.875rem;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--brand-shadow);
+}
 .btn-primary:hover { background: var(--brand-strong); }
-.btn-ghost { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
-.btn-ghost:hover { border-color: var(--brand); }
+.btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-shadow); }
+/* Uitgeschakeld: grijs (niet lichtgroen), zodat hij niet op een actieve knop lijkt. Zet er altijd een
+   regel bij die zegt wat er nog moet (.btn-reason). */
+.btn-primary:disabled, .btn-primary[aria-disabled='true'] {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--muted);
+  box-shadow: 0 4px 0 var(--line);
+}
+/* Tweede knop (16h): wit, rand 2px en onderrand 3px in de lijnkleur, hoogte 48 */
+.btn-ghost {
+  min-height: 3rem;
+  border-radius: 0.875rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  box-shadow: 0 3px 0 var(--line);
+  font-weight: 700;
+}
+.btn-ghost:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); }
+.btn-ghost:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.btn-ghost:disabled { opacity: 0.55; }
+/* De regel onder een uitgeschakelde knop: wat moet er nog gebeuren? */
+.btn-reason { margin-top: 0.5rem; padding: 0 0.25rem; font-size: 0.8125rem; line-height: 1.35; color: var(--muted); }
 .btn-quiet { color: var(--muted); }
 .btn-quiet:hover { color: var(--ink); background: var(--surface-2); }
 
@@ -174,13 +208,13 @@ table, .tabular-nums {
 button.chip { min-height: 2rem; }
 /* Touchscreens: elk tikdoel minstens 44px hoog (WCAG 2.5.5 / Apple HIG) */
 @media (pointer: coarse) {
-  .btn, button.chip, .input { min-height: 2.75rem; }
+  .btn:not(.btn-primary):not(.btn-ghost), button.chip, .input { min-height: 2.75rem; }
   input[type='range'] { min-height: 2.75rem; }
 }
 .chip-on { background: var(--brand-soft); color: var(--brand-strong); border-color: var(--brand); }
 
 /* "Alles wat je kunt aantikken voelt als een toets" (ontwerp ronde 10): dikkere rand en een onderrand.
-   .tap = kaart of knop, .tap-on = gekozen (groen), .btn-key = de grote groene hoofdknop. */
+   .tap = kaart of knop, .tap-on = gekozen (groen). De hoofdknop is .btn.btn-primary. */
 .tap {
   background: var(--surface);
   border: 2px solid var(--line);
@@ -192,14 +226,6 @@ button.chip { min-height: 2rem; }
 a.tap:active, button.tap:active, label.tap:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 .tap-on { background: var(--brand-soft); border-color: var(--brand); box-shadow: 0 3px 0 var(--brand); }
 a.tap-on:active, button.tap-on:active, label.tap-on:active { box-shadow: 0 1px 0 var(--brand); }
-.btn-key {
-  min-height: 3.375rem;
-  border-radius: 0.875rem;
-  font-size: 1rem;
-  font-weight: 700;
-  box-shadow: 0 4px 0 var(--brand-shadow);
-}
-.btn-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-shadow); }
 /* Grote keuzechip (filters, bronnen): rond, 2px rand, gekozen = groen */
 .pill {
   display: inline-flex;

@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, ArrowRight, ChevronDown, Lightbulb, Play, Swords, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, Lightbulb, Play, Route, Swords, TrendingUp } from 'lucide-react'
 import { familyProgress, useCardMap, useFamily, useProgressMap } from '../lib/hooks'
 import { moveNumberLabel } from '../lib/chess'
 import { learnLessons, learnThreshold, userMoveCount } from '../lib/course'
 import { CropBoard } from '../components/CropBoard'
 import { MoveChips, ROW_DIVIDE, ROW_LIST, ThickBar, VariationRow, rowMetaMap } from '../components/OpeningScreens'
-import { ErrorBox, Spinner, plural } from '../components/ui'
+import { ErrorBox, ProgressBar, Spinner, plural } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
 
 // Opening (ontwerp 10j): één kaart met bord, beginzetten, het idee en de ene grote knop (verder met de cursus).
@@ -29,6 +29,7 @@ export function OpeningDetail() {
   const lessons = learnLessons(file)
   const levels = [...new Set(lessons.map(l => l.level))].sort((a, b) => a - b)
   const nextLesson = lessons.find(l => l.variationIds.some(vid => !progress.get(vid)?.completions))
+  const lessonsDone = lessons.filter(l => l.variationIds.every(vid => progress.get(vid)?.completions)).length
   const courseLabel = p.learned === 0 ? 'Start de cursus' : nextLesson ? `Verder met de cursus · niveau ${levels.indexOf(nextLesson.level) + 1}` : 'Cursus herhalen'
   const courseTo = nextLesson ? `/les/${f.id}/${nextLesson.id}` : `/cursus/${f.id}`
 
@@ -71,14 +72,22 @@ export function OpeningDetail() {
             <MoveChips moves={rootMoves} className="mt-2" />
           </div>
           {info && <p className="max-w-[600px] text-base font-medium leading-[1.45] lg:text-xl lg:leading-relaxed">{info.idea}</p>}
-          <Link to={courseTo} className="btn btn-primary btn-key w-full gap-2.5! lg:w-auto lg:self-start lg:px-7!"><Play size={20} aria-hidden />{courseLabel}</Link>
-          {courseTo !== `/cursus/${f.id}` && (
-            <Link to={`/cursus/${f.id}`} className="-my-1.5 inline-flex min-h-11 items-center justify-center gap-1 self-center text-sm font-semibold text-brand-strong hover:underline lg:self-start">
-              Bekijk het leerpad · {plural(lessons.length, 'les', 'lessen')}<ArrowRight size={14} aria-hidden />
-            </Link>
-          )}
+          <Link to={courseTo} className="btn btn-primary w-full gap-2.5! lg:w-auto lg:self-start lg:px-7!"><Play size={20} aria-hidden />{courseLabel}</Link>
         </div>
       </section>
+
+      {/* Het leerpad als kaart met voortgang (ontwerp 16f), niet meer als losse link */}
+      {lessons.length > 0 && (
+        <Link to={`/cursus/${f.id}`} className="tap flex items-center gap-3 p-3.5 lg:max-w-2xl" aria-label={`Leerpad, ${plural(lessons.length, 'les', 'lessen')}: ${lessonsDone} gedaan${nextLesson ? `, volgende: ${nextLesson.title}` : ''}`}>
+          <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink"><Route size={20} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold leading-tight">Leerpad · {plural(lessons.length, 'les', 'lessen')}</span>
+            <ProgressBar value={lessonsDone / lessons.length} tone="accent" className="mt-1.5 h-1.5!" />
+            <span className="mt-1 block truncate text-xs text-muted">{lessonsDone} gedaan · {nextLesson ? `volgende: ${nextLesson.title}` : 'alles gedaan'}</span>
+          </span>
+          <ArrowRight size={18} aria-hidden className="shrink-0 text-muted" />
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5 lg:max-w-2xl lg:gap-3">
         <TrainTile to={`/crushing/${f.id}`} title="Afstraffen" text="Straf fouten van je tegenstander af" tone="danger" icon={<Swords size={20} aria-hidden />} />

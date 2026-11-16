@@ -69,7 +69,7 @@ export function Course() {
                   const s = lessonState(lesson, file, progress)
                   const current = firstOpen?.id === lesson.id
                   return (
-                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} title={`${lesson.title}: ${s.done} van ${s.vs.length} varianten afgerond`} aria-current={current ? 'step' : undefined} className={`card flex items-center gap-3 p-3 transition hover:border-brand ${current ? 'border-brand ring-2 ring-brand/25' : ''}`}>
+                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} title={`${lesson.title}: ${s.done} van ${s.vs.length} varianten afgerond`} aria-current={current ? 'step' : undefined} className={`tap flex items-center gap-3 p-3 ${current ? 'border-brand!' : ''}`}>
                       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold ${s.complete ? 'bg-brand text-on-brand' : current ? 'bg-brand-soft text-brand-strong' : 'bg-surface-2 text-muted'}`}>
                         {s.complete ? <Check size={20} aria-label="afgerond" /> : <span aria-label={`${s.done} van ${s.vs.length} afgerond`}>{s.done}/{s.vs.length}</span>}
                       </span>
@@ -88,8 +88,8 @@ export function Course() {
         <li>
           <h2 className="text-lg font-bold">Herhalen</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="card p-4 hover:border-brand"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
-            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="card p-4 hover:border-brand"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="tap p-4"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="tap p-4"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>
           </div>
         </li>
       </ol>

@@ -149,7 +149,7 @@ export function Settings() {
             <form className="flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); set({ lichessToken: token?.trim() || undefined }); setToken(null); setTokenMsg('Code opgeslagen.') }}>
               <label className="sr-only" htmlFor="lichess-token">Lichess-code</label>
               <input id="lichess-token" className="input min-h-[3.375rem] min-w-0 flex-1 basis-48" type="password" autoComplete="off" placeholder={s.lichessToken ? 'Code ingesteld (•••)' : 'lip_…'} value={token ?? ''} onChange={e => setToken(e.target.value)} />
-              <button type="submit" className="btn btn-primary btn-key px-5" disabled={!token?.trim()}>Opslaan</button>
+              <button type="submit" className="btn btn-primary px-5" disabled={!token?.trim()}>Opslaan</button>
               {s.lichessToken && <button type="button" className="tap min-h-[3.375rem] px-4 text-sm font-bold" onClick={() => { set({ lichessToken: undefined }); setTokenMsg('Code gewist.') }}>Wissen</button>}
             </form>
             {tokenMsg && <p className="text-sm text-brand-strong" role="status">{tokenMsg}</p>}

@@ -86,7 +86,10 @@ export function ImportGames() {
               <p className="text-xs text-muted">Zonder naam worden alle partijen als wit geteld.</p>
             </>
           )}
-          <button className="btn btn-primary btn-key w-full" disabled={!!busy || !ready}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+          <div>
+            <button className="btn btn-primary w-full" disabled={!!busy || !ready} aria-describedby={!ready ? 'import-reason' : undefined}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+            {!ready && <p id="import-reason" className="btn-reason">{chosen === 'pgn' ? 'Kies eerst een PGN-bestand.' : 'Vul eerst je gebruikersnaam in.'}</p>}
+          </div>
         </div>
       </form>
       {busy && <Spinner label={busy.includes('…') ? busy : 'Bezig met importeren…'} />}
