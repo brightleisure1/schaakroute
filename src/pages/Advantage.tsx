@@ -477,7 +477,7 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
         <div className="lg:col-start-2 lg:row-start-1">{heading}</div>
 
         <div className="mx-auto w-full max-w-[clamp(240px,calc(100dvh-520px),100%)] sm:max-w-[clamp(300px,calc(100dvh-460px),480px)] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-w-[min(100%,600px,calc(100dvh-140px))]">
-          <div className="rounded-xl shadow-[0_1px_0_var(--line),0_10px_26px_rgba(30,40,30,0.14)]">
+          <div className="rounded-xl shadow-[0_1px_0_var(--board-edge),0_10px_26px_rgba(30,40,30,0.14)]">
             <Board id="practice" label={`Schaakbord, je speelt ${colorNl}`} fen={fen} orientation={side} lastMove={last} arrows={arrows} />
           </div>
         </div>

@@ -738,7 +738,7 @@ function MoveSquares({ plies, ply, state }: { plies: number[]; ply: number; stat
     <ol className="flex flex-1 gap-1.5" aria-label={`${good} van ${plies.length} zetten in één keer goed`}>
       {plies.map(p => {
         const s = state[p]
-        const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-line ring-2 ring-brand/60' : 'bg-line') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
+        const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-track ring-2 ring-brand/60' : 'bg-track') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
         return <li key={p} className={`h-3 flex-1 rounded-[4px] transition-colors ${tone}`} />
       })}
     </ol>

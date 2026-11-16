@@ -7,11 +7,14 @@
   --bg: #faf7f2;
   --surface: #ffffff;
   --surface-2: #f3eee6;
+  /* voortgangsbalken en scheidingslijnen; in het licht gelijk aan --line */
+  --track: #e6dfd2;
   --ink: #1f2a24;
   --muted: #5c615a;
   --line: #e6dfd2;
   --brand: #2f7d4f;
   --brand-strong: #22603b;
+  --brand-hover: #22603b;
   --brand-soft: #e2f0e6;
   --brand-shadow: #1d5a37;
   --accent: #d99a2b;
@@ -31,48 +34,62 @@
   --board-dark: #8fae86;
   --board-hl-light: #edce92;
   --board-hl-dark: #bcb169;
+  --board-edge: #e6dfd2;
+  --board-shadow: 0 6px 22px rgba(30, 40, 30, 0.14);
   --notation-on-light: #4c6a46;
   --notation-on-dark: #20341d;
   --on-brand: #ffffff;
   --chart-1: #2f7d4f;
   --chart-2: #d99a2b;
   --chart-grid: #ece6db;
+  /* zachte staafkleur (komende herhalingen) */
+  --chart-soft: rgb(47 125 79 / 0.25);
   color-scheme: light;
 }
 
+/* Ronde 17: donkere modus in donker bosgroen (geen zwart). De groene knop blijft hetzelfde, groene tekst
+   wordt lichter, het bord iets gedempt. Randen en onderranden (--line) zijn lichter dan het vlak, zodat
+   knoppen en kaarten ook in het donker als toetsen ogen. */
 .dark {
-  --bg: #121614;
-  --surface: #1a1f1c;
-  --surface-2: #232a25;
-  --ink: #ecefe9;
-  --muted: #a1a99f;
-  --line: #2d342f;
-  --brand: #4aa86f;
+  --bg: #141a16;
+  --surface: #1d2620;
+  --surface-2: #26302a;
+  --track: #2a342e;
+  --ink: #eef2ec;
+  --muted: #a3aba1;
+  --line: #33403a;
+  --brand: #2f7d4f;
   --brand-strong: #6cc48f;
+  --brand-hover: #338455;
   --brand-soft: #1d3326;
-  --brand-shadow: #2a6e46;
-  --accent: #e8b04a;
-  --accent-soft: #3a2f19;
-  --accent-ink: #e8b04a;
-  --danger: #e2675b;
-  --danger-soft: #3b1f1c;
-  --danger-ink: #ef8a7f;
-  --info: #7aa7d8;
+  --brand-shadow: #1d5a37;
+  --accent: #d99a2b;
+  --accent-soft: #3a2f14;
+  --accent-ink: #e9b44c;
+  --danger: #c0453a;
+  --danger-soft: #3a1f1c;
+  --danger-ink: #f0958b;
+  /* ontwerp #3a6ea5, net iets lichter zodat het icoon in de tabbalk 3:1 haalt (wit erop blijft 5:1) */
+  --info: #3c72ab;
   --info-soft: #1c2a3a;
-  --info-ink: #8db5e0;
-  --teal: #5fb8b0;
-  --star: #e8b04a;
-  --star-empty: #6f776f;
-  --board-light: #d9d0bd;
-  --board-dark: #6d8f68;
-  --board-hl-light: #dcc086;
-  --board-hl-dark: #a39a5a;
-  --notation-on-light: #3f5c3b;
-  --notation-on-dark: #142212;
-  --on-brand: #0d1510;
-  --chart-1: #4aa86f;
-  --chart-2: #c4862a;
-  --chart-grid: #2a312c;
+  --info-ink: #8fb8e6;
+  --teal: #6fcaca;
+  --star: #e9b44c;
+  --star-empty: #7d867b;
+  --board-light: #c2bdac;
+  --board-dark: #6b8a66;
+  --board-hl-light: #edce92;
+  --board-hl-dark: #bcb169;
+  --board-edge: #0d120f;
+  --board-shadow: 0 1px 0 #0d120f, 0 10px 26px rgba(30, 40, 30, 0.14);
+  --notation-on-light: #2c3d29;
+  /* ontwerp #20341d; donkerder zodat de coördinaten 4.5:1 halen op het gedempte veld */
+  --notation-on-dark: #0e1a0f;
+  --on-brand: #ffffff;
+  --chart-1: #2f7d4f;
+  --chart-2: #d99a2b;
+  --chart-grid: #2a342e;
+  --chart-soft: #35503d;
   color-scheme: dark;
 }
 
@@ -80,6 +97,7 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-track: var(--track);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -163,7 +181,7 @@ table, .tabular-nums {
   font-weight: 700;
   box-shadow: 0 4px 0 var(--brand-shadow);
 }
-.btn-primary:hover { background: var(--brand-strong); }
+.btn-primary:hover { background: var(--brand-hover); }
 .btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-shadow); }
 /* Uitgeschakeld: grijs (niet lichtgroen), zodat hij niet op een actieve knop lijkt. Zet er altijd een
    regel bij die zegt wat er nog moet (.btn-reason). */

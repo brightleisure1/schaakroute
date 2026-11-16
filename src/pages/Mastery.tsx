@@ -170,7 +170,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
                 {forecast.map((f, i) => (
                   <li key={i} className="flex flex-col items-center gap-1">
                     <span className="text-xs font-bold tabular-nums">{f.n}<span className="sr-only"> herhalingen {f.label === 'Vandaag' ? 'vandaag' : `op ${f.label}`}</span></span>
-                    <span className="flex h-14 w-full items-end" aria-hidden><span className={`w-full rounded-t-md rounded-b-sm ${i === 0 ? 'bg-accent' : 'bg-brand/25'}`} style={{ height: `${Math.max(6, (f.n / max) * 100)}%` }} /></span>
+                    <span className="flex h-14 w-full items-end" aria-hidden><span className={`w-full rounded-t-md rounded-b-sm ${i === 0 ? 'bg-accent' : 'bg-(--chart-soft)'}`} style={{ height: `${Math.max(6, (f.n / max) * 100)}%` }} /></span>
                     <span className="text-xs text-muted first-letter:uppercase" aria-hidden>{f.label}</span>
                   </li>
                 ))}

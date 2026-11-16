@@ -15,7 +15,7 @@ import { pct } from './ui'
 export function ThickBar({ value, label, size = 'md', className = '' }: { value: number; label: string; size?: 'md' | 'lg'; className?: string }) {
   const p = Math.round(Math.max(0, Math.min(1, value)) * 100)
   return (
-    <div className={`w-full overflow-hidden rounded-full bg-line ${size === 'lg' ? 'h-2.5' : 'h-2'} ${className}`} role="progressbar" aria-valuenow={p} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+    <div className={`w-full overflow-hidden rounded-full bg-track ${size === 'lg' ? 'h-2.5' : 'h-2'} ${className}`} role="progressbar" aria-valuenow={p} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
       <div className="relative h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${p}%` }}>
         {size === 'lg' && p >= 4 && <span aria-hidden className="absolute inset-x-1.5 top-0.5 h-[3px] rounded-full bg-white/30" />}
       </div>
@@ -129,7 +129,7 @@ export function VariationRow({ v, file, status, label, shareSuffix }: { v: Varia
 
 /** Lijstkaart voor variantregels: 2 px rand, scheidingslijnen 2 px */
 export const ROW_LIST = 'overflow-hidden rounded-[18px] border-2 border-line bg-surface'
-export const ROW_DIVIDE = 'divide-y-2 divide-surface-2'
+export const ROW_DIVIDE = 'divide-y-2 divide-surface-2 dark:divide-track'
 
 /** De beginzetten als kleine chips; de laatste (kenmerkende) zet in groen */
 export function MoveChips({ moves, className = '' }: { moves: string[]; className?: string }) {

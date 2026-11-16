@@ -185,7 +185,7 @@ export function CrushingPuzzle({ puzzle, familyId, heading, onDone, onNext, next
       <div className="lg:col-start-2 lg:row-start-1">{heading}</div>
 
       <div className="w-full sm:mx-auto sm:max-w-[min(100%,560px,calc(100dvh-300px))] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-w-[min(100%,640px,calc(100dvh-140px))]">
-        <div className="rounded-xl shadow-[0_1px_0_var(--line),0_10px_26px_rgba(30,40,30,0.14)]">
+        <div className="rounded-xl shadow-[0_1px_0_var(--board-edge),0_10px_26px_rgba(30,40,30,0.14)]">
           <Board
             label={`Schaakbord, je speelt ${me}`}
             id={`pz-${puzzle.id}`}

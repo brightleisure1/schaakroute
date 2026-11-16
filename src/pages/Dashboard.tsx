@@ -235,7 +235,7 @@ function DaySegments({ minutes, goal }: { minutes: number; goal: number }) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex w-full max-w-60 gap-1" role="img" aria-label={`Dagdoel: ${minutes} van ${goal} minuten`}>
-        {Array.from({ length: goal }, (_, i) => <span key={i} className={`h-1.5 flex-1 rounded-full ${i < minutes ? 'bg-accent' : 'bg-line'}`} />)}
+        {Array.from({ length: goal }, (_, i) => <span key={i} className={`h-1.5 flex-1 rounded-full ${i < minutes ? 'bg-accent' : 'bg-track'}`} />)}
       </div>
       <span className="shrink-0 text-xs font-semibold text-muted sm:text-sm" aria-hidden>{minutes} van {goal} min vandaag</span>
     </div>

@@ -18,7 +18,10 @@
     <script>
       try {
         var t = localStorage.getItem('sr-theme') || 'system'
-        if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')
+        if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+          document.querySelector('meta[name=theme-color]').setAttribute('content', '#141a16')
+        }
       } catch (e) {}
     </script>
   </head>

@@ -169,7 +169,7 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
           clearArrowsOnPositionChange: true,
           animationDurationInMs: animationMs,
           showNotation,
-          boardStyle: { borderRadius: '12px', overflow: 'hidden', boxShadow: '0 6px 22px rgba(30, 40, 30, 0.14)' },
+          boardStyle: { borderRadius: '12px', overflow: 'hidden', boxShadow: 'var(--board-shadow)' },
           lightSquareStyle: { backgroundColor: 'var(--board-light)' },
           darkSquareStyle: { backgroundColor: 'var(--board-dark)' },
           lightSquareNotationStyle: { color: 'var(--notation-on-light)', fontWeight: 600 },

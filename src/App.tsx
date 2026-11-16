@@ -112,7 +112,12 @@ function ThemeSync() {
       // geen localStorage beschikbaar
     }
     const mq = matchMedia('(prefers-color-scheme: dark)')
-    const apply = () => document.documentElement.classList.toggle('dark', s.theme === 'dark' || (s.theme === 'system' && mq.matches))
+    const apply = () => {
+      const dark = s.theme === 'dark' || (s.theme === 'system' && mq.matches)
+      document.documentElement.classList.toggle('dark', dark)
+      // Statusbalk (iOS/Android) volgt het thema: in het donker het bosgroen van de achtergrond
+      document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#141a16' : '#2f7d4f')
+    }
     apply()
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)

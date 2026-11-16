@@ -33,7 +33,7 @@ export function SettingsGroup({ title, footer, children }: { title: string; foot
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2">
       <h2 id={id} className="px-1 text-xs font-bold uppercase tracking-[0.04em] text-muted">{title}</h2>
-      <div className="overflow-hidden rounded-[18px] border-2 border-line bg-surface [&>*+*]:border-t-2 [&>*+*]:border-surface-2">
+      <div className="overflow-hidden rounded-[18px] border-2 border-line bg-surface [&>*+*]:border-t-2 [&>*+*]:border-surface-2 dark:[&>*+*]:border-track">
         {children}
       </div>
       {footer && <div className="px-1 text-xs leading-relaxed text-muted">{footer}</div>}
@@ -111,8 +111,8 @@ export function SwitchRow({ checked, onChange, ...row }: RowProps & { checked: b
   return (
     <button type="button" role="switch" aria-checked={checked} className={ROW} onClick={() => onChange(!checked)}>
       <RowBody {...row} value={undefined} chevron="none" />
-      <span aria-hidden className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-line ring-1 ring-inset ring-muted/40'}`}>
-        <span className={`absolute left-[3px] top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.25)] transition-transform ${checked ? 'translate-x-[18px]' : ''}`} />
+      <span aria-hidden className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-line ring-1 ring-inset ring-muted/40 dark:ring-0'}`}>
+        <span className={`absolute left-[3px] top-[3px] h-[22px] w-[22px] rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.25)] transition-transform ${checked ? 'translate-x-[18px] bg-white' : 'bg-surface'}`} />
       </span>
     </button>
   )

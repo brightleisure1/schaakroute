@@ -24,7 +24,7 @@ export function useCloseTraining() {
 export function ThickProgress({ value, label, big }: { value: number; label: string; /** 16px op desktop (ontwerp 15b) */ big?: boolean }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
   return (
-    <div className={`h-3.5 w-full ${big ? 'lg:h-4' : ''} overflow-hidden rounded-full bg-surface-2`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+    <div className={`h-3.5 w-full ${big ? 'lg:h-4' : ''} overflow-hidden rounded-full bg-surface-2 dark:bg-track`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
       <div className="relative h-full min-w-3.5 rounded-full bg-brand transition-[width] duration-500" style={{ width: `${pct}%`, opacity: pct ? 1 : 0 }}>
         <span className="absolute inset-x-1.5 top-0.5 h-[3px] rounded-full bg-white/30" aria-hidden />
       </div>

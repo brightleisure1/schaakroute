@@ -340,7 +340,7 @@ const HEAT = [
 /** Grote reekskaart bovenaan: dagen op rij, record, level en XP. Vaste donkergroene kaart, leesbaar in licht en donker. */
 function StreakHero({ current, best, xp, level, progress, toNext }: { current: number; best: number; xp: number; level: number; progress: number; toNext: number }) {
   return (
-    <section aria-label="Reeks en level" className="flex items-center gap-4 rounded-[22px] bg-[#1f4d33] p-[18px] text-white dark:ring-2 dark:ring-[#2a6e46]">
+    <section aria-label="Reeks en level" className="flex items-center gap-4 rounded-[22px] bg-[#1f4d33] p-[18px] text-white">
       <Flame size={52} strokeWidth={2} aria-hidden className="shrink-0 text-[#e9b44c]" />
       <div className="min-w-0 flex-1">
         <div className="text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{current} {current === 1 ? 'dag' : 'dagen'}</div>
