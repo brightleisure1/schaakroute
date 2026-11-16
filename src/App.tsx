@@ -1,6 +1,8 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, MessageSquare, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { deviceLang, setLang, t, tn, type Lang } from './lib/i18n'
+import { feedbackHref } from './lib/feedback'
+import './lib/install' // vangt het installatieverzoek van de browser zo vroeg mogelijk op
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -389,6 +391,12 @@ function MoreTab() {
                 <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
               </NavLink>
             ))}
+            {/* Feedback (voor de testfase): opent de mailapp met een kant-en-klaar bericht */}
+            <a href={feedbackHref()} className="tap flex items-center gap-3 px-3.5 py-3">
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${TILE_TONE.brand}`} aria-hidden><MessageSquare size={18} strokeWidth={2} /></span>
+              <span className="min-w-0 flex-1"><span className="block font-bold">{t('Feedback geven')}</span><span className="block text-sm text-muted">{t('Zie je iets geks of heb je een idee? Laat het weten.')}</span></span>
+              <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
+            </a>
           </div>
         </div>
       )}

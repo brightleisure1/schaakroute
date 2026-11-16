@@ -364,4 +364,16 @@ export const app: Record<string, string> = {
   'Stockfish rekent lokaal': 'Stockfish runs locally',
   'Alleen als je het zelf gebruikt: Lichess en Chess.com': 'Only when you use them: Lichess and Chess.com',
   'Hosting': 'Hosting',
+  // feedback.ts en de feedbackknop
+  'Feedback geven': 'Send feedback',
+  'per mail': 'by email',
+  'Zie je iets geks of heb je een idee? Laat het weten.': 'Spotted something odd or have an idea? Let us know.',
+  'Feedback over SchaakRoute': 'Feedback about SchaakRoute',
+  'Wat ging er mis, of wat kan beter?': 'What went wrong, or what could be better?',
+  'Tip: voeg een screenshot toe.': 'Tip: add a screenshot.',
+  'Scherm': 'Screen',
+  'Apparaat': 'Device',
+  'Schermgrootte': 'Screen size',
+  'Taal': 'Language',
+  'Datum': 'Date',
 }

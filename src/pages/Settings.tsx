@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { BookMarked, Cpu, Languages, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
+import { BookMarked, Cpu, Languages, MessageSquare, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
 import { db, saveSettings, type UserSettings } from '../lib/db'
 import { analyse, engineStatus } from '../lib/engine'
 import { importBackup, summarizeBackup } from '../lib/progress'
 import { saveBackupFile } from '../lib/backup'
+import { feedbackHref } from '../lib/feedback'
 import { useManifest } from '../lib/hooks'
 import { PageHeader, Spinner, useSettings } from '../components/ui'
 import { getLang, locale, t, tr } from '../lib/i18n'
@@ -184,6 +185,7 @@ export function Settings() {
 
       <SettingsGroup title={t('Over de app')}>
         <LinkRow to="/bronnen" icon={ScrollText} label={t('Bronnen, methode en licenties')} />
+        <ActionRow onClick={() => { location.href = feedbackHref() }} icon={MessageSquare} tone="brand" label={t('Feedback geven')} value={t('per mail')} />
         <LinkRow to="/privacy" icon={ShieldCheck} label={t('Privacy')} />
       </SettingsGroup>
     </div>
