@@ -38,10 +38,10 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Trainen',
     items: [
-      { to: '/', label: 'Start', icon: House, mobile: true },
-      { to: '/dagelijks', label: 'Dagtraining', short: 'Vandaag', icon: Sun, mobile: true },
-      { to: '/mastery', label: 'Herhalen', icon: Repeat, mobile: true, badge: true },
-      { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true },
+      { to: '/', label: 'Start', icon: House, mobile: true, color: 'var(--brand)' },
+      { to: '/dagelijks', label: 'Dagtraining', short: 'Vandaag', icon: Sun, mobile: true, color: 'var(--accent)' },
+      { to: '/mastery', label: 'Herhalen', icon: Repeat, mobile: true, badge: true, color: 'var(--info)' },
+      { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true, color: 'var(--brand)' },
       { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alle varianten van een opening oefenen' },
     ],
   },
@@ -51,7 +51,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
       { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat er gespeeld wordt en wat scoort' },
       { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen samenstellen' },
-      { to: '/analyse', label: 'Partij-analyse', short: 'Analyse', icon: Microscope, mobile: true, desc: 'Je partijen zet voor zet laten beoordelen' },
+      { to: '/analyse', label: 'Partij-analyse', short: 'Analyse', icon: Microscope, mobile: true, color: 'var(--teal)', desc: 'Je partijen zet voor zet laten beoordelen' },
       { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Je partijen van Lichess of Chess.com' },
     ],
   },
@@ -63,7 +63,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     ],
   },
 ]
-interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string }
+interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string; /** Kleur van het icoon in het bodemmenu (ontwerp 14k) */ color?: string }
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
@@ -259,16 +259,17 @@ function Shell() {
         {!focus && !onboarding && (
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
           // Vaste tabbalk: de pagina eindigt erboven, dus hij dekt nooit iets af en verspringt niet
-          <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden" aria-label="Hoofdmenu">
+          // Bodemmenu (ontwerp 14k): grote iconen in een eigen kleur; alleen de actieve tab toont zijn naam, in een vakje met rand
+          <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 items-start border-t-2 border-line bg-surface px-1.5 pt-2.5 lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }} aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex min-h-15 flex-col items-center justify-center gap-1 whitespace-nowrap text-[11px] font-semibold tracking-tight transition-colors max-[359px]:text-[10px] min-[400px]:text-xs min-[400px]:tracking-normal ${isActive ? 'text-brand-strong' : 'text-muted hover:text-ink'}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} aria-label={n.short ?? n.label} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong">
                 {({ isActive }) => (
                   <>
-                    <span className={`relative flex h-7 w-12 items-center min-[400px]:w-14 justify-center rounded-full transition-colors ${isActive ? 'bg-brand-soft' : ''}`}>
-                      <n.icon size={22} strokeWidth={isActive ? 2.25 : 1.75} aria-hidden />
-                      {n.badge && due > 0 && <span className="absolute -top-1.5 right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-accent px-1 text-xs font-extrabold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
-                    </span>
-                    {n.short ?? n.label}
+                    <TabIcon active={isActive} color={n.color}>
+                      <n.icon size={27} strokeWidth={isActive ? 2.25 : 2} aria-hidden />
+                      {n.badge && due > 0 && <span className="absolute -top-1 right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-danger px-1 text-[11px] leading-none font-extrabold text-white" aria-label={`${due} herhalingen`}>{due}</span>}
+                    </TabIcon>
+                    {isActive && <span className="animate-fade-in whitespace-nowrap">{n.short ?? n.label}</span>}
                   </>
                 )}
               </NavLink>
@@ -279,6 +280,18 @@ function Shell() {
       </div>
     </div>
     </FocusContext.Provider>
+  )
+}
+
+/** Icoon van een tab in het bodemmenu: actief in een groen vakje met onderrand, anders alleen het icoon in zijn eigen kleur */
+function TabIcon({ active, color, children }: { active: boolean; color?: string; children: React.ReactNode }) {
+  return (
+    <span
+      className={`relative flex h-[46px] w-[52px] items-center justify-center rounded-[14px] border-2 transition-[background-color,border-color,box-shadow] duration-150 ${active ? 'border-brand bg-brand-soft shadow-[0_3px_0_var(--brand)]' : 'border-transparent'}`}
+      style={{ color: active ? 'var(--brand)' : color ?? 'var(--muted)' }}
+    >
+      {children}
+    </span>
   )
 }
 
@@ -300,9 +313,9 @@ function MoreTab() {
   }, [open])
   return (
     <>
-      <button ref={btn} className={`flex min-h-15 flex-col items-center justify-center gap-1 whitespace-nowrap text-[11px] font-semibold tracking-tight transition-colors max-[359px]:text-[10px] min-[400px]:text-xs min-[400px]:tracking-normal ${active || open ? 'text-brand-strong' : 'text-muted hover:text-ink'}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors min-[400px]:w-14 ${active || open ? 'bg-brand-soft' : ''}`}><Ellipsis size={22} strokeWidth={active || open ? 2.25 : 1.75} aria-hidden /></span>
-        Meer
+      <button ref={btn} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong" aria-label="Meer" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <TabIcon active={active || open} color="var(--muted)"><Ellipsis size={27} strokeWidth={active || open ? 2.25 : 2} aria-hidden /></TabIcon>
+        {(active || open) && <span className="animate-fade-in">Meer</span>}
       </button>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="more-title">
