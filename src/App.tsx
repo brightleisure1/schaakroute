@@ -34,6 +34,7 @@ const ReviewReplayView = lazy(() => import('./pages/GameReview').then(m => ({ de
 const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ default: m.GameReviewView })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
+const Privacy = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })))
 
 // Navigatie in drie groepen. De teksten zijn Nederlandse sleutels: vertalen gebeurt bij het tekenen (t(n.label)).
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -211,7 +212,7 @@ function Shell() {
   // Welkom is een eigen modus (ontwerp 10a/12a): geen kop en geen menu, ook als je je keuzes later aanpast
   const onboarding = loc.pathname === '/welkom'
   // Een gedeelde partij is ook zonder account te bekijken
-  const openWithoutOnboarding = /^\/(welkom|bronnen|delen\/|analyse\/)/.test(loc.pathname)
+  const openWithoutOnboarding = /^\/(welkom|bronnen|privacy|delen\/|analyse\/)/.test(loc.pathname)
   if (!settings.onboarded && !openWithoutOnboarding) return <Navigate to="/welkom" replace />
   const focus = FOCUS_ROUTES.test(loc.pathname) || sessionFocus
   // Zijmenu (ontwerp 15a): iconen in de kleur van elke training, zoals in het bodemmenu; actief met groene rand en onderrand
@@ -248,7 +249,7 @@ function Shell() {
               </div>
             ))}
           </nav>
-          <div className="mt-auto px-2.5 pt-4 text-xs text-muted">{t('Gratis en open source')} · <NavLink to="/bronnen" className="underline">{t('bronnen')}</NavLink></div>
+          <div className="mt-auto px-2.5 pt-4 text-xs text-muted">{t('Gratis en open source')} · <NavLink to="/bronnen" className="underline">{t('bronnen')}</NavLink> · <NavLink to="/privacy" className="underline">{t('privacy')}</NavLink></div>
         </aside>
       )}
 
@@ -289,6 +290,7 @@ function Shell() {
               <Route path="/delen/:code" element={<SharedGameView />} />
               <Route path="/instellingen" element={<Settings />} />
               <Route path="/bronnen" element={<Sources />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

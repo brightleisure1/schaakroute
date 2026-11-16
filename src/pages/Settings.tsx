@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { BookMarked, Cpu, Languages, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
+import { BookMarked, Cpu, Languages, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
 import { db, saveSettings, type UserSettings } from '../lib/db'
 import { analyse, engineStatus } from '../lib/engine'
-import { exportBackup, importBackup, summarizeBackup } from '../lib/progress'
+import { importBackup, summarizeBackup } from '../lib/progress'
+import { saveBackupFile } from '../lib/backup'
 import { useManifest } from '../lib/hooks'
 import { PageHeader, Spinner, useSettings } from '../components/ui'
 import { getLang, locale, t, tr } from '../lib/i18n'
@@ -59,24 +60,10 @@ export function Settings() {
     if (backupBusy) return
     setBackupMsg(null)
     setBackupBusy('save')
-    const name = `schaakroute-backup-${new Date().toISOString().slice(0, 10)}.json`
-    const file = new File([JSON.stringify(await exportBackup())], name, { type: 'application/json' })
     try {
-      // Telefoon: deelmenu (AirDrop, Bewaar in Bestanden, mail). Desktop: gewone download.
-      if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: t('SchaakRoute-back-up') })
-      } else {
-        const url = URL.createObjectURL(file)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = name
-        a.click()
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
-      }
-      await saveSettings({ lastBackupAt: Date.now() })
-      setBackupMsg({ ok: true, text: t('Back-up bewaard. Op je andere apparaat zet je hem terug via Instellingen.'), n: Date.now() })
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') setBackupMsg({ ok: false, text: t('Bewaren is niet gelukt. Probeer het opnieuw.'), n: Date.now() })
+      if ((await saveBackupFile()) === 'saved') setBackupMsg({ ok: true, text: t('Back-up bewaard. Op je andere apparaat zet je hem terug via Instellingen.'), n: Date.now() })
+    } catch {
+      setBackupMsg({ ok: false, text: t('Bewaren is niet gelukt. Probeer het opnieuw.'), n: Date.now() })
     } finally {
       setBackupBusy(null)
     }
@@ -197,6 +184,7 @@ export function Settings() {
 
       <SettingsGroup title={t('Over de app')}>
         <LinkRow to="/bronnen" icon={ScrollText} label={t('Bronnen, methode en licenties')} />
+        <LinkRow to="/privacy" icon={ShieldCheck} label={t('Privacy')} />
       </SettingsGroup>
     </div>
   )

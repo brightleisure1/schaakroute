@@ -346,4 +346,22 @@ export const app: Record<string, string> = {
   '14 dagen': '14 days',
   '{n} goede zetten in de laatste 14 dagen, vandaag {m}': '{n} good moves in the last 14 days, {m} today',
   '{date}: {n} goede zetten': '{date}: {n} good moves',
+  // LaunchNotices.tsx
+  'Zet SchaakRoute op je beginscherm': 'Add SchaakRoute to your home screen',
+  'Dan opent hij als app, ook zonder adresbalk, en blijft je voortgang bewaard.': 'It then opens as an app, without the address bar, and your progress stays safe.',
+  'Installeren': 'Install',
+  'Later': 'Later',
+  'Tijd voor een nieuwe back-up': 'Time for a new backup',
+  'Bewaar een back-up van je voortgang': 'Save a backup of your progress',
+  'Je voortgang staat alleen op dit apparaat. Met een back-up kun je altijd verder, ook op een nieuwe telefoon.': 'Your progress is stored only on this device. With a backup you can always pick up where you left off, even on a new phone.',
+  'Back-up bewaard. Terugzetten doe je via Instellingen.': 'Backup saved. You can restore it via Settings.',
+  'Bewaren is niet gelukt. Probeer het later via Instellingen.': "Saving didn't work. Try again later via Settings.",
+  // Privacy.tsx
+  'Privacy': 'Privacy',
+  'privacy': 'privacy',
+  'Kort en eerlijk: wat er met je gegevens gebeurt.': 'Short and honest: what happens to your data.',
+  'Alles blijft op je eigen apparaat': 'Everything stays on your own device',
+  'Stockfish rekent lokaal': 'Stockfish runs locally',
+  'Alleen als je het zelf gebruikt: Lichess en Chess.com': 'Only when you use them: Lichess and Chess.com',
+  'Hosting': 'Hosting',
 }

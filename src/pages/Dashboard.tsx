@@ -14,6 +14,7 @@ import { CropBoard } from '../components/CropBoard'
 import { ProgressBar, Spinner, useSettings, sideLabel, nf } from '../components/ui'
 import { getLang, t, tn } from '../lib/i18n'
 import { OPENING_INFO } from '../content/openingInfo'
+import { LaunchNotices } from '../components/LaunchNotices'
 import type { FamilyFile, Variation } from '../lib/types'
 
 export function Dashboard() {
@@ -116,6 +117,8 @@ export function Dashboard() {
         </div>
       </section>
       )}
+
+      <LaunchNotices settings={settings} hasProgress={!firstTime} />
 
       <section>
         <div className="mb-3 flex items-baseline justify-between">
