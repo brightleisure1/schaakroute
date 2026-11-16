@@ -99,15 +99,15 @@ export function Confetti({ fire }: { fire: number }) {
   )
 }
 
-export function Tabs<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[] }) {
+export function Tabs<T extends string>({ value, onChange, options, stretch, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; /** Over de volle breedte, elk deel even breed (ontwerp 15b) */ stretch?: boolean; label?: string }) {
   return (
-    <div className="inline-flex rounded-xl border border-line bg-surface-2 p-1" role="tablist">
+    <div className={`${stretch ? 'flex gap-0.5 rounded-[14px]' : 'inline-flex rounded-xl'} border border-line bg-surface-2 p-1`} role="tablist" aria-label={label}>
       {options.map(o => (
         <button
           key={o.value}
           role="tab"
           aria-selected={value === o.value}
-          className={`min-h-11 rounded-lg px-4 py-2 text-sm font-semibold transition ${value === o.value ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+          className={`${stretch ? 'min-h-[38px] flex-1 whitespace-nowrap rounded-[10px] px-3 text-sm' : 'min-h-11 rounded-lg px-4 py-2 text-sm font-semibold'} transition ${value === o.value ? `bg-surface text-ink shadow-sm ${stretch ? 'font-bold' : ''}` : `text-muted hover:text-ink ${stretch ? 'font-medium' : ''}`}`}
           onClick={() => onChange(o.value)}
         >
           {o.label}
@@ -159,6 +159,19 @@ export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; c
 }
 
 /** Zet de trainingsfocus aan of uit (App luistert): tijdens het trainen geen tabbalk en geen kopbalk op de telefoon */
+/** Groot scherm (lg, vanaf 1024px): daar staan bord en paneel naast elkaar */
+export function useWide() {
+  const q = '(min-width: 1024px)'
+  const [wide, setWide] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(q).matches)
+  useEffect(() => {
+    const mq = matchMedia(q)
+    const on = () => setWide(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return wide
+}
+
 export const FocusContext = createContext<(on: boolean) => void>(() => {})
 
 /** Trainingsfocus zolang `active` waar is, bijvoorbeeld zolang er een bord gespeeld wordt */

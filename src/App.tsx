@@ -42,15 +42,15 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/dagelijks', label: 'Dagtraining', short: 'Vandaag', icon: Sun, mobile: true, color: 'var(--accent)' },
       { to: '/mastery', label: 'Herhalen', icon: Repeat, mobile: true, badge: true, color: 'var(--info)' },
       { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true, color: 'var(--brand)' },
-      { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alles van één opening', tone: 'brand' },
+      { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alles van één opening', tone: 'brand', color: 'var(--brand)' },
     ],
   },
   {
     title: 'Verdiepen',
     items: [
-      { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Fouten afstraffen', tone: 'danger' },
-      { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat scoort het best', tone: 'info' },
-      { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen', tone: 'accent' },
+      { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Fouten afstraffen', tone: 'danger', color: 'var(--danger)' },
+      { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat scoort het best', tone: 'info', color: 'var(--info)' },
+      { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen', tone: 'accent', color: 'var(--accent)' },
       { to: '/analyse', label: 'Partij-analyse', short: 'Analyse', icon: Microscope, mobile: true, color: 'var(--teal)', desc: 'Je partijen zet voor zet laten beoordelen' },
       { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Lichess of Chess.com' },
     ],
@@ -65,7 +65,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 ]
 interface NavItem {
   to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string
-  /** Kleur van het icoon in het bodemmenu (ontwerp 14k) */
+  /** Kleur van het icoon in het bodemmenu (ontwerp 14k) en in het zijmenu (ontwerp 15a); zonder kleur grijs */
   color?: string
   /** Kleur van de tegel in het Meer-paneel: de kleur van die training (ontwerp 12c) */
   tone?: keyof typeof TILE_TONE
@@ -84,6 +84,8 @@ const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 /** Trainingsmodus (ontwerp ronde 10): geen kop en geen menu, alleen sluiten, voortgang en het bord */
 const TRAINING_MODE = /^\/((crushing|advantage)\/|train\/|analyse\/[^/]+\/(naspelen|fouten))/
+/** Desktop (ontwerp 15b): het zijmenu maakt plaats voor een balk over de volle breedte met sluiten, voortgang en je reeks */
+const FULL_TRAINING = /^\/train\//
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/[^/]+\/(naspelen|fouten))/
 
 /**
@@ -198,27 +200,33 @@ function Shell() {
   const openWithoutOnboarding = /^\/(welkom|bronnen|delen\/|analyse\/)/.test(loc.pathname)
   if (!settings.onboarded && !openWithoutOnboarding) return <Navigate to="/welkom" replace />
   const focus = FOCUS_ROUTES.test(loc.pathname) || sessionFocus
-  const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-surface-2 hover:text-ink'}`
+  // Zijmenu (ontwerp 15a): iconen in de kleur van elke training, zoals in het bodemmenu; actief met groene rand en onderrand
+  const navClass = ({ isActive }: { isActive: boolean }) => `flex min-h-[42px] items-center gap-3 rounded-xl border-2 px-2.5 text-sm transition-colors ${isActive ? 'border-brand bg-brand-soft font-bold text-brand-strong shadow-[0_2px_0_var(--brand)]' : 'border-transparent font-medium text-ink hover:bg-surface-2'}`
+  const fullTraining = FULL_TRAINING.test(loc.pathname)
   return (
     <FocusContext.Provider value={setSessionFocus}>
     <div className="min-h-dvh lg:flex">
       <BottomNavSpace active={!focus && !onboarding} />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">Naar de inhoud</a>
-      {!onboarding && (
-        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
-          <NavLink to="/" className="mb-5 flex items-center gap-2 px-2 text-xl font-extrabold tracking-tight">
+      {!onboarding && !fullTraining && (
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r-2 border-line bg-surface px-3 py-5 lg:flex">
+          <NavLink to="/" className="mb-[18px] flex items-center gap-2 px-2 text-xl font-extrabold tracking-[-0.025em]">
             <img src="./icon.svg" alt="" className="h-9 w-9 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span>
           </NavLink>
-          <nav aria-label="Hoofdmenu" className="flex flex-col gap-4">
+          <nav aria-label="Hoofdmenu" className="flex flex-col gap-[18px]">
             {NAV_GROUPS.map(g => (
               <div key={g.title}>
-                <h2 className="px-3 pb-1 text-xs font-semibold text-muted">{g.title}</h2>
+                <h2 className="px-3 pb-1.5 text-xs font-bold uppercase tracking-[0.04em] text-muted">{g.title}</h2>
                 <ul className="flex flex-col gap-0.5">
                   {g.items.map(n => (
                     <li key={n.to}>
                       <NavLink to={n.to} end={n.to === '/'} className={navClass}>
-                        <n.icon size={18} strokeWidth={1.75} aria-hidden />{n.label}
-                        {n.badge && due > 0 && <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-ink" aria-label={`${due} herhalingen`}>{due}</span>}
+                        {({ isActive }) => (
+                          <>
+                            <n.icon size={20} strokeWidth={isActive ? 2.25 : 2} aria-hidden className="shrink-0" style={{ color: isActive ? 'var(--brand)' : n.color ?? 'var(--muted)' }} />{n.label}
+                            {n.badge && due > 0 && <span className="ml-auto rounded-full bg-danger px-[7px] text-xs leading-5 font-extrabold text-white" aria-label={`${due} herhalingen`}>{due}</span>}
+                          </>
+                        )}
                       </NavLink>
                     </li>
                   ))}
@@ -226,7 +234,7 @@ function Shell() {
               </div>
             ))}
           </nav>
-          <div className="mt-auto px-2 pt-4 text-xs text-muted">Gratis en open source · <NavLink to="/bronnen" className="underline">bronnen</NavLink></div>
+          <div className="mt-auto px-2.5 pt-4 text-xs text-muted">Gratis en open source · <NavLink to="/bronnen" className="underline">bronnen</NavLink></div>
         </aside>
       )}
 
@@ -236,7 +244,7 @@ function Shell() {
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           <StreakPill />
         </header>
-        <main id="main" className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:pb-10 lg:pt-8 ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
+        <main id="main" className={`mx-auto w-full px-4 sm:px-6 ${fullTraining ? 'lg:max-w-none lg:p-0' : 'max-w-6xl lg:pb-10 lg:pt-8'} ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
           <Suspense fallback={<Spinner />}>
             <Routes>

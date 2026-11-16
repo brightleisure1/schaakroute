@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Chess } from 'chess.js'
 import type { Arrow } from 'react-chessboard'
-import { ArrowDownUp, BookOpen, Brain, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleX, Ellipsis, Eye, Hourglass, Info, Keyboard, Lightbulb, ListOrdered, MoveUpRight, RotateCcw, Undo2 } from 'lucide-react'
+import { ArrowDownUp, BookOpen, Brain, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleX, Ellipsis, Eye, Hourglass, Info, Keyboard, Lightbulb, ListOrdered, MoveUpRight, RotateCcw, Undo2 } from 'lucide-react'
 import { Board } from './Board'
 import { PieceIcon } from './CropBoard'
 import { TrainingHeading, TrainingSheet, TrainingTopBar } from './TrainingModeChrome'
 import { MoveInput, TypeToggle, useTypingOpen } from './MoveInput'
-import { ProgressBar, Stars, useSettings, pct, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
+import { ProgressBar, Stars, Tabs, useSettings, useWide, pct, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
 import { START_FEN, describeSan, epdOf, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
 import { judgeMove, isUserPly, qualityFor, starsFor, moveScore, bandCount } from '../lib/trainer'
@@ -74,8 +74,15 @@ export interface TrainerProps {
   /** Trainingsmodus (ontwerp 10f/12d): bovenbalk met sluiten, voortgangsbalk en teller */
   onClose?: () => void
   closeLabel?: string
-  /** Wisselen tussen Leren, Oefenen en Uit het hoofd, in het vel achter Meer (ontwerp 12f) */
+  /** Wisselen tussen Leren, Oefenen en Uit het hoofd, in het vel achter Meer (ontwerp 12f); op desktop onderaan het paneel (15b) */
   modes?: { value: TrainMode; onChange: (m: TrainMode) => void }
+  /**
+   * Desktop (ontwerp 15b/15c): de training vult het hele scherm zonder zijmenu. Een witte balk bovenin over de
+   * volle breedte, en na een goede zet een groene balk onderin over de volle breedte.
+   */
+  fullScreen?: boolean
+  /** Melding bovenaan het paneel naast het bord (alleen desktop), bijv. een vraag voor je van soort training wisselt */
+  notice?: ReactNode
 }
 
 const MODE_LABEL: Record<TrainMode, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd', review: 'Herhaling' }
@@ -87,25 +94,13 @@ const MODE_CHOICES: { value: TrainMode; label: string; text: string; icon: React
   { value: 'mastery', label: 'Uit het hoofd', text: 'Zonder hulp, zonder terug', icon: <Brain size={20} /> },
 ]
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
-/** Groot scherm: uitleg naast het bord in plaats van in een vel */
-function useWide() {
-  const q = '(min-width: 1024px)'
-  const [wide, setWide] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(q).matches)
-  useEffect(() => {
-    const mq = matchMedia(q)
-    const on = () => setWide(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return wide
-}
 const sideNl = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
 }
 
-export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange, completes, endTitle, onClose, closeLabel = 'Stoppen', modes }: TrainerProps) {
+export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange, completes, endTitle, onClose, closeLabel = 'Stoppen', modes, fullScreen, notice }: TrainerProps) {
   const settings = useSettings()
   const startPly = line.startPly ?? 0
   const endPly = Math.min(line.endPly ?? line.uci.length, line.uci.length)
@@ -151,6 +146,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const [flipped, setFlipped] = useState(false)
   const [wrongAt, setWrongAt] = useState<{ ply: number; square: string } | null>(null)
   const wide = useWide()
+  const full = !!fullScreen && wide
+  // Laatste goede zet voor de groene balk onderin (desktop, ontwerp 15c); blijft staan tot je volgende actie
+  const [good, setGood] = useState<Feedback>(null)
   const [typing, setTyping] = useTypingOpen()
   const [focusTyping, setFocusTyping] = useState(false)
   const toggleTyping = () => { setFocusTyping(!typing); setTyping(!typing) }
@@ -185,6 +183,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setRevealedPly(null)
     setMenuOpen(false)
     setWrongAt(null)
+    setGood(null)
     xpRef.current = 0
     newCardsRef.current = 0
     busy.current = false
@@ -218,6 +217,11 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     }, ply < startPly ? 380 : ply === startPly ? 350 : 520)
     return () => clearTimeout(t)
   }, [ply, done, userTurn, intro, showFull, result, startPly, opponent, sans])
+
+  // De groene balk verdwijnt zodra er iets anders te melden is (fout, hint, terug …)
+  useEffect(() => {
+    if (feedback && feedback.kind !== 'correct' && feedback.kind !== 'learn') setGood(null)
+  }, [feedback])
 
   // Leermodus: de zet wordt voorgedaan
   useEffect(() => {
@@ -267,7 +271,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setTimeout(() => setFlash(f => (f?.square === to ? null : f)), 600)
     setOpponentLine(null)
     setWrongAt(null)
-    setFeedback({ kind: 'correct', title: 'Goed', text: <><b>{sans[p]}</b> {mode !== 'learn' && quality === 5 ? 'klopt, in één keer.' : 'is goed.'}</> })
+    const fb: Feedback = { kind: 'correct', title: 'Goed', text: <><b>{sans[p]}</b> {mode !== 'learn' && quality === 5 ? 'klopt, in één keer.' : 'is goed.'}</> }
+    setFeedback(fb)
+    setGood(fb)
     setPly(p + 1)
     setHintLevel(0)
     try {
@@ -434,7 +440,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const recent = [displayPly - 2, displayPly - 1].filter(p => p >= 0 && p < sans.length)
   const boardLabel = `Schaakbord, je speelt ${line.side === 'white' ? 'wit' : 'zwart'}${userTurn ? ', jij bent aan zet' : ''}`
 
-  const explanation = (
+  const explain = (part?: 'stats' | 'rest') => (
     <Explanation
       fen={fens[displayPly]}
       name={currentName}
@@ -447,9 +453,32 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       family={family}
       hideAnswer={userTurn && mode !== 'learn' && revealedPly !== ply && viewPly === null}
       onReveal={revealStats}
+      part={part}
     />
   )
   const closeMenu = () => setMenuOpen(false)
+  const heading = (
+    <TrainingHeading
+      tone={MODE_TONE[mode]}
+      label={meta}
+      title={<span className="line-clamp-2 text-balance">{line.title}</span>}
+      sub={single ? 'Losse positie: vind de zet die je eerder leerde.' : undefined}
+      action={!wide && recent.length > 0 && (
+        <ol className="flex shrink-0 flex-wrap justify-end gap-1.5 pb-0.5" aria-label="Laatste zetten">
+          {recent.map((p, i) => {
+            const latest = p === displayPly - 1
+            const label = p % 2 === 0 ? `${moveNumberLabel(p)}${sans[p]}` : i === 0 || recent.length === 1 ? `${moveNumberLabel(p)}${sans[p]}` : sans[p]
+            return <li key={p} className={`rounded-lg border px-2 py-0.5 text-[13px] font-bold tabular-nums ${latest ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-surface-2 text-ink'}`} aria-current={latest ? 'step' : undefined}>{label}</li>
+          })}
+        </ol>
+      )}
+    />
+  )
+  // Desktop: de zet die je nu zoekt als "3.?" achter de gespeelde zetten (ontwerp 15b)
+  const nextPly = userTurn && viewPly === null && !showFull && !intro ? ply : undefined
+  const moreButton = (
+    <IconButton icon={<Ellipsis size={18} />} label="Meer" onClick={() => setMenuOpen(true)} expanded={menuOpen} square={wide && !!modes} row={wide && !modes} hint={wide ? 'Meer: bord draaien, alle zetten, zet typen (T); ← → bladert door eerdere zetten' : undefined} />
+  )
 
   return (
     <div>
@@ -460,29 +489,15 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         countLabel={`${doneUser} van ${plural(userPlies.length, 'zet', 'zetten')} gespeeld`}
         onClose={onClose}
         closeLabel={closeLabel}
+        full={fullScreen}
       />
     )}
-    <div className={`grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start ${onClose ? 'mt-2.5' : ''}`}>
-      <div className="-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,620px)] lg:max-w-[min(640px,calc(100dvh-160px))]">
+    {/* Desktop (ontwerp 15b): bord links, rechts een paneel met de variant, de feedback, vier knoppen en wat er gespeeld wordt */}
+    <div className={`grid gap-4 ${onClose ? 'mt-2.5' : ''} ${fullScreen ? 'lg:mx-auto lg:mt-0 lg:max-w-[1056px] lg:grid-cols-[auto_minmax(320px,400px)] lg:justify-center lg:gap-8 lg:px-8 lg:pb-[124px] lg:pt-7' : 'lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start'}`}>
+      <div className={`-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,620px)] ${fullScreen ? 'lg:mx-0 lg:w-[min(560px,calc(100dvh-220px),calc(100vw-480px))] lg:max-w-none lg:self-start' : 'lg:max-w-[min(640px,calc(100dvh-160px))]'}`}>
         {header && <div className="px-2 sm:px-0">{header}</div>}
-        {/* Kop boven het bord (ontwerp 10f): soort training en opening, titel en de laatste zetten */}
-        <div className="mb-3.5 px-2 sm:px-0">
-          <TrainingHeading
-            tone={MODE_TONE[mode]}
-            label={meta}
-            title={<span className="line-clamp-2 text-balance">{line.title}</span>}
-            sub={single ? 'Losse positie: vind de zet die je eerder leerde.' : undefined}
-            action={recent.length > 0 && (
-              <ol className="flex shrink-0 flex-wrap justify-end gap-1.5 pb-0.5" aria-label="Laatste zetten">
-                {recent.map((p, i) => {
-                  const latest = p === displayPly - 1
-                  const label = p % 2 === 0 ? `${moveNumberLabel(p)}${sans[p]}` : i === 0 || recent.length === 1 ? `${moveNumberLabel(p)}${sans[p]}` : sans[p]
-                  return <li key={p} className={`rounded-lg border px-2 py-0.5 text-[13px] font-bold tabular-nums ${latest ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-surface-2 text-ink'}`} aria-current={latest ? 'step' : undefined}>{label}</li>
-                })}
-              </ol>
-            )}
-          />
-        </div>
+        {/* Kop boven het bord (ontwerp 10f): soort training en opening, titel en de laatste zetten. Op desktop in het paneel. */}
+        {!wide && <div className="mb-3.5 px-2 sm:px-0">{heading}</div>}
         <div className="relative">
           {intro && (
             <button className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/25 lg:hidden" onClick={() => setIntro(false)} aria-label="Start de training">
@@ -519,7 +534,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
               {!showFull && !intro && <TypeToggle open={typing} onToggle={toggleTyping} className="ml-auto -mr-2" />}
             </div>
           )}
-          {!result && onClose && !showFull && !intro && (
+          {!result && onClose && !fullScreen && !showFull && !intro && (
             <div className="mt-1 hidden min-h-11 items-center justify-end lg:flex"><TypeToggle open={typing} onToggle={toggleTyping} className="-mr-2" /></div>
           )}
           {viewPly !== null && !showFull && !result && (
@@ -534,7 +549,14 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         </div>
       </div>
 
-      <aside className="flex flex-col gap-3">
+      <aside className={`flex flex-col gap-3 ${wide ? 'lg:gap-2.5' : ''}`}>
+        {wide && !result && (
+          <div>
+            {heading}
+            <MoveChips sans={sans} upto={displayPly} next={nextPly} />
+          </div>
+        )}
+        {wide && !result && notice}
         {result ? (
           <EndPanel
             line={line}
@@ -556,17 +578,26 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                 <button className="btn btn-primary mt-3 w-full max-lg:hidden" onClick={() => setIntro(false)}>Start <kbd className="ml-1 hidden rounded border border-white/40 px-1 text-xs font-normal lg:inline">Enter</kbd></button>
               </div>
             ) : (
-              <FeedbackBox feedback={feedback} opponentLine={opponentLine} userTurn={userTurn} done={done} showFull={showFull} />
+              // Desktop over het hele scherm: een goede zet staat in de groene balk onderin, niet hier
+              <FeedbackBox feedback={full && feedback?.kind === 'correct' ? null : feedback} opponentLine={opponentLine} userTurn={userTurn} done={done} showFull={showFull} chips={wide} />
             )}
 
-            {!intro && (
+            {!intro && (wide ? (
+              // Desktop (ontwerp 15b): twee bij twee, met de sneltoets op de knop; Meer staat onderaan het paneel
+              <div className="grid grid-cols-2 gap-2.5">
+                <IconButton icon={<Lightbulb size={18} />} label="Hint" shortcut="H" onClick={hint} disabled={!canHint} row />
+                <IconButton icon={<BookOpen size={18} />} label="Uitleg" shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} row />
+                <IconButton icon={<Undo2 size={18} />} label="Terug" shortcut="Z" onClick={previousMove} disabled={ply <= startPly} row />
+                <IconButton icon={<RotateCcw size={18} />} label="Opnieuw" shortcut="R" onClick={restart} row />
+              </div>
+            ) : (
               <div className="order-1 grid grid-cols-4 gap-2 lg:order-none">
                 <IconButton icon={<Lightbulb size={18} />} label="Hint" shortcut="H" onClick={hint} disabled={!canHint} />
                 <IconButton icon={<BookOpen size={18} />} label="Uitleg" shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} />
                 <IconButton icon={<Undo2 size={18} />} label="Terug" shortcut="Z" onClick={previousMove} disabled={ply <= startPly} />
-                <IconButton icon={<Ellipsis size={18} />} label="Meer" onClick={() => setMenuOpen(true)} expanded={menuOpen} />
+                {moreButton}
               </div>
-            )}
+            ))}
             {mode === 'mastery' && userTurn && (plyState[ply]?.mistakes ?? 0) > 0 && (
               <button className="btn btn-quiet order-1 lg:order-none" onClick={showMove}>Ik weet het niet: toon de zet</button>
             )}
@@ -591,20 +622,33 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
               </div>
             )}
 
-            {/* Groot scherm: uitleg naast het bord. Telefoon: als vel over het bord (ontwerp 12e) */}
-            {showExplain && wide && <div className="order-3 lg:order-none">{explanation}</div>}
-            <p className="order-4 hidden text-xs text-muted lg:block">Sneltoetsen: H hint · U uitleg · Z terug · R opnieuw · T zet typen · ← →</p>
+            {/* Groot scherm: wat er gespeeld wordt staat altijd naast het bord (ontwerp 15b); Uitleg voegt het idee toe.
+                Telefoon: alles als vel over het bord (ontwerp 12e) */}
+            {wide && explain('stats')}
+            {wide && showExplain && explain('rest')}
+            {wide && (
+              <div className="mt-auto pt-1.5">
+                <div className="flex items-stretch gap-2">
+                  {modes && (
+                    <div className="min-w-0 flex-1">
+                      <Tabs<TrainMode> stretch label="Soort training" value={modes.value} onChange={modes.onChange} options={MODE_CHOICES.map(c => ({ value: c.value, label: c.label }))} />
+                    </div>
+                  )}
+                  {moreButton}
+                </div>
+              </div>
+            )}
           </>
         )}
       </aside>
 
       <TrainingSheet open={showExplain && !wide && !result} onClose={() => setShowExplain(false)} title="Uitleg" cards>
-        {explanation}
+        {explain()}
       </TrainingSheet>
 
-      {/* Meer (ontwerp 12f): de trainingssoort en de overige acties in één vel */}
-      <TrainingSheet open={menuOpen && !result} onClose={closeMenu} title={modes ? 'Hoe wil je trainen?' : 'Meer'} cards>
-        {modes && (
+      {/* Meer (ontwerp 12f): de trainingssoort en de overige acties in één vel. Op desktop staat de soort al onderaan het paneel. */}
+      <TrainingSheet open={menuOpen && !result} onClose={closeMenu} title={modes && !wide ? 'Hoe wil je trainen?' : 'Meer'} cards>
+        {modes && !wide && (
           <ul className="flex flex-col gap-2.5" aria-label="Trainingssoort">
             {MODE_CHOICES.map(c => {
               const on = c.value === modes.value
@@ -632,7 +676,46 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         </div>
       </TrainingSheet>
     </div>
+
+    {/* Desktop over het hele scherm (ontwerp 15c): na een goede zet een groene balk onderin over de volle breedte */}
+    {fullScreen && (
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 max-lg:hidden" role="status" aria-live="polite" aria-atomic="true">
+        {full && good && !result && !showFull && (
+          <div className="pointer-events-auto border-t-2 border-brand/30 bg-brand-soft px-8 py-3.5 animate-fade-up">
+            <div className="mx-auto flex w-full max-w-[992px] items-center gap-4">
+              <span aria-hidden className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-brand text-on-brand shadow-[0_4px_0_var(--brand-shadow)]"><Check size={30} strokeWidth={3} /></span>
+              <div className="min-w-0 flex-1 text-brand-strong">
+                <div className="text-[22px] font-extrabold leading-tight tracking-[-0.01em]">{good.title}</div>
+                <div className="text-[15px]">{good.text}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
     </div>
+  )
+}
+
+/** Desktop (ontwerp 15b): de laatste zetten als blokjes onder de titel, de laatste groen; "3.?" als jij aan zet bent */
+function MoveChips({ sans, upto, next }: { sans: string[]; upto: number; next?: number }) {
+  // De laatste twee zetten (vier halve zetten), zodat het op één regel past; de hele lijn staat onder Meer
+  const MAX = 4
+  const from = Math.max(0, upto - MAX)
+  const plies = Array.from({ length: upto - from }, (_, i) => from + i)
+  if (!plies.length && next === undefined) return null
+  const chip = 'rounded-lg border px-2.5 py-[5px] text-[15px] font-bold tabular-nums'
+  const off = 'border-line bg-surface-2 text-ink'
+  const on = 'border-brand bg-brand-soft text-brand-strong'
+  return (
+    <ol className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Zetten tot nu toe">
+      {from > 0 && <li className="self-center px-0.5 text-[15px] font-bold text-muted" aria-label={plural(from, 'eerdere halve zet', 'eerdere halve zetten')}>…</li>}
+      {plies.map(p => {
+        const latest = next === undefined && p === upto - 1
+        return <li key={p} className={`${chip} ${latest ? on : off}`} aria-current={latest ? 'step' : undefined}>{p % 2 === 0 || p === from ? moveNumberLabel(p) : ''}{sans[p]}</li>
+      })}
+      {next !== undefined && <li className={`${chip} ${on}`} aria-current="step"><span aria-hidden>{moveNumberLabel(next)}?</span><span className="sr-only">jij bent aan zet</span></li>}
+    </ol>
   )
 }
 
@@ -663,23 +746,35 @@ function MoveSquares({ plies, ply, state }: { plies: number[]; ply: number; stat
 }
 
 /** Knop onder het bord (ontwerp 10f): aantikbare kaart met icoon en naam */
-function IconButton({ icon, label, onClick, disabled, shortcut, pressed, expanded }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean; shortcut?: string; pressed?: boolean; expanded?: boolean }) {
+function IconButton({ icon, label, onClick, disabled, shortcut, pressed, expanded, row, square, hint }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean; shortcut?: string; pressed?: boolean; expanded?: boolean; /** Tooltip in plaats van de standaard */ hint?: string; /** Desktop (ontwerp 15b): icoon, naam en sneltoets naast elkaar */ row?: boolean; /** Alleen het icoon, vierkant */ square?: boolean }) {
+  const layout = row
+    ? 'min-h-[50px] gap-2.5 px-3.5 text-[15px]'
+    : square
+      ? 'w-12! shrink-0 px-0'
+      : 'min-h-[54px] flex-col justify-center gap-[3px] px-1 py-1.5 text-[13px]'
   return (
     <button
       type="button"
-      className={`tap flex min-h-[54px] w-full flex-col items-center justify-center gap-[3px] rounded-[14px]! px-1 py-1.5 text-[13px] font-semibold disabled:pointer-events-none disabled:opacity-45 ${pressed || expanded ? 'tap-on' : ''}`}
+      className={`tap flex w-full items-center rounded-[14px]! font-semibold disabled:pointer-events-none disabled:opacity-45 ${square ? 'justify-center' : ''} ${layout} ${pressed || expanded ? 'tap-on' : ''}`}
+      aria-label={square ? label : undefined}
       onClick={onClick}
       disabled={disabled}
       aria-pressed={pressed}
       aria-expanded={expanded}
       aria-haspopup={expanded !== undefined ? 'dialog' : undefined}
       aria-keyshortcuts={shortcut}
-      title={shortcut ? `${label} (${shortcut})` : label}
+      title={hint ?? (shortcut ? `${label} (${shortcut})` : label)}
     >
       <span aria-hidden className={pressed || expanded ? 'text-brand-strong' : 'text-muted'}>{icon}</span>
-      {label}
+      {row ? <span className="flex-1 text-left">{label}</span> : !square && label}
+      {row && shortcut && <Kbd>{shortcut}</Kbd>}
     </button>
   )
+}
+
+/** Toets als klein blokje met onderrand (ontwerp 15b) */
+function Kbd({ children }: { children: ReactNode }) {
+  return <kbd aria-hidden className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-md border-2 border-line bg-surface px-[5px] font-sans text-xs font-bold text-ink shadow-[0_2px_0_var(--line)]">{children}</kbd>
 }
 
 function lastNamed(names: Record<string, [string, string, string]> | null, fens: string[], ply: number) {
@@ -702,7 +797,7 @@ const FEEDBACK_STYLE: Record<FeedbackKind | 'status', { box: string; tile: strin
   status: { box: 'bg-surface border-line', tile: 'bg-surface-2 text-muted', title: 'text-ink', icon: <Hourglass size={20} />, label: 'Status' },
 }
 
-function FeedbackBox({ feedback, opponentLine, userTurn, done, showFull }: { feedback: Feedback; opponentLine: string | null; userTurn: boolean; done: boolean; showFull: boolean }) {
+function FeedbackBox({ feedback, opponentLine, userTurn, done, showFull, chips }: { feedback: Feedback; opponentLine: string | null; userTurn: boolean; done: boolean; showFull: boolean; /** De zetten staan al als blokjes in beeld (desktop): de zet van de tegenstander bij "Speel …" alleen voorlezen */ chips?: boolean }) {
   const fb = showFull ? null : feedback
   const style = FEEDBACK_STYLE[fb?.kind ?? 'status']
   const status = showFull ? 'Bekijkmodus.' : done ? 'Lijn afgerond.' : userTurn ? 'Jij bent aan zet.' : 'De tegenstander is aan zet…'
@@ -716,7 +811,7 @@ function FeedbackBox({ feedback, opponentLine, userTurn, done, showFull }: { fee
         {title && <div className={`text-base font-extrabold leading-snug ${style.title}`}>{title}</div>}
         <div className={`mt-0.5 text-sm leading-snug ${fb?.kind === 'learn' || !fb ? 'text-muted' : 'text-ink'}`}>
           {fb?.text}
-          {opponentLine && !showFull && <span className={fb?.text ? 'block' : ''}>{opponentLine}</span>}
+          {opponentLine && !showFull && <span className={chips && fb?.kind === 'learn' ? 'sr-only' : fb?.text ? 'block' : ''}>{opponentLine}</span>}
           {showStatus && <span className="block font-semibold">{status}</span>}
           {showFull && 'Je bekijkt de hele variant; dit telt niet mee.'}
         </div>
@@ -808,9 +903,11 @@ export function ResultNumbers({ result }: { result: LineResult }) {
   )
 }
 
-function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, family, hideAnswer, onReveal }: {
+function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, family, hideAnswer, onReveal, part }: {
   fen: string; name?: string; info?: (typeof OPENING_INFO)[string]; stats: StatsFile | null; side: 'white' | 'black'; elo: number
   lastSan?: string; famIndex?: Map<string, PositionRef[]>; family?: FamilyFile; hideAnswer: boolean; onReveal: () => void
+  /** Alleen wat er gespeeld wordt, of alleen de rest (het idee en de namen); zonder: alles */
+  part?: 'stats' | 'rest'
 }) {
   const epd = epdOf(fen)
   const pos = stats?.positions[epd]
@@ -821,14 +918,14 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
   // Ontwerp 12e: aandeel op jouw niveau als balk, daarnaast de score voor jouw kleur
   const bandTotal = pos ? pos.m.reduce((a, x) => a + bandCount(x, band), 0) : 0
   const useBand = bandTotal >= 20
-  const rows = pos ? pos.m.slice(0, 5).map(m => {
+  const rows = pos ? pos.m.slice(0, part === 'stats' ? 4 : 5).map(m => {
     const mine = moveScore(m, side, band)
     const all = moveScore(m, side)
     return { san: m[1], share: useBand ? mine.n / bandTotal : (m[2] as number) / pos.n, score: (useBand && mine.n >= 10 ? mine : all).score }
   }) : []
   return (
     <div className="space-y-3.5 animate-fade-up">
-      {info && (
+      {info && part !== 'stats' && (
         <section className="card flex flex-col gap-2.5 p-3.5">
           <h3 className="text-xs font-bold uppercase tracking-[0.04em] text-muted">Het idee</h3>
           <p className="text-base font-medium leading-[1.45]">{info.idea}</p>
@@ -837,7 +934,7 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
           </ol>
         </section>
       )}
-      <section className="card px-3.5 py-3">
+      {part !== 'rest' && <section className="card px-3.5 py-3 lg:px-4 lg:py-3.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
           <h3 className="text-[15px] font-bold">Wat wordt hier gespeeld?</h3>
           <span className="text-xs text-muted">{useBand ? 'jouw niveau' : 'alle niveaus'} · score {side === 'white' ? 'wit' : 'zwart'}</span>
@@ -853,7 +950,7 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
             <thead className="sr-only"><tr><th>Zet</th><th>Hoe vaak gespeeld</th><th>Aandeel</th><th>Score {side === 'white' ? 'wit' : 'zwart'}</th></tr></thead>
             <tbody className="divide-y-2 divide-surface-2">
               {rows.map(r => (
-                <tr key={r.san} className="h-[38px]">
+                <tr key={r.san} className={part === 'stats' ? 'h-[34px]' : 'h-[38px]'}>
                   <td className="w-11 text-[15px] font-extrabold">{r.san}</td>
                   <td className="px-2.5" aria-hidden><div className="h-2 rounded-full bg-surface-2"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(2, Math.round(r.share * 100))}%` }} /></div></td>
                   <td className="w-11 text-right text-[13px] font-bold tabular-nums">{pct(r.share)}</td>
@@ -865,8 +962,8 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
         ) : (
           <p className="mt-1.5 text-sm text-muted">Geen statistiek voor deze stelling.</p>
         )}
-      </section>
-      {(name || lastSan || lineNames.length > 0) && (
+      </section>}
+      {part !== 'stats' && (name || lastSan || lineNames.length > 0) && (
         <section className="card space-y-0.5 px-3.5 py-3 text-sm text-muted">
           {name && <div>Lichess-naam: <span className="text-ink">{name}</span></div>}
           {lastSan && <div>Laatste zet: {lastSan}, {describeSan(lastSan)}</div>}

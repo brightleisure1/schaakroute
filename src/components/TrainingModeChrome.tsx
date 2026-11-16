@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { SlidersHorizontal, X } from 'lucide-react'
+import { Flame, SlidersHorizontal, X } from 'lucide-react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { streak } from '../lib/progress'
 
 /**
  * Bouwstenen voor de trainingsmodus van ontwerpronde 10 (Afstraffen, Op jouw niveau):
@@ -19,10 +21,10 @@ export function useCloseTraining() {
 }
 
 /** Dikke voortgangsbalk (14px) met een lichte glans, zoals in het ontwerp */
-export function ThickProgress({ value, label }: { value: number; label: string }) {
+export function ThickProgress({ value, label, big }: { value: number; label: string; /** 16px op desktop (ontwerp 15b) */ big?: boolean }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
   return (
-    <div className="h-3.5 w-full overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+    <div className={`h-3.5 w-full ${big ? 'lg:h-4' : ''} overflow-hidden rounded-full bg-surface-2`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
       <div className="relative h-full min-w-3.5 rounded-full bg-brand transition-[width] duration-500" style={{ width: `${pct}%`, opacity: pct ? 1 : 0 }}>
         <span className="absolute inset-x-1.5 top-0.5 h-[3px] rounded-full bg-white/30" aria-hidden />
       </div>
@@ -30,16 +32,36 @@ export function ThickProgress({ value, label }: { value: number; label: string }
   )
 }
 
-/** Bovenbalk in de trainingsmodus: sluiten, voortgang, teller. Blijft op de telefoon bovenin staan. */
-export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel = 'Sluiten' }: { value?: number; count?: string; countLabel?: string; onClose: () => void; closeLabel?: string }) {
+/**
+ * Bovenbalk in de trainingsmodus: sluiten, voortgang, teller. Blijft op de telefoon bovenin staan.
+ * `full` (desktop, ontwerp 15b): een witte balk over de volle breedte, de voortgang in het midden en rechts je reeks.
+ */
+export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel = 'Sluiten', full }: { value?: number; count?: string; countLabel?: string; onClose: () => void; closeLabel?: string; full?: boolean }) {
+  const wrap = full
+    ? 'lg:sticky lg:top-0 lg:mx-0 lg:gap-4 lg:border-b-2 lg:border-line lg:bg-surface lg:px-8 lg:py-[18px] lg:backdrop-blur-none'
+    : 'lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none'
   return (
-    <div className="sticky top-0 z-20 -mx-4 flex items-center gap-3 bg-bg/95 px-4 py-1.5 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
-      <button type="button" className="-ml-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-surface-2 hover:text-ink" onClick={onClose} aria-label={closeLabel} title={closeLabel}>
-        <X size={22} aria-hidden />
+    <div className={`sticky top-0 z-20 -mx-4 flex items-center gap-3 bg-bg/95 px-4 py-1.5 backdrop-blur sm:-mx-6 sm:px-6 ${wrap}`}>
+      <button type="button" className={`-ml-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-surface-2 hover:text-ink ${full ? 'lg:ml-0' : ''}`} onClick={onClose} aria-label={closeLabel} title={closeLabel}>
+        <X size={22} aria-hidden className={full ? 'lg:size-6' : ''} />
       </button>
-      <div className="min-w-0 flex-1">{value !== undefined && <ThickProgress value={value} label={countLabel ?? 'Voortgang'} />}</div>
-      {count && <span className="shrink-0 text-sm font-bold tabular-nums text-muted" aria-label={countLabel}>{count}</span>}
+      <div className={`flex min-w-0 flex-1 items-center gap-3 max-lg:contents ${full ? 'lg:mx-auto lg:max-w-[760px] lg:gap-3.5' : ''}`}>
+        <div className="min-w-0 flex-1">{value !== undefined && <ThickProgress value={value} label={countLabel ?? 'Voortgang'} big={full} />}</div>
+        {count && <span className={`shrink-0 text-sm font-bold tabular-nums text-muted ${full ? 'lg:text-[15px]' : ''}`} aria-label={countLabel}>{count}</span>}
+      </div>
+      {full && <StreakCount className="hidden lg:inline-flex" />}
     </div>
+  )
+}
+
+/** Je reeks als gouden pil (ontwerp 15a/15b): hoeveel dagen op rij je traint. Niets als er (nog) geen reeks is. */
+export function StreakCount({ className = '' }: { className?: string }) {
+  const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
+  if (!st.current) return null
+  return (
+    <span className={`min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-sm font-bold text-accent-ink ${className}`} aria-label={`${st.current} ${st.current === 1 ? 'dag' : 'dagen'} op rij getraind`}>
+      <Flame size={16} aria-hidden className="text-accent" />{st.current} {st.current === 1 ? 'dag' : 'dagen'}
+    </span>
   )
 }
 

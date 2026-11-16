@@ -9,7 +9,7 @@ import { db, saveSettings } from '../lib/db'
 import { addLine } from '../lib/repertoire'
 import { startSession, endSession } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
-import { Confetti, ErrorBox, Spinner, Tabs } from '../components/ui'
+import { Confetti, ErrorBox, Spinner, useWide } from '../components/ui'
 import { useCloseTraining } from '../components/TrainingModeChrome'
 import type { FamilyFile, TrainMode, Variation } from '../lib/types'
 
@@ -26,6 +26,7 @@ export function TrainPage() {
   const [pendingMode, setPendingMode] = useState<TrainMode | null>(null)
   const variation = file?.variations.find(v => v.id === variationId)
   const close = useCloseTraining()
+  const wide = useWide()
   const line = useMemo(() => (file && variation ? variationLine(file, variation) : null), [file, variation])
 
   useEffect(() => {
@@ -54,26 +55,21 @@ export function TrainPage() {
     setSearch({ mode: m })
   }
 
+  const pending = pendingMode && (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-info-soft px-4 py-3 text-sm text-info-ink lg:mb-0" role="alertdialog" aria-live="assertive">
+      <span>Je bent halverwege deze variant. Naar <b>{MODE_NAME[pendingMode]}</b> gaan begint de lijn opnieuw.</span>
+      <span className="flex gap-2">
+        <button className="btn btn-primary min-h-11" onClick={() => { const m = pendingMode; setPendingMode(null); setSearch({ mode: m }) }} autoFocus>Toch overschakelen</button>
+        <button className="btn btn-ghost min-h-11" onClick={() => setPendingMode(null)}>Blijven</button>
+      </span>
+    </div>
+  )
+
   return (
     <div>
-      {/* Telefoon: trainingsmodus met alleen sluiten en voortgang; de soort training zit achter Meer (ontwerp 12f) */}
-      <div className="mb-4 hidden flex-wrap items-center justify-between gap-3 lg:flex">
-        <Link to={`/opening/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← {file.family.name}</Link>
-        <Tabs<TrainMode>
-          value={mode}
-          onChange={switchMode}
-          options={[{ value: 'learn', label: 'Leren' }, { value: 'practice', label: 'Oefenen' }, { value: 'mastery', label: 'Uit het hoofd' }]}
-        />
-      </div>
-      {pendingMode && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-info-soft px-4 py-3 text-sm text-info-ink" role="alertdialog" aria-live="assertive">
-          <span>Je bent halverwege deze variant. Naar <b>{MODE_NAME[pendingMode]}</b> gaan begint de lijn opnieuw.</span>
-          <span className="flex gap-2">
-            <button className="btn btn-primary min-h-11" onClick={() => { const m = pendingMode; setPendingMode(null); setSearch({ mode: m }) }} autoFocus>Toch overschakelen</button>
-            <button className="btn btn-ghost min-h-11" onClick={() => setPendingMode(null)}>Blijven</button>
-          </span>
-        </div>
-      )}
+      {/* Telefoon: de soort training zit achter Meer (ontwerp 12f). Desktop: onderaan het paneel naast het bord (ontwerp 15b),
+          en de vraag of je echt wilt wisselen staat dan bovenin dat paneel. */}
+      {!wide && pending}
       <Confetti fire={fire} />
       <Trainer
         key={line.key + mode}
@@ -85,6 +81,8 @@ export function TrainPage() {
         onClose={close}
         closeLabel={`Stoppen, terug naar ${file.family.name}`}
         modes={{ value: mode, onChange: switchMode }}
+        fullScreen
+        notice={wide ? pending : undefined}
         onComplete={r => { if (r.stars === 3 || r.badges.length) setFire(f => f + 1) }}
         renderEnd={(r, restart) => <EndActions file={file} variation={variation} result={r} mode={mode} restart={restart} />}
         renderEndExtra={() => <EndExtras file={file} variation={variation} mode={mode} />}
