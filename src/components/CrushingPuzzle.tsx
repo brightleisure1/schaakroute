@@ -12,6 +12,7 @@ import { parseUci, uciOf, START_FEN, epdOf } from '../lib/chess'
 import { recordPuzzle, checkBadges } from '../lib/progress'
 import { explainThemes } from '../content/themes'
 import type { Puzzle, Side } from '../lib/types'
+import { InlineWait } from './PieceMotion'
 
 type Tone = 'wait' | 'chance' | 'good' | 'bad' | 'hint' | 'reveal'
 interface Msg { tone: Tone; title: string; body?: string; glyph?: string }
@@ -248,7 +249,7 @@ export function CrushingPuzzle({ puzzle, familyId, heading, onDone, onNext, next
                 <div className="font-semibold">Hoe ontstond deze stelling?</div>
                 {!history ? (
                   <button type="button" className="btn btn-quiet mt-1 min-h-11 px-0" onClick={loadHistory}>Haal de partij op bij Lichess (online)</button>
-                ) : history.loading ? <div className="mt-1 text-muted">Laden…</div> : history.error ? <div className="mt-1 text-muted">{history.error}</div> : <div className="mt-1"><MoveList sans={history.san} current={history.san.length} /></div>}
+                ) : history.loading ? <InlineWait className="mt-1" /> : history.error ? <div className="mt-1 text-muted">{history.error}</div> : <div className="mt-1"><MoveList sans={history.san} current={history.san.length} /></div>}
                 <a className="inline-flex min-h-11 items-center gap-1 text-xs text-muted underline" href={puzzle.gameUrl} target="_blank" rel="noreferrer">
                   Bekijk de partij op lichess.org<ExternalLink size={12} aria-hidden />
                 </a>

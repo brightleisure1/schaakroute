@@ -11,6 +11,7 @@ import { recordPuzzle, checkBadges } from '../lib/progress'
 import { explainThemes } from '../content/themes'
 import type { Puzzle, Side } from '../lib/types'
 import type { BadgeDef } from '../lib/gamification'
+import { InlineWait } from './PieceMotion'
 
 export interface PuzzleResult {
   solved: boolean
@@ -197,7 +198,7 @@ export function PuzzleTrainer({ puzzle, familyId, onDone, nextLabel = 'Volgende'
           <div className="font-medium">Hoe ontstond deze stelling?</div>
           {!history ? (
             <button className="btn btn-quiet mt-1 px-0" onClick={loadHistory}>Haal de partij op bij Lichess (online)</button>
-          ) : history.loading ? <div className="text-muted">Laden…</div> : history.error ? <div className="text-muted">{history.error}</div> : <MoveList sans={history.san} current={history.san.length} />}
+          ) : history.loading ? <InlineWait /> : history.error ? <div className="text-muted">{history.error}</div> : <MoveList sans={history.san} current={history.san.length} />}
           <a className="mt-1 inline-flex min-h-11 items-center text-xs text-muted underline" href={puzzle.gameUrl} target="_blank" rel="noreferrer">Bekijk de partij op lichess.org</a>
         </div>
       </aside>

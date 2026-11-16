@@ -9,7 +9,8 @@ import { db, saveSettings } from '../lib/db'
 import { addLine } from '../lib/repertoire'
 import { startSession, endSession } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
-import { Confetti, ErrorBox, Spinner, useWide } from '../components/ui'
+import { Confetti, ErrorBox, useWide } from '../components/ui'
+import { BoardLoading } from '../components/PieceMotion'
 import { useCloseTraining } from '../components/TrainingModeChrome'
 import type { FamilyFile, TrainMode, Variation } from '../lib/types'
 
@@ -44,7 +45,7 @@ export function TrainPage() {
   }, [variation, file])
 
   if (error) return <ErrorBox error={error} />
-  if (!file || !line) return <Spinner />
+  if (!file || !line) return <BoardLoading />
   if (!variation) return <ErrorBox error="Variant niet gevonden" />
 
   function switchMode(m: TrainMode) {

@@ -8,6 +8,7 @@ import { endSession, startSession } from '../lib/progress'
 import { CrushingPuzzle } from '../components/CrushingPuzzle'
 import { FilterKey, PillChoice, TrainingHeading, TrainingSheet, TrainingTopBar, useCloseTraining } from '../components/TrainingModeChrome'
 import { Confetti, Empty, ErrorBox, Spinner, nf, useSettings } from '../components/ui'
+import { BoardLoading } from '../components/PieceMotion'
 import { FamilyPicker } from './Variations'
 
 const DEFAULT_RANGE = 300
@@ -79,7 +80,7 @@ export function Crushing() {
         closeLabel="Stoppen met afstraffen"
       />
       <Confetti fire={fire} />
-      {puzzles.loading ? <><div>{heading}</div><Spinner /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
+      {puzzles.loading ? <><div>{heading}</div><BoardLoading label="Puzzels laden…" /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
         <>
           <div>{heading}</div>
           <Empty title="Geen puzzels in dit bereik" action={<button type="button" className="btn btn-primary" onClick={() => setSheet(true)}>Filters aanpassen</button>}>

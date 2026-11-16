@@ -4,7 +4,8 @@ import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
 import { streak } from './lib/progress'
-import { FocusContext, Spinner, useSettings } from './components/ui'
+import { FocusContext, useSettings } from './components/ui'
+import { AppLoading, EmptyKnight } from './components/PieceMotion'
 import { Dashboard } from './pages/Dashboard'
 import { Onboarding } from './pages/Onboarding'
 import { Openings } from './pages/Openings'
@@ -131,8 +132,8 @@ class ErrorBoundary extends Component<{ children: ReactNode; resetKey: string },
     if (!this.state.error) return this.props.children
     return (
       <div className="card mx-auto max-w-lg p-6 text-center">
-        <ChessKnight size={32} strokeWidth={1.5} aria-hidden className="mx-auto text-muted" />
-        <h2 className="mt-2 font-bold">Er ging iets mis op deze pagina</h2>
+        <EmptyKnight className="mx-auto bg-brand-soft" />
+        <h2 className="mt-3 font-bold">Er ging iets mis op deze pagina</h2>
         <p className="mt-1 text-sm text-muted">{this.state.error.message}</p>
         <p className="mt-1 text-xs text-muted">Je voortgang is veilig opgeslagen.</p>
         <button className="btn btn-primary mt-4" onClick={() => this.setState({ error: null })}>Opnieuw proberen</button>
@@ -193,7 +194,7 @@ function Shell() {
   const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
   const loc = useLocation()
   const [sessionFocus, setSessionFocus] = useState(false)
-  if (!settings) return <Spinner />
+  if (!settings) return <AppLoading fullscreen />
   // Welkom is een eigen modus (ontwerp 10a/12a): geen kop en geen menu, ook als je je keuzes later aanpast
   const onboarding = loc.pathname === '/welkom'
   // Een gedeelde partij is ook zonder account te bekijken
@@ -246,7 +247,7 @@ function Shell() {
         </header>
         <main id="main" className={`mx-auto w-full px-4 sm:px-6 ${fullTraining ? 'lg:max-w-none lg:p-0' : 'max-w-6xl lg:pb-10 lg:pt-8'} ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
-          <Suspense fallback={<Spinner />}>
+          <Suspense fallback={<AppLoading />}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/welkom" element={<Onboarding />} />

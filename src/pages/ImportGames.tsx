@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChessKnight, Download, FileUp, User } from 'lucide-react'
+import { Download, FileUp, User } from 'lucide-react'
 import { db, saveSettings, type ImportedGame } from '../lib/db'
 import { analyseGames, exitsToCards, fetchChesscomGames, fetchLichessGames, gamesFromPgnFile, saveGames } from '../lib/games'
 import { loadAllFamilies, loadNames } from '../lib/data'
@@ -9,6 +9,7 @@ import { useAsync } from '../lib/hooks'
 import { formatMoves } from '../lib/chess'
 import { ChoiceCards, FileField, IconField } from '../components/Choice'
 import { ErrorBox, PageHeader, Spinner, pct, sideLabel, useSettings } from '../components/ui'
+import { BusyKnight, EmptyKnight } from '../components/PieceMotion'
 
 type Source = 'lichess' | 'chesscom' | 'pgn'
 const SOURCES: { value: Source; label: string; hint: string }[] = [
@@ -87,7 +88,7 @@ export function ImportGames() {
             </>
           )}
           <div>
-            <button className="btn btn-primary w-full" disabled={!!busy || !ready} aria-describedby={!ready ? 'import-reason' : undefined}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+            <button className={`btn btn-primary w-full ${busy ? 'btn-busy' : ''}`} disabled={!!busy || !ready} aria-busy={!!busy} aria-describedby={!ready ? 'import-reason' : undefined}>{busy ? <BusyKnight /> : <Download size={20} strokeWidth={2.25} aria-hidden />}{busy ? 'Partijen ophalen…' : 'Partijen ophalen'}</button>
             {!ready && <p id="import-reason" className="btn-reason">{chosen === 'pgn' ? 'Kies eerst een PGN-bestand.' : 'Vul eerst je gebruikersnaam in.'}</p>}
           </div>
         </div>
@@ -97,7 +98,7 @@ export function ImportGames() {
       {msg && <div className="card bg-brand-soft p-3 text-sm text-brand-strong" role="status">{msg}</div>}
       {games.length === 0 ? (
         <div className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-surface p-4 lg:max-w-3xl">
-          <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-surface-2 text-muted"><ChessKnight size={24} strokeWidth={1.75} /></span>
+          <EmptyKnight size={44} className="bg-surface-2" />
           <p className="text-sm leading-snug text-muted">Nog geen partijen opgehaald. Daarna zie je hier je werkpunten per opening.</p>
         </div>
       ) : <AnalysisView games={games} />}

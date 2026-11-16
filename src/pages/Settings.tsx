@@ -5,6 +5,7 @@ import { analyse, engineStatus } from '../lib/engine'
 import { exportBackup, importBackup, summarizeBackup } from '../lib/progress'
 import { useManifest } from '../lib/hooks'
 import { PageHeader, Spinner, useSettings } from '../components/ui'
+import { SuccessNote } from '../components/PieceMotion'
 import { ActionRow, ExpandRow, FileRow, LinkRow, SettingsGroup, SwitchRow } from '../components/SettingsList'
 
 // Ontwerp ronde 10: één gegroepeerde lijst. Tik op een rij om die instelling hier open te klappen.
@@ -40,7 +41,9 @@ export function Settings() {
   const [engineMsg, setEngineMsg] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [tokenMsg, setTokenMsg] = useState<string | null>(null)
-  const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [tokenMsgN, setTokenMsgN] = useState(0)
+  const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string; n: number } | null>(null)
+  const [backupBusy, setBackupBusy] = useState<'save' | 'restore' | null>(null)
   if (!s) return <Spinner />
   const set = (p: Partial<UserSettings>) => saveSettings(p)
   const toggle = (p: Panel) => setOpen(o => (o === p ? null : p))
@@ -52,7 +55,9 @@ export function Settings() {
   }
 
   async function saveBackup() {
+    if (backupBusy) return
     setBackupMsg(null)
+    setBackupBusy('save')
     const name = `schaakroute-backup-${new Date().toISOString().slice(0, 10)}.json`
     const file = new File([JSON.stringify(await exportBackup())], name, { type: 'application/json' })
     try {
@@ -68,9 +73,11 @@ export function Settings() {
         setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
       await saveSettings({ lastBackupAt: Date.now() })
-      setBackupMsg({ ok: true, text: 'Back-up bewaard. Op je andere apparaat zet je hem terug via Instellingen.' })
+      setBackupMsg({ ok: true, text: 'Back-up bewaard. Op je andere apparaat zet je hem terug via Instellingen.', n: Date.now() })
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') setBackupMsg({ ok: false, text: 'Bewaren is niet gelukt. Probeer het opnieuw.' })
+      if ((err as Error).name !== 'AbortError') setBackupMsg({ ok: false, text: 'Bewaren is niet gelukt. Probeer het opnieuw.', n: Date.now() })
+    } finally {
+      setBackupBusy(null)
     }
   }
 
@@ -82,10 +89,13 @@ export function Settings() {
       const current = await db.cards.filter(c => c.correct > 0).count()
       const from = sum.exportedAt ? `van ${dateNl(sum.exportedAt)}` : 'zonder datum'
       if (!confirm(`Deze back-up is ${from} en bevat ${sum.positions} geleerde posities en ${sum.variations} afgeronde varianten.\n\nHij vervangt je huidige voortgang op dit apparaat (${current} geleerde posities). Doorgaan?`)) return
+      setBackupBusy('restore')
       await importBackup(backup)
-      setBackupMsg({ ok: true, text: `Back-up ${from} teruggezet: ${sum.positions} geleerde posities.` })
+      setBackupMsg({ ok: true, text: `Back-up ${from} teruggezet: ${sum.positions} geleerde posities.`, n: Date.now() })
     } catch (err) {
-      setBackupMsg({ ok: false, text: err instanceof SyntaxError ? 'Dit bestand is geen geldige back-up.' : (err as Error).message })
+      setBackupMsg({ ok: false, text: err instanceof SyntaxError ? 'Dit bestand is geen geldige back-up.' : (err as Error).message, n: Date.now() })
+    } finally {
+      setBackupBusy(null)
     }
   }
 
@@ -146,13 +156,13 @@ export function Settings() {
         <ExpandRow id="lichess" open={open === 'lichess'} onToggle={() => toggle('lichess')} icon={KeyRound} label="Lichess-code" value={s.lichessToken ? 'ingesteld' : 'niet ingesteld'}>
           <div className="space-y-3">
             <p className="text-sm text-muted">Voor de nieuwste statistieken van de Lichess Opening Explorer heb je een gratis persoonlijke code (token) nodig. <a className="underline" href="https://lichess.org/account/oauth/token" target="_blank" rel="noreferrer">Maak er een aan op Lichess</a>, zonder extra rechten. De code blijft op dit apparaat. Zonder code gebruikt de app de ingebouwde statistieken.</p>
-            <form className="flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); set({ lichessToken: token?.trim() || undefined }); setToken(null); setTokenMsg('Code opgeslagen.') }}>
+            <form className="flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); set({ lichessToken: token?.trim() || undefined }); setToken(null); setTokenMsg('Code opgeslagen.'); setTokenMsgN(n => n + 1) }}>
               <label className="sr-only" htmlFor="lichess-token">Lichess-code</label>
               <input id="lichess-token" className="input min-h-[3.375rem] min-w-0 flex-1 basis-48" type="password" autoComplete="off" placeholder={s.lichessToken ? 'Code ingesteld (•••)' : 'lip_…'} value={token ?? ''} onChange={e => setToken(e.target.value)} />
               <button type="submit" className="btn btn-primary px-5" disabled={!token?.trim()}>Opslaan</button>
               {s.lichessToken && <button type="button" className="tap min-h-[3.375rem] px-4 text-sm font-bold" onClick={() => { set({ lichessToken: undefined }); setTokenMsg('Code gewist.') }}>Wissen</button>}
             </form>
-            {tokenMsg && <p className="text-sm text-brand-strong" role="status">{tokenMsg}</p>}
+            {tokenMsg && <div className="text-sm text-brand-strong" role="status">{tokenMsg === 'Code opgeslagen.' ? <SuccessNote key={tokenMsgN}>{tokenMsg}</SuccessNote> : tokenMsg}</div>}
           </div>
         </ExpandRow>
       </SettingsGroup>
@@ -161,8 +171,8 @@ export function Settings() {
         title="Voortgang"
         footer={<span title={manifest?.datasetVersion ? `Dataset ${manifest.datasetVersion}` : undefined}>Je voortgang staat alleen op dit apparaat. Wil je verder op een ander apparaat? Bewaar een back-up en zet hem daar terug. Updates van de openingsdata wissen nooit je voortgang.</span>}
       >
-        <ActionRow onClick={saveBackup} icon={HardDriveDownload} tone="brand" label="Back-up bewaren" value={s.lastBackupAt ? dateShort(s.lastBackupAt) : 'nog nooit'} />
-        <FileRow accept="application/json,.json" onFile={f => void restoreBackup(f)} icon={HardDriveUpload} label="Back-up terugzetten" />
+        <ActionRow onClick={saveBackup} icon={HardDriveDownload} tone="brand" label="Back-up bewaren" value={s.lastBackupAt ? dateShort(s.lastBackupAt) : 'nog nooit'} busy={backupBusy === 'save'} />
+        <FileRow accept="application/json,.json" onFile={f => void restoreBackup(f)} icon={HardDriveUpload} label="Back-up terugzetten" busy={backupBusy === 'restore'} />
         <ExpandRow id="wissen" open={open === 'wipe'} onToggle={() => toggle('wipe')} icon={Trash2} tone="danger" label="Alles wissen" danger>
           <div className="rounded-xl bg-danger-soft p-3 text-sm">
             <p>Dit wist al je voortgang op dit apparaat en kan niet ongedaan worden gemaakt. Bewaar eerst een back-up.</p>
@@ -170,7 +180,9 @@ export function Settings() {
           </div>
         </ExpandRow>
       </SettingsGroup>
-      <p className={backupMsg ? `-mt-3 px-1 text-sm ${backupMsg.ok ? 'text-brand-strong' : 'text-danger-ink'}` : 'sr-only'} role="status">{backupMsg?.text}</p>
+      <div className={backupMsg ? `-mt-3 px-1 text-sm ${backupMsg.ok ? 'text-brand-strong' : 'text-danger-ink'}` : 'sr-only'} role="status">
+        {backupMsg?.ok ? <SuccessNote key={backupMsg.n}>{backupMsg.text}</SuccessNote> : backupMsg?.text}
+      </div>
 
       <SettingsGroup title="Over de app">
         <LinkRow to="/bronnen" icon={ScrollText} label="Bronnen, methode en licenties" />

@@ -10,6 +10,7 @@ import { AUTO_NEXT_MS, MAX_REDO, knownUserMoves, moveNo, planVariation, redoStep
 import { Check, Trophy } from 'lucide-react'
 import { Trainer, ResultNumbers, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, PageHeader, ProgressBar, Spinner, Stars } from '../components/ui'
+import { BoardLoading } from '../components/PieceMotion'
 import type { FamilyFile, Lesson, TrainingLine } from '../lib/types'
 import type { VariationProgress } from '../lib/db'
 
@@ -142,7 +143,7 @@ export function LessonRun() {
   if (error) return <ErrorBox error={error} />
   // Een les met alleen korte lijnen bestaat niet meer: terug naar het leerpad
   if (file && !lesson) return <Navigate to={`/cursus/${file.family.id}`} replace />
-  if (!file || !lesson) return <Spinner />
+  if (!file || !lesson) return <BoardLoading />
   const lessons = learnLessons(file)
   const nextLesson = lessons[lessons.findIndex(l => l.id === lesson.id) + 1]
   const finished = planned >= lesson.variationIds.length && index >= steps.length
@@ -167,7 +168,7 @@ export function LessonRun() {
     )
   }
   const step = steps[index]
-  if (!step) return <Spinner />
+  if (!step) return <BoardLoading />
   const v = file.variations.find(x => x.id === step.variationId)!
   const vIndex = lesson.variationIds.indexOf(v.id)
   const side = file.family.side

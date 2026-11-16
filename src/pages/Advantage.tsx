@@ -14,6 +14,7 @@ import { EvalButton } from '../components/EvalButton'
 import { MoveList } from '../components/Trainer'
 import { BottomAction, FilterKey, PillChoice, TrainingHeading, TrainingSheet, TrainingTopBar, useCloseTraining } from '../components/TrainingModeChrome'
 import { Empty, ErrorBox, Spinner, nf, pct, useSettings } from '../components/ui'
+import { BoardLoading, InlineWait } from '../components/PieceMotion'
 import { FamilyPicker } from './Variations'
 import type { Side, StatMove, StatsFile } from '../lib/types'
 
@@ -117,7 +118,7 @@ export function Advantage() {
         <>
           <TrainingTopBar onClose={close} closeLabel="Stoppen met Op jouw niveau" />
           <TrainingHeading tone="info" label={label} title={mode === 'train' ? 'Welke zet scoort het best?' : 'Wat wordt hier gespeeld?'} action={filterKey} />
-          {loading ? <Spinner /> : <ErrorBox error="Geen statistieken beschikbaar" />}
+          {loading ? <BoardLoading label="Stelling laden…" /> : <ErrorBox error="Geen statistieken beschikbaar" />}
         </>
       ) : mode === 'train' ? (
         <AdvantageQuiz
@@ -256,7 +257,7 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
             <p className="mt-1 text-sm text-muted">Voeg een Lichess-token toe in Instellingen voor actuele aantallen.</p>
           ) : !live ? (
             <button className="btn btn-ghost mt-2 w-full" onClick={fetchLive}>Haal live statistieken op (rating {ratingGroupsFor(elo).join(', ')})</button>
-          ) : live.loading ? <div className="text-sm text-muted">Laden…</div> : live.error ? <div className="text-sm text-danger-ink">{live.error}</div> : live.data && (
+          ) : live.loading ? <InlineWait className="text-sm" /> : live.error ? <div className="text-sm text-danger-ink">{live.error}</div> : live.data && (
             <div className="mt-2">
               <table className="w-full text-sm tabular-nums">
                 <tbody>

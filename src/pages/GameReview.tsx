@@ -15,10 +15,11 @@ import { Board, MiniBoard } from '../components/Board'
 import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
 import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
-import { Empty, ErrorBox, FocusBar, PageHeader, ProgressBar, STICKY_ACTIONS, Spinner, Tabs, plural, useSettings } from '../components/ui'
+import { Empty, ErrorBox, FocusBar, PageHeader, STICKY_ACTIONS, Spinner, Tabs, plural, useSettings } from '../components/ui'
 import type { Side } from '../lib/types'
 import { Download, Lock, Search, User } from 'lucide-react'
 import { IconField, Note, Segmented } from '../components/Choice'
+import { AnalysisPawn, BoardLoading, BusyKnight } from '../components/PieceMotion'
 
 /** Rekendiepte van Stockfish per stelling. Snel: een halve minuut per partij; grondig: een paar minuten. */
 const QUICK_DEPTH = 14
@@ -199,7 +200,7 @@ export function GameReviewList() {
                 </div>
               </fieldset>
               <div>
-                <button className="btn btn-primary w-full" disabled={pasteBusy || !paste.trim()} aria-describedby={!paste.trim() ? reasonId : undefined}><Search size={20} strokeWidth={2.25} aria-hidden />{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
+                <button className={`btn btn-primary w-full ${pasteBusy ? 'btn-busy' : ''}`} disabled={pasteBusy || !paste.trim()} aria-busy={pasteBusy} aria-describedby={!paste.trim() ? reasonId : undefined}>{pasteBusy ? <BusyKnight /> : <Search size={20} strokeWidth={2.25} aria-hidden />}{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
                 {!paste.trim() && <p id={reasonId} className="btn-reason">Plak eerst een link of PGN.</p>}
               </div>
               {pasteErr && <ErrorBox error={pasteErr} />}
@@ -235,7 +236,7 @@ export function GameReviewList() {
                 </div>
               </fieldset>
               <div>
-                <button className="btn btn-primary w-full" disabled={busy || !username} aria-describedby={!username ? reasonId : undefined}><Download size={20} strokeWidth={2.25} aria-hidden />Partijen ophalen</button>
+                <button className={`btn btn-primary w-full ${busy ? 'btn-busy' : ''}`} disabled={busy || !username} aria-busy={busy} aria-describedby={!username ? reasonId : undefined}>{busy ? <BusyKnight /> : <Download size={20} strokeWidth={2.25} aria-hidden />}{busy ? 'Partijen ophalen…' : 'Partijen ophalen'}</button>
                 {!username && <p id={reasonId} className="btn-reason">Vul eerst je gebruikersnaam in.</p>}
               </div>
               {known && <p className="text-[13px] leading-snug text-muted">Dezelfde naam geldt voor <Link to="/import" className="underline">Mijn partijen</Link>. Je vult hem één keer in.</p>}
@@ -558,7 +559,7 @@ export function GameReviewView() {
 export function ReviewReplayView() {
   const { id = '' } = useParams()
   const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
-  if (record === null) return <Spinner label="Partij laden…" />
+  if (record === null) return <BoardLoading label="Partij laden…" />
   if (!record) return <Navigate to="/analyse" replace />
   return <ReviewReplay record={record} />
 }
@@ -596,17 +597,31 @@ function useReview(record: GameReviewRecord) {
   return { game, evals, error, progress, fens, book, done, ready, moves }
 }
 
-function AnalysisProgress({ progress, done, total, error }: { progress: EngineProgress | null; done: number; total: number; error: string | null }) {
+/**
+ * Voortgang van Stockfish (ontwerp 13b): een pion loopt mee met de echte voortgang en promoveert op het laatste veld.
+ * Na een analyse die je hier zag lopen blijft het blok nog even staan, zodat de promotie te zien is.
+ */
+function AnalysisProgress({ active, loaded, progress, done, total, error }: { active: boolean; loaded: boolean; progress: EngineProgress | null; done: number; total: number; error: string | null }) {
+  // Afgeleid tijdens het renderen (niet in een effect), zodat het blok bij het einde geen frame verdwijnt
+  const [ran, setRan] = useState(false)
+  const [linger, setLinger] = useState(false)
+  if (active && loaded && !ran) setRan(true)
+  if (!active && ran) { setRan(false); setLinger(true) }
+  useEffect(() => {
+    if (!linger) return
+    const t = setTimeout(() => setLinger(false), 1400)
+    return () => clearTimeout(t)
+  }, [linger])
+  if (!active && !linger) return null
+  const count = active ? progress?.done ?? done : total
+  const deepening = active && progress?.deepening
   return (
-    <div className="rounded-[18px] border-2 border-line bg-surface p-4" aria-live="polite">
-      <div className="flex justify-between text-sm">
-        <span className="font-semibold">{progress?.deepening ? `Grondige analyse (diepte ${progress.depth})…` : 'Stockfish analyseert…'}</span>
-        <span className="tabular-nums text-muted">{progress?.done ?? done}/{total}</span>
-      </div>
-      <ProgressBar className="mt-2" value={(progress?.done ?? done) / total} label="Voortgang van de analyse" />
-      {error ? <div className="mt-2"><ErrorBox error={error} /></div> : <p className="mt-2 text-xs text-muted">{progress?.deepening
+    <div className="flex flex-col items-center gap-3 rounded-[18px] border-2 border-line bg-surface p-4 text-center" aria-live="polite">
+      <div className="text-[15px] font-bold">{deepening ? `Grondige analyse (diepte ${progress?.depth})…` : active ? 'Stockfish analyseert…' : 'Analyse klaar'} <span className="font-medium tabular-nums text-muted">{count}/{total}</span></div>
+      <AnalysisPawn value={total ? count / total : 0} label="Voortgang van de analyse" />
+      {error ? <div className="w-full text-left"><ErrorBox error={error} /></div> : <p className="max-w-[300px] text-[13px] leading-snug text-muted">{deepening
         ? 'De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat.'
-        : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al naspelen.'}</p>}
+        : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.'}</p>}
     </div>
   )
 }
@@ -657,7 +672,7 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
         </p>
       </div>
 
-      {(!ready || progress?.deepening) && <AnalysisProgress progress={progress} done={done} total={fens.length} error={error} />}
+      <AnalysisProgress active={!ready || !!progress?.deepening} loaded={!!evals} progress={progress} done={done} total={fens.length} error={error} />
 
       <section className="rounded-[22px] border-2 border-line bg-surface p-3" aria-label="Nauwkeurigheid en verloop">
         <div className="grid grid-cols-2 gap-2">
@@ -792,7 +807,7 @@ function ReviewReplay({ record }: { record: GameReviewRecord }) {
       </div>
 
       <div className="mx-auto mt-2 w-full max-w-[min(92vw,620px)] space-y-3 lg:mt-12 lg:max-w-none">
-        {(!ready || progress?.deepening) && <AnalysisProgress progress={progress} done={done} total={fens.length} error={error} />}
+        <AnalysisProgress active={!ready || !!progress?.deepening} loaded={!!evals} progress={progress} done={done} total={fens.length} error={error} />
         <ReplayComment move={current} ply={ply} ready={!!evals && done > ply} game={game} replyLine={current ? replyLine(fens[ply], evals?.[ply]) : []} />
         {evals && evals.length > 1 && <EvalGraph evals={evals} total={total} ply={ply} moves={moves} onPick={go} compact />}
         <MoveChips san={game.san} moves={moves} ply={ply} onPick={go} />
@@ -953,7 +968,7 @@ export function MistakeTrainerView() {
   // Eén keer vastleggen: tussentijdse updates van het record (nauwkeurigheid) mogen de trainer niet herstarten
   const [snapshot, setSnapshot] = useState<GameReviewRecord | null>(null)
   useEffect(() => { if (record && !snapshot) setSnapshot(record) }, [record, snapshot])
-  if (record === null || (record && !snapshot)) return <Spinner label="Partij laden…" />
+  if (record === null || (record && !snapshot)) return <BoardLoading label="Partij laden…" />
   if (!record || !snapshot) return <Navigate to="/analyse" replace />
   return <MistakeTrainer record={snapshot} />
 }

@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChessKnight, Star, X } from 'lucide-react'
+import { Star, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type UserSettings } from '../lib/db'
 import type { BadgeDef } from '../lib/gamification'
+import { EmptyKnight, HoppingPawns } from './PieceMotion'
 
 export function useSettings(): UserSettings | undefined {
   return useLiveQuery(async () => (await db.settings.get('me')) ?? { ...DEFAULT_SETTINGS }, [])
@@ -59,18 +60,19 @@ export function StatTile({ label, value, hint, icon }: { label: string; value: R
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="card flex flex-col items-center gap-2 p-8 text-center">
-      <ChessKnight size={32} strokeWidth={1.5} aria-hidden className="text-muted" />
-      <h3 className="font-semibold">{title}</h3>
+      <EmptyKnight />
+      <h3 className="mt-1 font-semibold">{title}</h3>
       {children && <div className="max-w-md text-sm text-muted">{children}</div>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   )
 }
 
+/** Kort wachten midden op een scherm (ontwerp 13c): drie pionnen wippen na elkaar op */
 export function Spinner({ label = 'Laden…' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 p-10 text-muted" role="status">
-      <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-brand" />
+    <div className="flex flex-col items-center justify-center gap-3 p-8 text-sm text-muted" role="status">
+      <HoppingPawns size={40} />
       {label}
     </div>
   )

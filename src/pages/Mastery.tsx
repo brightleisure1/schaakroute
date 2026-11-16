@@ -10,7 +10,8 @@ import { DAY, masteryScore, stageOf } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
 import { Trainer } from '../components/Trainer'
 import { AUTO_NEXT_MS } from '../lib/lessonPlan'
-import { CropBoard, PieceIcon } from '../components/CropBoard'
+import { CropBoard } from '../components/CropBoard'
+import { EmptyKnight } from '../components/PieceMotion'
 import { Empty, FocusBar, ProgressBar, Spinner, Tabs, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
 
@@ -262,7 +263,7 @@ function ReviewEmpty({ filtered }: { filtered?: boolean }) {
   return (
     <div className="space-y-4 lg:max-w-xl">
       <section className="card flex flex-col items-center gap-1.5 px-5 py-7 text-center" aria-labelledby="review-empty-title">
-        <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-[19px] bg-brand-soft"><PieceIcon piece="bN" size={46} /></span>
+        <EmptyKnight size={64} />
         <h2 id="review-empty-title" className="mt-2 text-lg font-extrabold tracking-[-0.01em]">{filtered ? 'Nog niets van deze opening' : 'Nog niets om te herhalen'}</h2>
         <p className="max-w-[280px] text-sm leading-snug text-muted">Zodra je een variant hebt geleerd, komt hij hier vanzelf terug.</p>
         <Link to="/dagelijks" className="btn btn-primary mt-3 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>

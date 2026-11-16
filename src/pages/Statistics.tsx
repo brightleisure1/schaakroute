@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Brain, ChartColumn, ChartNoAxesCombined, Check, ChessKnight, Flame, Lock, Sun, Timer, X, type LucideIcon } from 'lucide-react'
+import { Brain, ChartColumn, ChartNoAxesCombined, Check, Flame, Lock, Sun, Timer, X, type LucideIcon } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, today, type DailyActivity } from '../lib/db'
 import { familyProgress, useCardMap, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
@@ -9,6 +9,7 @@ import { streak, totalXp } from '../lib/progress'
 import { stageOf } from '../lib/srs'
 import { displayName } from '../lib/data'
 import { PageHeader, Spinner, Stars, nf, pct } from '../components/ui'
+import { EmptyKnight } from '../components/PieceMotion'
 import { ThickBar } from '../components/OpeningScreens'
 import { IconTile, type Tone } from '../components/SettingsList'
 
@@ -38,7 +39,7 @@ function FirstTimeStats() {
   return (
     <div className="space-y-5 lg:max-w-xl">
       <section className={`${CARD} flex flex-col items-center gap-2 p-5! text-center`} aria-labelledby="stats-first-title">
-        <span aria-hidden className="mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand-strong"><ChessKnight size={30} strokeWidth={1.75} /></span>
+        <EmptyKnight size={56} className="mb-1 bg-brand-soft" />
         <h2 id="stats-first-title" className="text-lg font-extrabold">Hier komt je voortgang</h2>
         <p className="max-w-sm text-sm leading-snug text-muted">Na je eerste training zie je hier je reeks, je goede zetten en wat je hebt geleerd.</p>
         <Link to="/dagelijks" className="btn btn-primary mt-2 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>
