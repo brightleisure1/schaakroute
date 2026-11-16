@@ -293,7 +293,10 @@ function Shell() {
           <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 items-start border-t-2 border-line bg-surface px-1.5 pt-2.5 lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }} aria-label="Hoofdmenu">
             {NAV.filter(n => n.mobile).map(n => (
               <NavLink key={n.to} to={n.to} end={n.to === '/'} aria-label={n.short ?? n.label} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong">
-                {({ isActive }) => (
+                {({ isActive: exact }) => {
+                  // Een losse opening (/opening/…) hoort bij de tab Openingen
+                  const isActive = exact || (n.to === '/openingen' && loc.pathname.startsWith('/opening/'))
+                  return (
                   <>
                     <TabIcon active={isActive} color={n.color}>
                       <n.icon size={27} strokeWidth={isActive ? 2.25 : 2} aria-hidden />
@@ -301,7 +304,8 @@ function Shell() {
                     </TabIcon>
                     {isActive && <span className="animate-fade-in whitespace-nowrap">{n.short ?? n.label}</span>}
                   </>
-                )}
+                  )
+                }}
               </NavLink>
             ))}
             <MoreTab />
