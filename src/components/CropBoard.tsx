@@ -32,3 +32,12 @@ export function CropBoard({ epd, uci, orientation, inset = 3, coordsFrom }: { ep
     </div>
   )
 }
+
+/** Eén schaakstuk als icoon (dezelfde stukken als op het bord), bijv. 'wP', 'bN'. Decoratief. */
+export function PieceIcon({ piece, size = 28, className = '' }: { piece: string; size?: number; className?: string }) {
+  return (
+    <span aria-hidden className={`block shrink-0 ${className}`} style={{ width: size, height: size }}>
+      {defaultPieces[piece]?.({ svgStyle: { width: '100%', height: '100%', display: 'block' } })}
+    </span>
+  )
+}

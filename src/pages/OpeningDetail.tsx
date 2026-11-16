@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, ArrowRight, ChevronDown, Lightbulb, Play, Route, Swords, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Compass, Lightbulb, Play, Route, Scale, Swords, TrendingUp } from 'lucide-react'
 import { familyProgress, useCardMap, useFamily, useProgressMap } from '../lib/hooks'
 import { moveNumberLabel } from '../lib/chess'
 import { learnLessons, learnThreshold, userMoveCount } from '../lib/course'
@@ -109,30 +109,31 @@ export function OpeningDetail() {
         </div>
       </section>
 
+      {/* Ontwerp 12i: dezelfde kaarten met een icoontegel; plannen genummerd, sterk en zwak altijd zichtbaar,
+          en onderaan nog eens de hoofdknop zodat je na het lezen meteen kunt beginnen */}
       {info && (
-        <section aria-labelledby="weten-title">
-          <h2 id="weten-title" className="mb-2.5 text-lg font-bold tracking-[-0.01em] lg:text-xl">Wat je moet weten</h2>
-          <div className="grid gap-2.5 lg:grid-cols-3 lg:gap-3.5">
-            <div className="rounded-[18px] border-2 border-line bg-surface p-4 lg:p-5">
-              <h3 className="font-bold">Typische plannen</h3>
-              <ul className="mt-2.5 space-y-2.5 text-sm leading-relaxed">
-                {info.plans.map(t => <li key={t} className="flex gap-2.5"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />{t}</li>)}
-              </ul>
+        <section aria-labelledby="weten-title" className="flex flex-col gap-3.5">
+          <h2 id="weten-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">Wat je moet weten</h2>
+          <div className="grid gap-3.5 lg:grid-cols-3">
+            <div className="card flex flex-col gap-2.5 p-4 lg:p-5">
+              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-brand-strong"><Compass size={17} /></span>Typische plannen</h3>
+              <ol className="space-y-2 text-sm leading-snug">
+                {info.plans.map((t, i) => <li key={t} className="flex gap-2.5"><span aria-hidden className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-extrabold text-brand-strong">{i + 1}</span><span className="pt-px">{t}</span></li>)}
+              </ol>
             </div>
-            <div className="hidden rounded-[18px] border-2 border-line bg-surface p-5 lg:block">
-              <h3 className="font-bold">Sterk en zwak</h3>
+            <div className="flex items-start gap-3 rounded-[18px] border-2 border-accent/35 bg-accent-soft p-4 lg:p-5">
+              <span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-surface text-accent-ink"><Lightbulb size={17} /></span>
+              <div className="min-w-0">
+                <h3 className="font-bold text-accent-ink">Tip</h3>
+                <p className="mt-0.5 text-sm leading-[1.45]">{info.tip}</p>
+              </div>
+            </div>
+            <div className="card flex flex-col gap-2.5 p-4 lg:p-5">
+              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-info-soft text-info-ink"><Scale size={17} /></span>Sterk en zwak</h3>
               <ProsCons strengths={info.strengths} weaknesses={info.weaknesses} />
             </div>
-            <div className="rounded-[18px] bg-accent-soft p-4 lg:p-5">
-              <h3 className="flex items-center gap-2 font-bold text-accent-ink"><Lightbulb size={16} aria-hidden />Tip</h3>
-              <p className="mt-2 text-sm leading-relaxed">{info.tip}</p>
-            </div>
-            {/* Telefoon: sterk en zwak ingeklapt */}
-            <details className="group rounded-[18px] border-2 border-line bg-surface px-4 py-1.5 lg:hidden">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-bold">Sterk en zwak<ChevronDown size={18} aria-hidden className="text-muted transition group-open:rotate-180" /></summary>
-              <div className="pb-2.5"><ProsCons strengths={info.strengths} weaknesses={info.weaknesses} /></div>
-            </details>
           </div>
+          <Link to={courseTo} className="btn btn-primary w-full gap-2.5! lg:w-auto lg:self-start lg:px-7!"><Play size={20} aria-hidden />{courseLabel}</Link>
         </section>
       )}
     </div>
@@ -158,9 +159,9 @@ function TrainTile({ to, title, text, tone, icon }: { to: string; title: string;
 
 function ProsCons({ strengths, weaknesses }: { strengths: string[]; weaknesses: string[] }) {
   return (
-    <ul className="mt-2.5 space-y-2.5 text-sm leading-relaxed">
-      {strengths.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-soft font-extrabold text-brand-strong" aria-label="Sterk">+</span>{t}</li>)}
-      {weaknesses.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-danger-soft font-extrabold text-danger-ink" aria-label="Zwak">−</span>{t}</li>)}
+    <ul className="space-y-2 text-sm leading-snug">
+      {strengths.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-brand-soft text-[15px] font-extrabold text-brand-strong" role="img" aria-label="Sterk">+</span><span className="pt-px">{t}</span></li>)}
+      {weaknesses.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-danger-soft text-[15px] font-extrabold text-danger-ink" role="img" aria-label="Zwak">−</span><span className="pt-px">{t}</span></li>)}
     </ul>
   )
 }

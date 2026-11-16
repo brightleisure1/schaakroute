@@ -10,6 +10,7 @@ import { addLine } from '../lib/repertoire'
 import { startSession, endSession } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
 import { Confetti, ErrorBox, Spinner, Tabs } from '../components/ui'
+import { useCloseTraining } from '../components/TrainingModeChrome'
 import type { FamilyFile, TrainMode, Variation } from '../lib/types'
 
 const MODE_NAME: Record<string, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd' }
@@ -24,6 +25,7 @@ export function TrainPage() {
   const inProgress = useRef(false)
   const [pendingMode, setPendingMode] = useState<TrainMode | null>(null)
   const variation = file?.variations.find(v => v.id === variationId)
+  const close = useCloseTraining()
   const line = useMemo(() => (file && variation ? variationLine(file, variation) : null), [file, variation])
 
   useEffect(() => {
@@ -54,7 +56,8 @@ export function TrainPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Telefoon: trainingsmodus met alleen sluiten en voortgang; de soort training zit achter Meer (ontwerp 12f) */}
+      <div className="mb-4 hidden flex-wrap items-center justify-between gap-3 lg:flex">
         <Link to={`/opening/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← {file.family.name}</Link>
         <Tabs<TrainMode>
           value={mode}
@@ -79,6 +82,9 @@ export function TrainPage() {
         family={file}
         sessionId={sessionId}
         onProgressChange={p => { inProgress.current = p }}
+        onClose={close}
+        closeLabel={`Stoppen, terug naar ${file.family.name}`}
+        modes={{ value: mode, onChange: switchMode }}
         onComplete={r => { if (r.stars === 3 || r.badges.length) setFire(f => f + 1) }}
         renderEnd={(r, restart) => <EndActions file={file} variation={variation} result={r} mode={mode} restart={restart} />}
         renderEndExtra={() => <EndExtras file={file} variation={variation} mode={mode} />}

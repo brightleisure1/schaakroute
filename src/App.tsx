@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BookMarked, ChartColumn, ChessKnight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -42,33 +42,48 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/dagelijks', label: 'Dagtraining', short: 'Vandaag', icon: Sun, mobile: true, color: 'var(--accent)' },
       { to: '/mastery', label: 'Herhalen', icon: Repeat, mobile: true, badge: true, color: 'var(--info)' },
       { to: '/openingen', label: 'Openingen', icon: ChessKnight, mobile: true, color: 'var(--brand)' },
-      { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alle varianten van een opening oefenen' },
+      { to: '/variaties', label: 'Varianten', icon: GitBranch, desc: 'Alles van één opening', tone: 'brand' },
     ],
   },
   {
     title: 'Verdiepen',
     items: [
-      { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Openingsfouten van je tegenstander afstraffen' },
-      { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat er gespeeld wordt en wat scoort' },
-      { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen samenstellen' },
+      { to: '/crushing', label: 'Afstraffen', icon: Swords, desc: 'Fouten afstraffen', tone: 'danger' },
+      { to: '/advantage', label: 'Op jouw niveau', icon: TrendingUp, desc: 'Wat scoort het best', tone: 'info' },
+      { to: '/repertoire', label: 'Repertoire', icon: BookMarked, desc: 'Je eigen openingen', tone: 'accent' },
       { to: '/analyse', label: 'Partij-analyse', short: 'Analyse', icon: Microscope, mobile: true, color: 'var(--teal)', desc: 'Je partijen zet voor zet laten beoordelen' },
-      { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Je partijen van Lichess of Chess.com' },
+      { to: '/import', label: 'Mijn partijen', icon: Download, desc: 'Lichess of Chess.com' },
     ],
   },
   {
     title: 'Jij',
     items: [
-      { to: '/statistieken', label: 'Statistieken', icon: ChartColumn, desc: 'Je voortgang in cijfers' },
-      { to: "/instellingen", label: "Instellingen", icon: SettingsIcon, desc: 'Niveau, weergave en back-up' },
+      { to: '/statistieken', label: 'Statistieken', icon: ChartColumn, desc: 'Je voortgang' },
+      { to: '/instellingen', label: 'Instellingen', icon: SettingsIcon, desc: 'Niveau, weergave en back-up', wide: true },
     ],
   },
 ]
-interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string; /** Kleur van het icoon in het bodemmenu (ontwerp 14k) */ color?: string }
+interface NavItem {
+  to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean; badge?: boolean; desc?: string
+  /** Kleur van het icoon in het bodemmenu (ontwerp 14k) */
+  color?: string
+  /** Kleur van de tegel in het Meer-paneel: de kleur van die training (ontwerp 12c) */
+  tone?: keyof typeof TILE_TONE
+  /** In het Meer-paneel als brede regel onderaan in plaats van een tegel */
+  wide?: boolean
+}
+const TILE_TONE = {
+  brand: 'bg-brand-soft text-brand-strong',
+  danger: 'bg-danger-soft text-danger-ink',
+  info: 'bg-info-soft text-info-ink',
+  accent: 'bg-accent-soft text-accent-ink',
+  neutral: 'bg-surface-2 text-ink',
+}
 const NAV = NAV_GROUPS.flatMap(g => g.items)
 // Op deze schermen wordt getraind: geen bodemnavigatie, zodat bord, feedback en knoppen in beeld blijven.
 // Dagtraining en Herhalen staan zelf in het bodemmenu en houden het menu, ook tijdens het trainen.
 /** Trainingsmodus (ontwerp ronde 10): geen kop en geen menu, alleen sluiten, voortgang en het bord */
-const TRAINING_MODE = /^\/((crushing|advantage)\/|analyse\/[^/]+\/(naspelen|fouten))/
+const TRAINING_MODE = /^\/((crushing|advantage)\/|train\/|analyse\/[^/]+\/(naspelen|fouten))/
 const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|analyse\/[^/]+\/(naspelen|fouten))/
 
 /**
@@ -177,7 +192,8 @@ function Shell() {
   const loc = useLocation()
   const [sessionFocus, setSessionFocus] = useState(false)
   if (!settings) return <Spinner />
-  const onboarding = loc.pathname === '/welkom' && !settings.onboarded
+  // Welkom is een eigen modus (ontwerp 10a/12a): geen kop en geen menu, ook als je je keuzes later aanpast
+  const onboarding = loc.pathname === '/welkom'
   // Een gedeelde partij is ook zonder account te bekijken
   const openWithoutOnboarding = /^\/(welkom|bronnen|delen\/|analyse\/)/.test(loc.pathname)
   if (!settings.onboarded && !openWithoutOnboarding) return <Navigate to="/welkom" replace />
@@ -216,7 +232,7 @@ function Shell() {
 
       <div className="min-w-0 flex-1">
         {/* De kopbalk scrolt gewoon mee weg; alleen de menuknop blijft vast rechtsboven staan (geen scroll-JavaScript) */}
-        <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus || TRAINING_MODE.test(loc.pathname) ? 'hidden' : 'flex'}`}>
+        <header className={`relative z-20 items-center justify-between border-b border-line bg-bg px-4 py-2 lg:hidden ${sessionFocus || onboarding || TRAINING_MODE.test(loc.pathname) ? 'hidden' : 'flex'}`}>
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           <StreakPill />
         </header>
@@ -295,13 +311,15 @@ function TabIcon({ active, color, children }: { active: boolean; color?: string;
   )
 }
 
-/** Vijfde tab "Meer": opent van onderen een paneel met de overige onderdelen, elk met een korte uitleg */
+/** Vijfde tab "Meer": opent van onderen een paneel met de overige onderdelen als tegels (ontwerp 12c) */
 function MoreTab() {
   const [open, setOpen] = useState(false)
   const loc = useLocation()
   const btn = useRef<HTMLButtonElement>(null)
   const first = useRef<HTMLAnchorElement>(null)
   const items = NAV.filter(n => !n.mobile)
+  const tiles = items.filter(n => !n.wide)
+  const rows = items.filter(n => n.wide)
   const active = items.some(n => loc.pathname.startsWith(n.to))
   useEffect(() => setOpen(false), [loc.pathname])
   useEffect(() => {
@@ -320,22 +338,29 @@ function MoreTab() {
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="more-title">
           <div className="absolute inset-0 bg-black/40 animate-fade-in" aria-hidden onClick={() => setOpen(false)} />
-          <div className="safe-bottom absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl bg-surface p-4 shadow-2xl animate-fade-up">
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" aria-hidden />
-            <div className="mb-2 flex items-center justify-between px-1">
-              <h2 id="more-title" className="text-lg font-bold">Meer</h2>
-              <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setOpen(false)} aria-label="Sluiten"><X size={22} aria-hidden /></button>
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col gap-3.5 overflow-y-auto rounded-t-[26px] bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2.5 shadow-2xl animate-fade-up">
+            <div className="mx-auto h-[5px] w-11 shrink-0 rounded-full bg-line" aria-hidden />
+            <div className="flex items-center justify-between">
+              <h2 id="more-title" className="text-[22px] font-extrabold tracking-[-0.02em]">Meer</h2>
+              <button className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => setOpen(false)} aria-label="Sluiten"><X size={18} strokeWidth={2.5} aria-hidden /></button>
             </div>
-            <ul className="space-y-1">
-              {items.map((n, i) => (
-                <li key={n.to}>
-                  <NavLink ref={i === 0 ? first : undefined} to={n.to} className={({ isActive }) => `flex min-h-14 items-center gap-3 rounded-2xl px-2 py-2 ${isActive ? 'bg-brand-soft' : 'hover:bg-surface-2'}`}>
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong" aria-hidden><n.icon size={20} /></span>
-                    <span className="min-w-0"><span className="block font-semibold">{n.label}</span>{n.desc && <span className="block text-sm text-muted">{n.desc}</span>}</span>
+            <ul className="grid grid-cols-2 gap-2.5">
+              {tiles.map((n, i) => (
+                <li key={n.to} className="flex">
+                  <NavLink ref={i === 0 ? first : undefined} to={n.to} className={({ isActive }) => `tap flex w-full flex-col gap-2.5 p-3.5 ${isActive ? 'tap-on' : ''}`}>
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] ${TILE_TONE[n.tone ?? 'neutral']}`} aria-hidden><n.icon size={22} strokeWidth={2} /></span>
+                    <span className="min-w-0"><span className="block font-bold leading-tight">{n.label}</span>{n.desc && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{n.desc}</span>}</span>
                   </NavLink>
                 </li>
               ))}
             </ul>
+            {rows.map(n => (
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => `tap flex items-center gap-3 px-3.5 py-3 ${isActive ? 'tap-on' : ''}`}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${TILE_TONE[n.tone ?? 'neutral']}`} aria-hidden><n.icon size={18} strokeWidth={2} /></span>
+                <span className="min-w-0 flex-1 font-bold">{n.label}</span>
+                <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
+              </NavLink>
+            ))}
           </div>
         </div>
       )}

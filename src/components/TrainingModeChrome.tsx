@@ -44,11 +44,13 @@ export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel =
 }
 
 /** Kop van een trainingsscherm: klein label in de kleur van de trainingssoort, titel en eventueel één knop rechts */
-export function TrainingHeading({ label, title, tone, action, sub }: { label: ReactNode; title: ReactNode; tone: 'danger' | 'info'; action?: ReactNode; sub?: ReactNode }) {
+const HEADING_TONE = { danger: 'text-danger-ink', info: 'text-info-ink', accent: 'text-accent-ink', brand: 'text-brand-strong' }
+
+export function TrainingHeading({ label, title, tone, action, sub }: { label: ReactNode; title: ReactNode; tone: keyof typeof HEADING_TONE; action?: ReactNode; sub?: ReactNode }) {
   return (
     <div className="flex items-end justify-between gap-3">
       <div className="min-w-0">
-        <div className={`truncate text-xs font-bold uppercase tracking-[0.04em] ${tone === 'danger' ? 'text-danger-ink' : 'text-info-ink'}`}>{label}</div>
+        <div className={`truncate text-xs font-bold uppercase tracking-[0.04em] ${HEADING_TONE[tone]}`}>{label}</div>
         <h1 className="mt-0.5 text-xl font-extrabold leading-tight tracking-tight lg:text-2xl">{title}</h1>
         {sub && <div className="mt-0.5 truncate text-sm text-muted">{sub}</div>}
       </div>
@@ -73,7 +75,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([ty
  * Paneel als modale dialoog: op de telefoon schuift het van onderen in, op een groot scherm staat het in het midden.
  * Escape en de achtergrond sluiten; de focus blijft in het paneel en gaat daarna terug naar de knop.
  */
-export function TrainingSheet({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+export function TrainingSheet({ open, onClose, title, children, footer, cards }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; /** Witte kaarten op de achtergrondkleur, grote titel (ontwerp 12e/12f) */ cards?: boolean }) {
   const panel = useRef<HTMLDivElement>(null)
   const close = useRef(onClose)
   close.current = onClose
@@ -108,15 +110,21 @@ export function TrainingSheet({ open, onClose, title, children, footer }: { open
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center lg:items-center lg:p-6" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <div className="absolute inset-0 bg-black/40 animate-fade-in" aria-hidden onClick={() => close.current()} />
-      <div ref={panel} tabIndex={-1} className="safe-bottom relative flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-2xl outline-none animate-fade-up lg:rounded-3xl">
-        <div className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-line lg:hidden" aria-hidden />
+      <div ref={panel} tabIndex={-1} className={`safe-bottom relative flex max-h-[88dvh] w-full max-w-lg flex-col shadow-2xl outline-none animate-fade-up lg:rounded-3xl ${cards ? 'rounded-t-[26px] bg-bg' : 'rounded-t-3xl bg-surface'}`}>
+        <div className={`mx-auto mt-2.5 shrink-0 rounded-full bg-line lg:hidden ${cards ? 'h-[5px] w-11' : 'h-1.5 w-10'}`} aria-hidden />
         <div className="flex shrink-0 items-center justify-between px-4 pt-2 lg:px-6 lg:pt-5">
-          <h2 id={titleId} className="text-lg font-bold">{title}</h2>
-          <button type="button" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => close.current()} aria-label="Sluiten">
-            <X size={22} aria-hidden />
-          </button>
+          <h2 id={titleId} className={cards ? 'text-[22px] font-extrabold tracking-[-0.02em]' : 'text-lg font-bold'}>{title}</h2>
+          {cards ? (
+            <button type="button" className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => close.current()} aria-label="Sluiten">
+              <X size={18} strokeWidth={2.5} aria-hidden />
+            </button>
+          ) : (
+            <button type="button" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => close.current()} aria-label="Sluiten">
+              <X size={22} aria-hidden />
+            </button>
+          )}
         </div>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4 pt-2 lg:px-6">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-2 lg:px-6 ${cards ? 'space-y-3.5' : 'space-y-5'}`}>{children}</div>
         {footer && <div className="shrink-0 border-t border-line px-4 pb-4 pt-3 lg:px-6 lg:pb-6">{footer}</div>}
       </div>
     </div>

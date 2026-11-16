@@ -8,7 +8,8 @@ import { BADGES, levelFromXp } from '../lib/gamification'
 import { streak, totalXp } from '../lib/progress'
 import { stageOf } from '../lib/srs'
 import { displayName } from '../lib/data'
-import { PageHeader, ProgressBar, Spinner, Stars, Tabs, nf, pct } from '../components/ui'
+import { PageHeader, Spinner, Stars, nf, pct } from '../components/ui'
+import { ThickBar } from '../components/OpeningScreens'
 import { IconTile, type Tone } from '../components/SettingsList'
 
 // Uitsluitend echte, lokaal opgeslagen gebruikersgegevens. Lege toestanden in plaats van voorbeelddata.
@@ -73,7 +74,7 @@ export function Statistics() {
   const progress = useProgressMap()
   const { data: manifest } = useManifest()
   const families = useFamilies(manifest?.families.map(f => f.id) ?? [])
-  const [range, setRange] = useState<'30' | '90'>('30')
+  const [range, setRange] = useState<'14' | '30' | '90'>('14')
 
   const byDay = useMemo(() => new Map(daily.map(d => [d.day, d])), [daily])
   const totals = daily.reduce((a, d) => ({ correct: a.correct + d.correct, mistakes: a.mistakes + d.mistakes, reviews: a.reviews + d.reviews, seconds: a.seconds + d.seconds }), { correct: 0, mistakes: 0, reviews: 0, seconds: 0 })
@@ -96,7 +97,7 @@ export function Statistics() {
   const famRows = fileList
     .map(f => ({ f, p: familyProgress(f, progress, cards) }))
     .filter(x => x.p.learned > 0 || x.p.positions > 0)
-    .sort((a, b) => b.p.score - a.p.score)
+    .sort((a, b) => b.p.pct - a.p.pct || b.p.score - a.p.score)
   const varRows = fileList.flatMap(f => f.variations.filter(v => progress.get(v.id)?.completions).map(v => {
     const p = progress.get(v.id)!
     return { f, v, p, m: variationMastery(v, f.family.side, cards, p), errRate: p.mistakes / Math.max(1, p.completions) }
@@ -136,19 +137,23 @@ export function Statistics() {
         </section>
       </div>
 
-      <section className={CARD}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-[15px] font-bold">Goed en fout per dag</h2>
-          <Tabs value={range} onChange={setRange} options={[{ value: '30', label: '30 dagen' }, { value: '90', label: '90 dagen' }]} />
+      {/* Ontwerp 12h: dezelfde kaarten als bovenaan, periode als pillen, staafjes met fouten bovenop */}
+      <section className={`${CARD} flex flex-col gap-3`} aria-labelledby="daily-title">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="daily-title" className="min-w-0 text-[15px] font-bold leading-tight">Goed en fout per dag</h2>
+          <div className="flex shrink-0 gap-2" role="group" aria-label="Periode">
+            {RANGES.map(r => (
+              <button key={r} type="button" className={`pill ${range === r ? 'pill-on' : 'font-medium!'}`} aria-pressed={range === r} onClick={() => setRange(r)}>
+                {r} d<span className="sr-only">agen</span>
+              </button>
+            ))}
+          </div>
         </div>
         <DailyBars days={days} byDay={byDay} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className={CARD}>
-          <h2 className="mb-1 text-[15px] font-bold">Geleerde posities door de tijd</h2>
-          <LineChart days={days} values={cumulative} />
-        </div>
+        <LearnedChart days={days} values={cumulative} />
         <div className={CARD}>
           <h2 className="mb-2 text-[15px] font-bold">Meer cijfers</h2>
           <dl className="divide-y-2 divide-surface-2 text-sm">
@@ -161,13 +166,16 @@ export function Statistics() {
       </section>
 
       <section className={CARD}>
-        <h2 className="mb-3 text-[15px] font-bold">Beheersing per opening</h2>
+        <h2 className="mb-1 text-[15px] font-bold">Beheersing per opening</h2>
         {famRows.length === 0 ? <p className="text-sm text-muted">Nog geen opening getraind.</p> : (
-          <ul className="space-y-3">
+          <ul className="divide-y-2 divide-surface-2">
             {famRows.map(({ f, p }) => (
-              <li key={f.family.id}>
-                <div className="flex justify-between text-sm"><Link to={`/opening/${f.family.id}`} className="inline-flex min-h-11 items-center font-medium hover:underline">{f.family.name}</Link><span className="tabular-nums text-muted">{p.score}% · {p.learned}/{p.total} varianten · {p.positions} posities</span></div>
-                <ProgressBar value={p.score / 100} className="mt-1" />
+              <li key={f.family.id} className="pb-2.5 pt-1 last:pb-0">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <Link to={`/opening/${f.family.id}`} className="inline-flex min-h-10 min-w-0 items-center font-bold hover:underline"><span className="truncate">{f.family.name}</span></Link>
+                  <span className="shrink-0 tabular-nums text-muted">{nf(p.learned)} van {nf(p.total)}<span className="sr-only"> varianten geleerd, {p.positions} posities</span></span>
+                </div>
+                <ThickBar value={p.pct} size="lg" label={`${f.family.name}: ${p.learned} van ${p.total} varianten geleerd`} />
               </li>
             ))}
           </ul>
@@ -232,98 +240,68 @@ export function Statistics() {
   )
 }
 
+const RANGES = ['14', '30', '90'] as const
+
 function DailyBars({ days, byDay }: { days: string[]; byDay: Map<string, DailyActivity> }) {
-  const [hover, setHover] = useState<number | null>(null)
   const [table, setTable] = useState(false)
   const data = days.map(d => ({ d, c: byDay.get(d)?.correct ?? 0, m: byDay.get(d)?.mistakes ?? 0 }))
   const max = Math.max(5, ...data.map(x => x.c + x.m))
-  const W = 720, H = 180, pad = 24
-  const bw = (W - pad) / data.length
-  const y = (v: number) => H - pad - (v / max) * (H - pad - 8)
-  if (table) {
-    return (
-      <div>
-        <Legend onTable={() => setTable(false)} tableLabel="Grafiek" />
-        <div className="max-h-64 overflow-auto text-sm"><table className="w-full tabular-nums"><thead className="text-xs text-muted"><tr><th className="text-left">Dag</th><th className="text-right">Goed</th><th className="text-right">Fout</th></tr></thead>
-          <tbody>{data.filter(x => x.c + x.m).reverse().map(x => <tr key={x.d} className="border-t border-line"><td>{shortDate(x.d)}</td><td className="text-right">{x.c}</td><td className="text-right">{x.m}</td></tr>)}</tbody></table></div>
-      </div>
-    )
-  }
+  const H = 96
+  const gap = data.length <= 14 ? 5 : data.length <= 30 ? 3 : 1
+  const totalC = data.reduce((a, x) => a + x.c, 0)
+  const totalM = data.reduce((a, x) => a + x.m, 0)
   return (
     <div>
-      <Legend onTable={() => setTable(true)} tableLabel="Tabel" />
-      <div className="relative">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Goede zetten en fouten per dag" onMouseLeave={() => setHover(null)}>
-          {[0.5, 1].map(f => <line key={f} x1={pad} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--chart-grid)" />)}
-          <text x={0} y={y(max) + 4} fontSize="11" fill="var(--muted)">{max}</text>
-          <text x={0} y={H - pad + 4} fontSize="11" fill="var(--muted)">0</text>
-          {data.map((x, i) => {
-            const bx = pad + i * bw + 1
-            const w = Math.max(2, bw - 3)
-            const hc = (x.c / max) * (H - pad - 8)
-            const hm = (x.m / max) * (H - pad - 8)
-            return (
-              <g key={x.d} onMouseEnter={() => setHover(i)}>
-                <rect x={pad + i * bw} y={0} width={bw} height={H - pad} fill="transparent" />
-                {x.c > 0 && <rect x={bx} y={H - pad - hc} width={w} height={hc} rx={Math.min(3, w / 2)} fill="var(--chart-1)" />}
-                {x.m > 0 && <rect x={bx} y={H - pad - hc - hm - (x.c ? 2 : 0)} width={w} height={hm} rx={Math.min(3, w / 2)} fill="var(--chart-2)" />}
-                {(i === data.length - 1 || ((data.length - 1 - i) % 7 === 0 && data.length - 1 - i >= 7)) && <text x={i === data.length - 1 ? W : bx + w / 2} y={H - 6} fontSize="11" textAnchor={i === data.length - 1 ? 'end' : 'middle'} fill="var(--muted)">{shortDate(x.d)}</text>}
-              </g>
-            )
-          })}
-        </svg>
-        {hover !== null && (
-          <div className="pointer-events-none absolute top-0 rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg" style={{ left: `min(calc(${((hover + 0.5) / data.length) * 100}% ), calc(100% - 140px))` }}>
-            <div className="font-semibold">{shortDate(data[hover].d)}</div>
-            <div><span className="mr-1 inline-block h-2 w-2 rounded-sm" style={{ background: 'var(--chart-1)' }} />Goed: {data[hover].c}</div>
-            <div><span className="mr-1 inline-block h-2 w-2 rounded-sm" style={{ background: 'var(--chart-2)' }} />Fout: {data[hover].m}</div>
+      {table ? (
+        <div className="max-h-64 overflow-auto text-sm"><table className="w-full tabular-nums"><thead className="text-xs text-muted"><tr><th className="text-left">Dag</th><th className="text-right">Goed</th><th className="text-right">Fout</th></tr></thead>
+          <tbody>{data.filter(x => x.c + x.m).reverse().map(x => <tr key={x.d} className="border-t border-line"><td>{shortDate(x.d)}</td><td className="text-right">{x.c}</td><td className="text-right">{x.m}</td></tr>)}</tbody></table></div>
+      ) : (
+        <>
+          <div className="flex items-end" style={{ height: H, gap }} role="img" aria-label={`Laatste ${data.length} dagen: ${nf(totalC)} goede zetten en ${nf(totalM)} fouten`}>
+            {data.map(x => {
+              const hm = Math.round((x.m / max) * H)
+              const hc = Math.round((x.c / max) * H)
+              return (
+                <span key={x.d} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-[2px]" title={`${shortDate(x.d)}: ${x.c} goed, ${x.m} fout`}>
+                  {x.m > 0 && <span className="rounded-[4px] bg-(--chart-2)" style={{ height: Math.max(3, hm) }} />}
+                  <span className={`rounded-[4px] ${x.c ? 'bg-(--chart-1)' : 'bg-surface-2'}`} style={{ height: x.c ? Math.max(3, hc) : 3 }} />
+                </span>
+              )
+            })}
           </div>
-        )}
+          <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(data[0].d)}</span><span>vandaag</span></div>
+        </>
+      )}
+      <div className="mt-2 flex items-center gap-3.5 text-[13px] text-muted">
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-1)" aria-hidden />Goede zetten</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-2)" aria-hidden />Fouten</span>
+        <button type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-end px-1 text-xs font-semibold underline" onClick={() => setTable(t => !t)}>{table ? 'Grafiek' : 'Tabel'}</button>
       </div>
     </div>
   )
 }
 
-function Legend({ onTable, tableLabel }: { onTable: () => void; tableLabel: string }) {
-  return (
-    <div className="mb-2 flex items-center gap-4 text-xs text-muted">
-      <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--chart-1)' }} />Goede zetten</span>
-      <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--chart-2)' }} />Fouten</span>
-      <button className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center px-2 underline" onClick={onTable}>{tableLabel}</button>
-    </div>
-  )
-}
-
-function LineChart({ days, values }: { days: string[]; values: number[] }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const W = 360, H = 150, pad = 22, top = 22
+/** Geleerde posities (ontwerp 12h): het aantal groot rechtsboven, daaronder een gevlakte lijn met een punt op vandaag */
+function LearnedChart({ days, values }: { days: string[]; values: number[] }) {
+  const W = 322, H = 70, top = 8
+  const last = values[values.length - 1] ?? 0
   const max = Math.max(5, ...values)
-  const x = (i: number) => pad + (i / Math.max(1, values.length - 1)) * (W - pad - 6)
-  const y = (v: number) => H - pad - (v / max) * (H - pad - top)
-  const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const x = (i: number) => (i / Math.max(1, values.length - 1)) * (W - 6)
+  const y = (v: number) => H - 1 - (v / max) * (H - 1 - top)
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Cumulatief geleerde posities"
-        onMouseMove={e => {
-          const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-          const i = Math.round(((e.clientX - r.left) / r.width * W - pad) / (W - pad - 6) * (values.length - 1))
-          setHover(Math.max(0, Math.min(values.length - 1, i)))
-        }}
-        onMouseLeave={() => setHover(null)}>
-        <line x1={pad} x2={W} y1={y(max)} y2={y(max)} stroke="var(--chart-grid)" />
-        <line x1={pad} x2={W} y1={y(0)} y2={y(0)} stroke="var(--chart-grid)" />
-        <text x={0} y={y(max) + 4} fontSize="11" fill="var(--muted)">{max}</text>
-        <path d={d} fill="none" stroke="var(--chart-1)" strokeWidth={2} strokeLinejoin="round" />
-        {hover !== null && <>
-          <line x1={x(hover)} x2={x(hover)} y1={8} y2={H - pad} stroke="var(--muted)" strokeDasharray="3 3" />
-          <circle cx={x(hover)} cy={y(values[hover])} r={4} fill="var(--chart-1)" stroke="var(--surface)" strokeWidth={2} />
-        </>}
-        <text x={pad} y={H - 6} fontSize="11" fill="var(--muted)">{shortDate(days[0])}</text>
-        <text x={W - 6} y={H - 6} fontSize="11" textAnchor="end" fill="var(--muted)">{shortDate(days[days.length - 1])}</text>
-        <text x={x(values.length - 1)} y={y(values[values.length - 1]) - 6} fontSize="11" textAnchor="end" fill="var(--ink)" fontWeight={600}>{values[values.length - 1]}</text>
+    <section className={CARD} aria-labelledby="learned-title">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="learned-title" className="text-[15px] font-bold">Geleerde posities</h2>
+        <span className="text-xl font-extrabold tabular-nums">{nf(last)}</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2.5 block w-full" role="img" aria-label={`Geleerde posities: ${nf(values[0] ?? 0)} op ${shortDate(days[0])}, ${nf(last)} vandaag`}>
+        <polygon points={`0,${H} ${pts} ${x(values.length - 1).toFixed(1)},${H}`} fill="var(--brand-soft)" />
+        <polyline points={pts} fill="none" stroke="var(--chart-1)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={x(values.length - 1)} cy={y(last)} r={5} fill="var(--chart-1)" stroke="var(--surface)" strokeWidth={2} />
       </svg>
-      {hover !== null && <div className="pointer-events-none absolute right-0 top-0 rounded-lg border border-line bg-surface px-2 py-1 text-xs shadow">{shortDate(days[hover])}: <b>{values[hover]}</b> posities</div>}
-    </div>
+      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>vandaag</span></div>
+    </section>
   )
 }
 

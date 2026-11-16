@@ -14,6 +14,10 @@ export interface BoardProps {
   arrows?: Arrow[]
   hintSquare?: string | null
   flash?: { square: string; kind: 'good' | 'bad' | 'info' } | null
+  /** Veld van een foute zet: blijft rood tot de volgende zet (ontwerp 12d) */
+  wrongSquare?: string | null
+  /** Ring op het juiste veld (ontwerp 12d) */
+  ringSquare?: string | null
   id?: string
   animationMs?: number
   showNotation?: boolean
@@ -45,7 +49,7 @@ export function describePosition(fen: string): string {
   return `Wit: ${side('w')}. Zwart: ${side('b')}. ${c.turn() === 'w' ? 'Wit' : 'Zwart'} aan zet.`
 }
 
-export function Board({ fen, orientation, movable, onMove, lastMove, arrows = [], hintSquare, flash, id = 'board', animationMs = 220, showNotation = true, label }: BoardProps) {
+export function Board({ fen, orientation, movable, onMove, lastMove, arrows = [], hintSquare, flash, wrongSquare, ringSquare, id = 'board', animationMs = 220, showNotation = true, label }: BoardProps) {
   const [selected, setSelected] = useState<string | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -138,6 +142,8 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
     }
   }
   if (hintSquare) squareStyles[hintSquare] = { ...squareStyles[hintSquare], boxShadow: 'inset 0 0 0 4px rgba(58, 110, 165, 0.85)' }
+  if (wrongSquare) squareStyles[wrongSquare] = { ...squareStyles[wrongSquare], backgroundColor: 'color-mix(in srgb, var(--danger) 55%, transparent)' }
+  if (ringSquare) squareStyles[ringSquare] = { ...squareStyles[ringSquare], backgroundImage: 'radial-gradient(circle closest-side, transparent 68%, var(--brand) 70%, var(--brand) 85%, transparent 87%)' }
   if (flash) {
     const color = flash.kind === 'good' ? 'rgba(47, 160, 90, 0.55)' : flash.kind === 'bad' ? 'rgba(200, 60, 50, 0.5)' : 'rgba(58, 110, 165, 0.45)'
     squareStyles[flash.square] = { ...squareStyles[flash.square], backgroundColor: color, transition: 'background-color 0.2s' }

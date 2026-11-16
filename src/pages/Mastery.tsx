@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Repeat } from 'lucide-react'
+import { Repeat, Sun } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type TrainingCard } from '../lib/db'
@@ -10,7 +10,7 @@ import { DAY, masteryScore, stageOf } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
 import { Trainer } from '../components/Trainer'
 import { AUTO_NEXT_MS } from '../lib/lessonPlan'
-import { CropBoard } from '../components/CropBoard'
+import { CropBoard, PieceIcon } from '../components/CropBoard'
 import { Empty, FocusBar, ProgressBar, Spinner, Tabs, plural, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
 
@@ -21,6 +21,19 @@ export function Mastery() {
   const { data: manifest } = useManifest()
   const [session, setSession] = useState(false)
   useTrainingFocus(session)
+  // Nog nooit iets geleerd: geen keuzes bovenaan, alleen uitleg en de ene knop (ontwerp 12g)
+  const anyLearned = useLiveQuery(async () => (await db.cards.filter(c => !c.suspended && c.correct + c.wrong > 0).first()) !== undefined, [], undefined)
+  if (anyLearned === false) {
+    return (
+      <div className="lg:max-w-xl">
+        <div className="mb-4">
+          <h1 className="text-[28px] font-extrabold leading-[1.12] tracking-[-0.03em] sm:text-3xl">Herhalen</h1>
+          <p className="mt-1 text-[15px] text-muted">Herhaal wat je bijna vergeet.</p>
+        </div>
+        <ReviewEmpty />
+      </div>
+    )
+  }
   return (
     <div>
       {!session && (
@@ -112,9 +125,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   if (!started) {
     const left = Math.max(0, queue.length - index)
     const { mine, stages, forecast, weakest } = overview
-    if (!mine.length) {
-      return <Empty title="Nog geen geleerde posities" action={<Link to="/dagelijks" className="btn btn-primary">Start de dagtraining</Link>}>Posities komen hier terug zodra je ze geleerd hebt in de dagtraining of de cursus.</Empty>
-    }
+    if (!mine.length) return <ReviewEmpty filtered={!!family} />
     const max = Math.max(1, ...forecast.map(f => f.n))
     const stageRows = [
       { key: 'learning', label: 'Lerend', hint: 'komt binnen een dag terug', n: stages.learning, c: 'bg-accent' },
@@ -237,6 +248,39 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
         <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(index)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
       )}
     />
+    </div>
+  )
+}
+
+/** Herhalen zonder posities (ontwerp 12g): wat er komt, één knop en in drie stappen hoe het werkt */
+function ReviewEmpty({ filtered }: { filtered?: boolean }) {
+  const steps = [
+    { title: 'Leer een variant', text: 'in de dagtraining of de cursus' },
+    { title: 'Na een dag komt hij terug', text: 'precies voor je hem vergeet' },
+    { title: 'Daarna na 3 en 7 dagen', text: 'tot hij vast zit' },
+  ]
+  return (
+    <div className="space-y-4 lg:max-w-xl">
+      <section className="card flex flex-col items-center gap-1.5 px-5 py-7 text-center" aria-labelledby="review-empty-title">
+        <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-[19px] bg-brand-soft"><PieceIcon piece="bN" size={46} /></span>
+        <h2 id="review-empty-title" className="mt-2 text-lg font-extrabold tracking-[-0.01em]">{filtered ? 'Nog niets van deze opening' : 'Nog niets om te herhalen'}</h2>
+        <p className="max-w-[280px] text-sm leading-snug text-muted">Zodra je een variant hebt geleerd, komt hij hier vanzelf terug.</p>
+        <Link to="/dagelijks" className="btn btn-primary mt-3 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>
+      </section>
+      <section className="card p-4" aria-labelledby="review-how-title">
+        <h2 id="review-how-title" className="text-[15px] font-bold">Zo werkt het</h2>
+        <ol className="mt-3 divide-y-2 divide-surface-2">
+          {steps.map((st, i) => (
+            <li key={st.title} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+              <span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-accent-soft text-[15px] font-extrabold text-accent-ink">{i + 1}</span>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-bold leading-tight">{st.title}</span>
+                <span className="block text-[13px] text-muted">{st.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   )
 }
