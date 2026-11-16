@@ -1,4 +1,5 @@
 import type { FamilyFile, Lesson, Variation } from './types'
+import { t } from './i18n'
 
 // Leren gaat over lijnen waarin je zelf minstens 4 zetten speelt. Kortere lijnen (1–3 eigen zetten) zijn
 // saai om te leren; ze blijven gewoon in de variantenboom staan en zijn daar los te oefenen.
@@ -15,6 +16,12 @@ export function learnThreshold(file: FamilyFile) {
 }
 
 const cache = new WeakMap<FamilyFile, Lesson[]>()
+
+/** Titel van een les in de gekozen taal; het volgnummer (1/4) blijft staan */
+export function lessonTitle(title: string) {
+  const m = title.match(/^(.*?)( \(\d+\/\d+\))?$/)!
+  return t(m[1]) + (m[2] ?? '')
+}
 
 /** Een les leert hooguit zoveel varianten, zodat hij een paar minuten duurt */
 export const MAX_LESSON_VARIATIONS = 3

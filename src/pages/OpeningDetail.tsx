@@ -3,11 +3,12 @@ import { Link, useParams } from 'react-router'
 import { ArrowLeft, ArrowRight, Compass, Lightbulb, Play, Route, Scale, Swords, TrendingUp } from 'lucide-react'
 import { familyProgress, useCardMap, useFamily, useProgressMap } from '../lib/hooks'
 import { moveNumberLabel } from '../lib/chess'
-import { learnLessons, learnThreshold, userMoveCount } from '../lib/course'
+import { learnLessons, learnThreshold, lessonTitle, userMoveCount } from '../lib/course'
 import { CropBoard } from '../components/CropBoard'
 import { MoveChips, ROW_DIVIDE, ROW_LIST, ThickBar, VariationRow, rowMetaMap } from '../components/OpeningScreens'
-import { ErrorBox, ProgressBar, Spinner, plural } from '../components/ui'
+import { ErrorBox, ProgressBar, Spinner } from '../components/ui'
 import { OPENING_INFO } from '../content/openingInfo'
+import { t, tn, tr } from '../lib/i18n'
 
 // Opening (ontwerp 10j): één kaart met bord, beginzetten, het idee en de ene grote knop (verder met de cursus).
 // Daaronder de twee andere trainingen als tegels en de varianten om mee te beginnen. De achtergrond
@@ -23,14 +24,13 @@ export function OpeningDetail() {
   const f = file.family
   const info = OPENING_INFO[f.id]
   const p = familyProgress(file, progress, cards)
-  const sideNl = f.side === 'white' ? 'wit' : 'zwart'
 
   // Volgende les van het leerpad: de eerste met een variant die nog niet is afgerond
   const lessons = learnLessons(file)
   const levels = [...new Set(lessons.map(l => l.level))].sort((a, b) => a - b)
   const nextLesson = lessons.find(l => l.variationIds.some(vid => !progress.get(vid)?.completions))
   const lessonsDone = lessons.filter(l => l.variationIds.every(vid => progress.get(vid)?.completions)).length
-  const courseLabel = p.learned === 0 ? 'Start de cursus' : nextLesson ? `Verder met de cursus · niveau ${levels.indexOf(nextLesson.level) + 1}` : 'Cursus herhalen'
+  const courseLabel = p.learned === 0 ? t('Start de cursus') : nextLesson ? t('Verder met de cursus · niveau {n}', { n: levels.indexOf(nextLesson.level) + 1 }) : t('Cursus herhalen')
   const courseTo = nextLesson ? `/les/${f.id}/${nextLesson.id}` : `/cursus/${f.id}`
 
   // De vijf meest gespeelde varianten om mee te beginnen (geen basislijnen, wel lang genoeg om te leren)
@@ -44,21 +44,22 @@ export function OpeningDetail() {
     .slice(0, 5)
 
   const rootMoves = f.rootSan.map((m, i) => (i % 2 === 0 ? `${moveNumberLabel(i)}${m}` : m))
-  const caption = `Met ${sideNl} · ${f.curated ? 'extra opening' : `#${f.rank} populairst`}`
+  const caption = `${f.side === 'white' ? t('Met wit') : t('Met zwart')} · ${f.curated ? t('extra opening') : t('#{n} populairst', { n: f.rank })}`
+  const lessonCount = tn(lessons.length, '{n} les', '{n} lessen')
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
       <header>
-        <Link to="/openingen" className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm text-muted hover:text-ink"><ArrowLeft size={14} aria-hidden />Openingen</Link>
+        <Link to="/openingen" className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm text-muted hover:text-ink"><ArrowLeft size={14} aria-hidden />{t('Openingen')}</Link>
         <h1 className="text-[1.75rem] font-extrabold leading-[1.12] tracking-[-0.03em] lg:text-[2.5rem]">{f.name}</h1>
-        {info?.nameNl && <p className="mt-0.5 text-sm text-muted">{info.nameNl} · {f.ecoRange}</p>}
+        <p className="mt-0.5 text-sm text-muted">{info?.nameNl ? `${info.nameNl} · ` : ''}{f.ecoRange}</p>
         <div className="mt-2.5 flex items-center gap-2.5 lg:max-w-md">
-          <ThickBar value={p.pct} size="lg" label="Varianten geleerd" className="flex-1" />
-          <span className="shrink-0 text-[0.8125rem] text-muted tabular-nums"><b className="text-ink">{p.learned}</b> van {p.total}<span className="sr-only"> varianten geleerd</span>{p.mastered > 0 && <span className="hidden sm:inline"> · {p.mastered} beheerst</span>}</span>
+          <ThickBar value={p.pct} size="lg" label={t('Varianten geleerd')} className="flex-1" />
+          <span className="shrink-0 text-[0.8125rem] text-muted tabular-nums">{tr(<><b className="text-ink">{p.learned}</b> van {p.total}<span className="sr-only"> varianten geleerd</span></>, <><b className="text-ink">{p.learned}</b> of {p.total}<span className="sr-only"> variations learned</span></>)}{p.mastered > 0 && <span className="hidden sm:inline"> · {t('{n} beheerst', { n: p.mastered })}</span>}</span>
         </div>
       </header>
 
-      <section aria-label="Over deze opening" className="rounded-[22px] border-2 border-line bg-surface p-4 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-center lg:gap-8 lg:p-6">
+      <section aria-label={t('Over deze opening')} className="rounded-[22px] border-2 border-line bg-surface p-4 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-center lg:gap-8 lg:p-6">
         <div className="flex items-center gap-3.5 lg:block">
           <div className="w-[120px] shrink-0 lg:w-full"><CropBoard epd={f.rootEpd} uci={f.rootUci} orientation={f.side} /></div>
           <div className="min-w-0 lg:hidden">
@@ -78,33 +79,33 @@ export function OpeningDetail() {
 
       {/* Het leerpad als kaart met voortgang (ontwerp 16f), niet meer als losse link */}
       {lessons.length > 0 && (
-        <Link to={`/cursus/${f.id}`} className="tap flex items-center gap-3 p-3.5 lg:max-w-2xl" aria-label={`Leerpad, ${plural(lessons.length, 'les', 'lessen')}: ${lessonsDone} gedaan${nextLesson ? `, volgende: ${nextLesson.title}` : ''}`}>
+        <Link to={`/cursus/${f.id}`} className="tap flex items-center gap-3 p-3.5 lg:max-w-2xl" aria-label={`${t('Leerpad')}, ${lessonCount}: ${t('{n} gedaan', { n: lessonsDone })}${nextLesson ? `, ${t('volgende: {title}', { title: lessonTitle(nextLesson.title) })}` : ''}`}>
           <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink"><Route size={20} /></span>
           <span className="min-w-0 flex-1">
-            <span className="block font-bold leading-tight">Leerpad · {plural(lessons.length, 'les', 'lessen')}</span>
+            <span className="block font-bold leading-tight">{t('Leerpad')} · {lessonCount}</span>
             <ProgressBar value={lessonsDone / lessons.length} tone="accent" className="mt-1.5 h-1.5!" />
-            <span className="mt-1 block truncate text-xs text-muted">{lessonsDone} gedaan · {nextLesson ? `volgende: ${nextLesson.title}` : 'alles gedaan'}</span>
+            <span className="mt-1 block truncate text-xs text-muted">{t('{n} gedaan', { n: lessonsDone })} · {nextLesson ? t('volgende: {title}', { title: lessonTitle(nextLesson.title) }) : t('alles gedaan')}</span>
           </span>
           <ArrowRight size={18} aria-hidden className="shrink-0 text-muted" />
         </Link>
       )}
 
       <div className="grid grid-cols-2 gap-2.5 lg:max-w-2xl lg:gap-3">
-        <TrainTile to={`/crushing/${f.id}`} title="Afstraffen" text="Straf fouten van je tegenstander af" tone="danger" icon={<Swords size={20} aria-hidden />} />
-        <TrainTile to={`/advantage/${f.id}`} title="Op jouw niveau" text="Oefen wat er op jouw niveau gespeeld wordt" tone="info" icon={<TrendingUp size={20} aria-hidden />} />
+        <TrainTile to={`/crushing/${f.id}`} title={t('Afstraffen')} text={t('Straf fouten van je tegenstander af')} tone="danger" icon={<Swords size={20} aria-hidden />} />
+        <TrainTile to={`/advantage/${f.id}`} title={t('Op jouw niveau')} text={t('Oefen wat er op jouw niveau gespeeld wordt')} tone="info" icon={<TrendingUp size={20} aria-hidden />} />
       </div>
 
       <section aria-labelledby="eerst-title" className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <h2 id="eerst-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">Leer deze varianten eerst</h2>
-          <span className="text-sm text-muted">de {top.length} meest gespeelde</span>
+          <h2 id="eerst-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">{t('Leer deze varianten eerst')}</h2>
+          <span className="text-sm text-muted">{t('de {n} meest gespeelde', { n: top.length })}</span>
         </div>
         <div className={ROW_LIST}>
           <ul className={ROW_DIVIDE}>
             {top.map((v, i) => <VariationRow key={v.id} v={v} file={file} status={meta.get(v.id)!.status} shareSuffix={i === 0} />)}
           </ul>
           <Link to={`/variaties?opening=${f.id}`} className="flex min-h-12 items-center justify-center gap-2 border-t-2 border-surface-2 p-4 text-sm font-semibold text-brand-strong hover:bg-surface-2 focus-visible:-outline-offset-2! lg:text-base">
-            Alle {f.variationCount} varianten bekijken, zoeken en filteren<ArrowRight size={16} aria-hidden />
+            {t('Alle {n} varianten bekijken, zoeken en filteren', { n: f.variationCount })}<ArrowRight size={16} aria-hidden />
           </Link>
         </div>
       </section>
@@ -113,23 +114,23 @@ export function OpeningDetail() {
           en onderaan nog eens de hoofdknop zodat je na het lezen meteen kunt beginnen */}
       {info && (
         <section aria-labelledby="weten-title" className="flex flex-col gap-3.5">
-          <h2 id="weten-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">Wat je moet weten</h2>
+          <h2 id="weten-title" className="text-lg font-bold tracking-[-0.01em] lg:text-xl">{t('Wat je moet weten')}</h2>
           <div className="grid gap-3.5 lg:grid-cols-3">
             <div className="card flex flex-col gap-2.5 p-4 lg:p-5">
-              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-brand-strong"><Compass size={17} /></span>Typische plannen</h3>
+              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-brand-strong"><Compass size={17} /></span>{t('Typische plannen')}</h3>
               <ol className="space-y-2 text-sm leading-snug">
-                {info.plans.map((t, i) => <li key={t} className="flex gap-2.5"><span aria-hidden className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-extrabold text-brand-strong">{i + 1}</span><span className="pt-px">{t}</span></li>)}
+                {info.plans.map((plan, i) => <li key={plan} className="flex gap-2.5"><span aria-hidden className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-extrabold text-brand-strong">{i + 1}</span><span className="pt-px">{plan}</span></li>)}
               </ol>
             </div>
             <div className="flex items-start gap-3 rounded-[18px] border-2 border-accent/35 bg-accent-soft p-4 lg:p-5">
               <span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-surface text-accent-ink"><Lightbulb size={17} /></span>
               <div className="min-w-0">
-                <h3 className="font-bold text-accent-ink">Tip</h3>
+                <h3 className="font-bold text-accent-ink">{t('Tip')}</h3>
                 <p className="mt-0.5 text-sm leading-[1.45]">{info.tip}</p>
               </div>
             </div>
             <div className="card flex flex-col gap-2.5 p-4 lg:p-5">
-              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-info-soft text-info-ink"><Scale size={17} /></span>Sterk en zwak</h3>
+              <h3 className="flex items-center gap-2.5 font-bold"><span aria-hidden className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-info-soft text-info-ink"><Scale size={17} /></span>{t('Sterk en zwak')}</h3>
               <ProsCons strengths={info.strengths} weaknesses={info.weaknesses} />
             </div>
           </div>
@@ -160,8 +161,8 @@ function TrainTile({ to, title, text, tone, icon }: { to: string; title: string;
 function ProsCons({ strengths, weaknesses }: { strengths: string[]; weaknesses: string[] }) {
   return (
     <ul className="space-y-2 text-sm leading-snug">
-      {strengths.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-brand-soft text-[15px] font-extrabold text-brand-strong" role="img" aria-label="Sterk">+</span><span className="pt-px">{t}</span></li>)}
-      {weaknesses.map(t => <li key={t} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-danger-soft text-[15px] font-extrabold text-danger-ink" role="img" aria-label="Zwak">−</span><span className="pt-px">{t}</span></li>)}
+      {strengths.map(s => <li key={s} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-brand-soft text-[15px] font-extrabold text-brand-strong" role="img" aria-label={t('Sterk')}>+</span><span className="pt-px">{s}</span></li>)}
+      {weaknesses.map(w => <li key={w} className="flex gap-2.5"><span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-danger-soft text-[15px] font-extrabold text-danger-ink" role="img" aria-label={t('Zwak')}>−</span><span className="pt-px">{w}</span></li>)}
     </ul>
   )
 }

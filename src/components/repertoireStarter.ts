@@ -5,12 +5,13 @@ import { isUserPly } from '../lib/trainer'
 import { addLine } from '../lib/repertoire'
 import { loadFamily, loadStats } from '../lib/data'
 import type { FamilyFile, StatsFile } from '../lib/types'
+import { t } from '../lib/i18n'
 
 // Startrepertoire uit de openingsdata: de meest gespeelde lijnen van één familie, zo gekozen dat je
 // per stelling één eigen zet hebt (een repertoire traint alleen hoofdzetten) en op alle gangbare
 // reacties van de tegenstander een antwoord klaar hebt.
 
-/** Voorstellen op het lege repertoirescherm */
+/** Voorstellen op het lege repertoirescherm (titel en hint zijn Nederlandse sleutels: vertalen met t() bij het tonen) */
 export const STARTERS = [
   { familyId: 'italian-game', side: 'white', title: 'Wit: Italian Game', hint: 'de 12 meest gespeelde lijnen' },
   { familyId: 'sicilian-defense', side: 'black', title: 'Zwart: Sicilian Defense', hint: 'antwoord op 1.e4' },
@@ -75,9 +76,9 @@ export function starterLines(file: FamilyFile, stats: StatsFile | null, count = 
 export async function createStarterRepertoire(familyId: string, database: SchaakDB = db): Promise<number> {
   const [file, stats] = await Promise.all([loadFamily(familyId), loadStats(familyId).catch(() => null)])
   const lines = starterLines(file, stats)
-  if (!lines.length) throw new Error(`Geen lijnen gevonden voor ${file.family.name}.`)
+  if (!lines.length) throw new Error(t('Geen lijnen gevonden voor {name}.', { name: file.family.name }))
   const now = Date.now()
-  const id = (await database.repertoires.add({ name: `Mijn ${file.family.name}`, side: file.family.side, familyId, createdAt: now, updatedAt: now })) as number
+  const id = (await database.repertoires.add({ name: t('Mijn {name}', { name: file.family.name }), side: file.family.side, familyId, createdAt: now, updatedAt: now })) as number
   for (const l of lines) await addLine(id, file.family.side, l, database)
   return id
 }

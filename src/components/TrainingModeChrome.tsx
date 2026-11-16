@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { Flame, SlidersHorizontal, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { streak } from '../lib/progress'
+import { t, tn } from '../lib/i18n'
 
 /**
  * Bouwstenen voor de trainingsmodus van ontwerpronde 10 (Afstraffen, Op jouw niveau):
@@ -36,7 +37,7 @@ export function ThickProgress({ value, label, big }: { value: number; label: str
  * Bovenbalk in de trainingsmodus: sluiten, voortgang, teller. Blijft op de telefoon bovenin staan.
  * `full` (desktop, ontwerp 15b): een witte balk over de volle breedte, de voortgang in het midden en rechts je reeks.
  */
-export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel = 'Sluiten', full }: { value?: number; count?: string; countLabel?: string; onClose: () => void; closeLabel?: string; full?: boolean }) {
+export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel = t('Sluiten'), full }: { value?: number; count?: string; countLabel?: string; onClose: () => void; closeLabel?: string; full?: boolean }) {
   const wrap = full
     ? 'lg:sticky lg:top-0 lg:mx-0 lg:gap-4 lg:border-b-2 lg:border-line lg:bg-surface lg:px-8 lg:py-[18px] lg:backdrop-blur-none'
     : 'lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none'
@@ -46,7 +47,7 @@ export function TrainingTopBar({ value, count, countLabel, onClose, closeLabel =
         <X size={22} aria-hidden className={full ? 'lg:size-6' : ''} />
       </button>
       <div className={`flex min-w-0 flex-1 items-center gap-3 max-lg:contents ${full ? 'lg:mx-auto lg:max-w-[760px] lg:gap-3.5' : ''}`}>
-        <div className="min-w-0 flex-1">{value !== undefined && <ThickProgress value={value} label={countLabel ?? 'Voortgang'} big={full} />}</div>
+        <div className="min-w-0 flex-1">{value !== undefined && <ThickProgress value={value} label={countLabel ?? t('Voortgang')} big={full} />}</div>
         {count && <span className={`shrink-0 text-sm font-bold tabular-nums text-muted ${full ? 'lg:text-[15px]' : ''}`} aria-label={countLabel}>{count}</span>}
       </div>
       {full && <StreakCount className="hidden lg:inline-flex" />}
@@ -59,8 +60,8 @@ export function StreakCount({ className = '' }: { className?: string }) {
   const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
   if (!st.current) return null
   return (
-    <span className={`min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-sm font-bold text-accent-ink ${className}`} aria-label={`${st.current} ${st.current === 1 ? 'dag' : 'dagen'} op rij getraind`}>
-      <Flame size={16} aria-hidden className="text-accent" />{st.current} {st.current === 1 ? 'dag' : 'dagen'}
+    <span className={`min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-sm font-bold text-accent-ink ${className}`} aria-label={tn(st.current, '{n} dag op rij getraind', '{n} dagen op rij getraind')}>
+      <Flame size={16} aria-hidden className="text-accent" />{tn(st.current, '{n} dag', '{n} dagen')}
     </span>
   )
 }
@@ -82,9 +83,9 @@ export function TrainingHeading({ label, title, tone, action, sub }: { label: Re
 }
 
 /** Vierkante filterknop (44px) die het filterpaneel opent; een stip als er iets anders dan standaard is gekozen */
-export function FilterKey({ onClick, expanded, active, label = 'Filters' }: { onClick: () => void; expanded: boolean; active?: boolean; label?: string }) {
+export function FilterKey({ onClick, expanded, active, label = t('Filters') }: { onClick: () => void; expanded: boolean; active?: boolean; label?: string }) {
   return (
-    <button type="button" className="tap relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]!" onClick={onClick} aria-haspopup="dialog" aria-expanded={expanded} aria-label={active ? `${label} (aangepast)` : label} title={label}>
+    <button type="button" className="tap relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]!" onClick={onClick} aria-haspopup="dialog" aria-expanded={expanded} aria-label={active ? t('{label} (aangepast)', { label }) : label} title={label}>
       <SlidersHorizontal size={18} aria-hidden />
       {active && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-bg bg-brand" aria-hidden />}
     </button>
@@ -137,11 +138,11 @@ export function TrainingSheet({ open, onClose, title, children, footer, cards }:
         <div className="flex shrink-0 items-center justify-between px-4 pt-2 lg:px-6 lg:pt-5">
           <h2 id={titleId} className={cards ? 'text-[22px] font-extrabold tracking-[-0.02em]' : 'text-lg font-bold'}>{title}</h2>
           {cards ? (
-            <button type="button" className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => close.current()} aria-label="Sluiten">
+            <button type="button" className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => close.current()} aria-label={t('Sluiten')}>
               <X size={18} strokeWidth={2.5} aria-hidden />
             </button>
           ) : (
-            <button type="button" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => close.current()} aria-label="Sluiten">
+            <button type="button" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => close.current()} aria-label={t('Sluiten')}>
               <X size={22} aria-hidden />
             </button>
           )}

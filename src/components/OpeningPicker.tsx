@@ -6,8 +6,9 @@ import { OPENING_INFO } from '../content/openingInfo'
 import { CropBoard } from './CropBoard'
 import { Tabs, pct } from './ui'
 import type { FamilySummary, Side } from '../lib/types'
+import { t } from '../lib/i18n'
 
-const SIDE_LABEL: Record<Side, string> = { white: 'Wit', black: 'Zwart' }
+const sideName = (side: Side) => (side === 'white' ? t('Wit') : t('Zwart'))
 
 export function OpeningPicker({ families, sides, value, onChange }: { families: FamilySummary[]; sides: Side | 'both'; value: string[]; onChange: (ids: string[]) => void }) {
   const shownSides: Side[] = sides === 'both' ? ['white', 'black'] : [sides]
@@ -18,7 +19,7 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id])
   const chosen = value.flatMap(id => families.filter(f => f.id === id))
   const countFor = (side: Side) => chosen.filter(f => f.side === side).length
-  const tabLabel = (side: Side) => (countFor(side) ? `${SIDE_LABEL[side]} (${countFor(side)})` : SIDE_LABEL[side])
+  const tabLabel = (side: Side) => (countFor(side) ? `${sideName(side)} (${countFor(side)})` : sideName(side))
   // De lijst staat op populariteit, dus de eerste per kleur is de populairste
   const popular = shownSides.flatMap(side => families.find(f => f.side === side)?.id ?? [])
   const results = shownSides.map(side => ({ side, list: families.filter(f => f.side === side && matchesOpening(f, OPENING_INFO[f.id]?.nameNl, query)) }))
@@ -26,17 +27,17 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold">Welke openingen wil je leren?</h2>
-        <p className="mt-1 text-sm text-muted">Kies er minstens één. Je kunt dit later aanpassen.</p>
+        <h2 className="text-xl font-bold">{t('Welke openingen wil je leren?')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('Kies er minstens één. Je kunt dit later aanpassen.')}</p>
       </div>
 
       <div className="min-h-8 space-y-2">
-        <p className="text-sm font-semibold" aria-live="polite">{chosen.length ? `${chosen.length} gekozen` : 'Nog niets gekozen'}</p>
+        <p className="text-sm font-semibold" aria-live="polite">{chosen.length ? t('{n} gekozen', { n: chosen.length }) : t('Nog niets gekozen')}</p>
         {chosen.length > 0
           ? (
             <div className="flex flex-wrap gap-1.5">
               {chosen.map(f => (
-                <button key={f.id} className="group inline-flex min-h-8 items-center gap-1.5 rounded-full bg-brand-soft py-1 pl-2 pr-2 text-xs font-semibold text-ink transition hover:bg-brand/25 pointer-coarse:min-h-11" aria-label={`${f.name} (${SIDE_LABEL[f.side].toLowerCase()}) verwijderen`} onClick={() => toggle(f.id)}>
+                <button key={f.id} className="group inline-flex min-h-8 items-center gap-1.5 rounded-full bg-brand-soft py-1 pl-2 pr-2 text-xs font-semibold text-ink transition hover:bg-brand/25 pointer-coarse:min-h-11" aria-label={f.side === 'white' ? t('{name} (wit) verwijderen', { name: f.name }) : t('{name} (zwart) verwijderen', { name: f.name })} onClick={() => toggle(f.id)}>
                   <SidePawn side={f.side} />{f.name}<X size={12} strokeWidth={2.5} aria-hidden className="text-muted transition group-hover:text-ink" />
                 </button>
               ))}
@@ -44,8 +45,8 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
           )
           : (
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-              Weet je het niet?
-              <button className="btn btn-ghost" onClick={() => onChange(popular)}>Kies de populairste</button>
+              {t('Weet je het niet?')}
+              <button className="btn btn-ghost" onClick={() => onChange(popular)}>{t('Kies de populairste')}</button>
             </div>
           )}
       </div>
@@ -54,16 +55,16 @@ export function OpeningPicker({ families, sides, value, onChange }: { families: 
         {sides === 'both' && !searching && (
           <div className="shrink-0"><Tabs value={tab} onChange={setTab} options={shownSides.map(side => ({ value: side, label: tabLabel(side) }))} /></div>
         )}
-        <input className="input min-h-11 sm:flex-1" type="search" aria-label="Zoek een opening" placeholder="Zoek op naam of zetten" value={query} onChange={e => setQuery(e.target.value)} />
+        <input className="input min-h-11 sm:flex-1" type="search" aria-label={t('Zoek een opening')} placeholder={t('Zoek op naam of zetten')} value={query} onChange={e => setQuery(e.target.value)} />
       </div>
 
       {searching
         ? (
           <>
             {results.filter(r => r.list.length).map(r => (
-              <OpeningSection key={r.side} title={sides === 'both' ? `Met ${SIDE_LABEL[r.side].toLowerCase()}` : undefined} families={r.list} value={value} onToggle={toggle} />
+              <OpeningSection key={r.side} title={sides === 'both' ? (r.side === 'white' ? t('Met wit') : t('Met zwart')) : undefined} families={r.list} value={value} onToggle={toggle} />
             ))}
-            {results.every(r => !r.list.length) && <p className="text-sm text-muted">Geen opening gevonden voor “{query.trim()}”.</p>}
+            {results.every(r => !r.list.length) && <p className="text-sm text-muted">{t('Geen opening gevonden voor “{q}”.', { q: query.trim() })}</p>}
           </>
         )
         : groupByFirstMove(families, sides === 'both' ? tab : sides).map(g => (
@@ -104,9 +105,9 @@ function OpeningCard({ family: f, selected, onToggle }: { family: FamilySummary;
       <span aria-hidden className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-md border shadow-sm ${selected ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface'}`}>{selected && <Check size={16} strokeWidth={3} />}</span>
       <span className="block min-w-0 px-1 pb-1">
         <span className="block text-sm font-semibold leading-tight">{f.name}</span>
-        <span className="block text-xs text-muted">{OPENING_INFO[f.id]?.nameNl}</span>
+        {OPENING_INFO[f.id]?.nameNl && <span className="block text-xs text-muted">{OPENING_INFO[f.id]?.nameNl}</span>}
         <span className="mt-1 block font-mono text-xs text-muted">{formatMoves(f.rootSan)}</span>
-        <span className="mt-1 block text-xs text-muted">{f.variationCount} varianten · {pct(f.share, 1)} van de partijen</span>
+        <span className="mt-1 block text-xs text-muted">{t('{n} varianten', { n: f.variationCount })} · {t('{pct} van de partijen', { pct: pct(f.share, 1) })}</span>
       </span>
     </button>
   )

@@ -6,7 +6,7 @@ import { Board } from './Board'
 import { PieceIcon } from './CropBoard'
 import { TrainingHeading, TrainingSheet, TrainingTopBar } from './TrainingModeChrome'
 import { MoveInput, TypeToggle, useTypingOpen } from './MoveInput'
-import { ProgressBar, Stars, Tabs, useSettings, useWide, pct, plural, STICKY_ACTIONS, BadgesEarned } from './ui'
+import { ProgressBar, Stars, Tabs, useSettings, useWide, pct, BadgesEarned } from './ui'
 import { START_FEN, describeSan, epdOf, moveNumberLabel, parseUci, uciOf } from '../lib/chess'
 import { loadNames, loadStats, positionIndex, type PositionRef } from '../lib/data'
 import { judgeMove, isUserPly, qualityFor, starsFor, moveScore, bandCount } from '../lib/trainer'
@@ -15,6 +15,7 @@ import { moveLoss } from '../lib/engine'
 import { OPENING_INFO } from '../content/openingInfo'
 import type { FamilyFile, StatsFile, TrainingLine, TrainMode } from '../lib/types'
 import type { BadgeDef } from '../lib/gamification'
+import { locale, t, tn, tr } from '../lib/i18n'
 
 export interface Miss {
   ply: number
@@ -93,14 +94,16 @@ const MODE_CHOICES: { value: TrainMode; label: string; text: string; icon: React
   { value: 'practice', label: 'Oefenen', text: 'Zonder pijlen, wel hints', icon: <Lightbulb size={20} /> },
   { value: 'mastery', label: 'Uit het hoofd', text: 'Zonder hulp, zonder terug', icon: <Brain size={20} /> },
 ]
-const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
-const sideNl = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
-const isTyping = (t: EventTarget | null) => {
-  const el = t as HTMLElement | null
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+const sideNl = (s: 'white' | 'black') => (s === 'white' ? t('Wit') : t('Zwart'))
+/** 'wit' of 'zwart', klein, midden in een zin */
+const sideLower = (s: 'white' | 'black') => (s === 'white' ? t('wit') : t('zwart'))
+const isTyping = (target: EventTarget | null) => {
+  const el = target as HTMLElement | null
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
 }
 
-export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange, completes, endTitle, onClose, closeLabel = 'Stoppen', modes, fullScreen, notice }: TrainerProps) {
+export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, renderEndExtra, header, autoIntro = true, onProgressChange, completes, endTitle, onClose, closeLabel = t('Stoppen'), modes, fullScreen, notice }: TrainerProps) {
   const settings = useSettings()
   const startPly = line.startPly ?? 0
   const endPly = Math.min(line.endPly ?? line.uci.length, line.uci.length)
@@ -208,14 +211,17 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   useEffect(() => {
     if (done || userTurn || intro || showFull || result) return
     const id = runId.current
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (id !== runId.current) return
-      if (ply < startPly) setOpponentLine(`Voorgespeeld: ${moveNumberLabel(ply)} ${sans[ply]}`)
-      else setOpponentLine(`${sideNl(opponent)} ${ply === startPly ? 'speelt' : 'antwoordt'} ${sans[ply]} (${describeSan(sans[ply])}).`)
+      if (ply < startPly) setOpponentLine(t('Voorgespeeld: {move}', { move: `${moveNumberLabel(ply)} ${sans[ply]}` }))
+      else {
+        const vars = { side: sideNl(opponent), san: sans[ply], desc: describeSan(sans[ply]) }
+        setOpponentLine(ply === startPly ? t('{side} speelt {san} ({desc}).', vars) : t('{side} antwoordt {san} ({desc}).', vars))
+      }
       setPly(p => p + 1)
       setHintLevel(0)
     }, ply < startPly ? 380 : ply === startPly ? 350 : 520)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
   }, [ply, done, userTurn, intro, showFull, result, startPly, opponent, sans])
 
   // De groene balk verdwijnt zodra er iets anders te melden is (fout, hint, terug …)
@@ -226,7 +232,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   // Leermodus: de zet wordt voorgedaan
   useEffect(() => {
     if (mode === 'learn' && userTurn && !intro) {
-      setFeedback({ kind: 'learn', title: <>Speel {sans[ply]}</>, text: <>{cap(describeSan(sans[ply]))}.</> })
+      setFeedback({ kind: 'learn', title: t('Speel {san}', { san: sans[ply] }), text: <>{cap(describeSan(sans[ply]))}.</> })
     }
   }, [mode, userTurn, ply, intro, sans])
 
@@ -257,8 +263,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       setViewPly(null)
       onComplete?.(r)
     }
-    const t = setTimeout(finish, 350)
-    return () => clearTimeout(t)
+    const timer = setTimeout(finish, 350)
+    return () => clearTimeout(timer)
   }, [done]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updatePly = (p: number, patch: (s: PlyState) => PlyState) =>
@@ -271,7 +277,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setTimeout(() => setFlash(f => (f?.square === to ? null : f)), 600)
     setOpponentLine(null)
     setWrongAt(null)
-    const fb: Feedback = { kind: 'correct', title: 'Goed', text: <><b>{sans[p]}</b> {mode !== 'learn' && quality === 5 ? 'klopt, in één keer.' : 'is goed.'}</> }
+    const fb: Feedback = { kind: 'correct', title: t('Goed'), text: <><b>{sans[p]}</b> {mode !== 'learn' && quality === 5 ? t('klopt, in één keer.') : t('is goed.')}</> }
     setFeedback(fb)
     setGood(fb)
     setPly(p + 1)
@@ -293,7 +299,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     const p = ply
     const verdict = judgeMove({ fen: fens[p], expected: line.uci[p], from, to, promotion, familyIndex: famIndex, names: names ?? undefined, stats })
     if (verdict.kind === 'illegal') {
-      setFeedback({ kind: 'illegal', title: 'Ongeldige zet', text: 'Dat is geen legale zet in deze stelling.' })
+      setFeedback({ kind: 'illegal', title: t('Ongeldige zet'), text: t('Dat is geen legale zet in deze stelling.') })
       return false
     }
     if (verdict.kind === 'correct') {
@@ -321,21 +327,27 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setFlash({ square: to, kind: 'bad' })
     setWrongAt({ ply: p, square: to })
     recordMistake({ sessionId, epd: epdOf(fens[p]), expected: line.uci[p], played: playedUci, result: 'mistake', familyId: line.familyId, variationId: line.variationId }).catch(() => {})
-    let title: ReactNode = 'Niet deze zet'
-    let text: ReactNode = <><b>{verdict.move.san}</b> is niet de zet uit deze variant. {mode === 'mastery' ? 'Probeer het nog eens.' : 'Probeer het nog eens of vraag een hint.'}</>
+    let title: ReactNode = t('Niet deze zet')
+    let text: ReactNode = <><b>{verdict.move.san}</b> {t('is niet de zet uit deze variant.')} {mode === 'mastery' ? t('Probeer het nog eens.') : t('Probeer het nog eens of vraag een hint.')}</>
     if (mode === 'learn') {
       // Ontwerp 12d: rode kaart en een ring op het juiste veld
-      title = 'Bijna'
-      text = <>Niet <b>{verdict.move.san}</b> maar <b>{sans[p]}</b>. Zet het stuk op het veld met de ring ({parseUci(line.uci[p]).to}).</>
+      title = t('Bijna')
+      text = tr(
+        <>Niet <b>{verdict.move.san}</b> maar <b>{sans[p]}</b>. Zet het stuk op het veld met de ring ({parseUci(line.uci[p]).to}).</>,
+        <>Not <b>{verdict.move.san}</b> but <b>{sans[p]}</b>. Move the piece to the ringed square ({parseUci(line.uci[p]).to}).</>,
+      )
     } else if (mistakes >= 3) {
       updatePly(p, s => ({ ...s, shown: true }))
       setHintLevel(2)
-      title = 'Zo moet het'
-      text = <>De zet was <b>{sans[p]}</b> ({describeSan(sans[p])}), naar het veld met de ring. Speel hem nu zelf. Deze stelling komt snel terug in je herhalingen.</>
+      title = t('Zo moet het')
+      text = tr(
+        <>De zet was <b>{sans[p]}</b> ({describeSan(sans[p])}), naar het veld met de ring. Speel hem nu zelf. Deze stelling komt snel terug in je herhalingen.</>,
+        <>The move was <b>{sans[p]}</b> ({describeSan(sans[p])}), to the ringed square. Now play it yourself. This position will come back soon in your reviews.</>,
+      )
     } else if (mistakes === 2 && mode !== 'mastery') {
       setHintLevel(h => Math.max(h, 1))
-      title = 'Nog niet'
-      text = <><b>{verdict.move.san}</b> is het ook niet. Hint: het gemarkeerde stuk moet bewegen.</>
+      title = t('Nog niet')
+      text = <><b>{verdict.move.san}</b> {t('is het ook niet. Hint: het gemarkeerde stuk moet bewegen.')}</>
     }
     setFeedback({ kind: 'wrong', title, text })
     // Optioneel: Stockfish onderscheidt een speelbare zet van een echte fout
@@ -344,12 +356,12 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         if (!r || id !== runId.current) return
         setFeedback(prev => {
           if (!prev || prev.kind !== 'wrong') return prev
-          const loss = (r.loss / 100).toFixed(1).replace('.', ',')
+          const loss = (r.loss / 100).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
           const extra = r.loss >= 150
-            ? <span className="mt-1 block">Stockfish: dit is ook objectief een slechte zet (ongeveer {loss} pion verlies).</span>
+            ? <span className="mt-1 block">{t('Stockfish: dit is ook objectief een slechte zet (ongeveer {loss} pion verlies).', { loss })}</span>
             : r.loss <= 50
-              ? <span className="mt-1 block">Stockfish: objectief speelbaar (minder dan een halve pion verschil), alleen niet de zet van deze lijn.</span>
-              : <span className="mt-1 block">Stockfish: een onnauwkeurigheid (ongeveer {loss} pion).</span>
+              ? <span className="mt-1 block">{t('Stockfish: objectief speelbaar (minder dan een halve pion verschil), alleen niet de zet van deze lijn.')}</span>
+              : <span className="mt-1 block">{t('Stockfish: een onnauwkeurigheid (ongeveer {loss} pion).', { loss })}</span>
           return { ...prev, text: <>{prev.text}{extra}</> }
         })
       }).catch(() => {})
@@ -362,14 +374,14 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     const next = Math.min(2, hintLevel + 1)
     setHintLevel(next)
     updatePly(ply, s => ({ ...s, hints: s.hints + 1 }))
-    setFeedback({ kind: 'hint', title: 'Hint', text: next === 1 ? 'Verplaats het gemarkeerde stuk.' : <>De zet is <b>{sans[ply]}</b>; de pijl laat hem zien.</> })
+    setFeedback({ kind: 'hint', title: t('Hint'), text: next === 1 ? t('Verplaats het gemarkeerde stuk.') : tr(<>De zet is <b>{sans[ply]}</b>; de pijl laat hem zien.</>, <>The move is <b>{sans[ply]}</b>; the arrow shows it.</>) })
   }
 
   function showMove() {
     if (!userTurn) return
     updatePly(ply, s => ({ ...s, shown: true }))
     setHintLevel(2)
-    setFeedback({ kind: 'hint', title: 'De zet', text: <>De zet is <b>{sans[ply]}</b>. Speel hem nu zelf.</> })
+    setFeedback({ kind: 'hint', title: t('De zet'), text: tr(<>De zet is <b>{sans[ply]}</b>. Speel hem nu zelf.</>, <>The move is <b>{sans[ply]}</b>. Now play it yourself.</>) })
   }
 
   function revealStats() {
@@ -390,7 +402,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setPly(Math.max(startPly, target))
     setOpponentLine(null)
     setWrongAt(null)
-    setFeedback({ kind: 'info', title: 'Teruggenomen', text: 'Een zet teruggenomen. Speel opnieuw.' })
+    setFeedback({ kind: 'info', title: t('Teruggenomen'), text: t('Een zet teruggenomen. Speel opnieuw.') })
     setHintLevel(0)
   }
 
@@ -435,10 +447,10 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const info = line.familyId ? OPENING_INFO[line.familyId] : undefined
   const currentName = names?.[epdOf(fens[displayPly])]?.[1] ?? lastNamed(names, fens, displayPly)
   const canHint = userTurn && mode !== 'mastery' && mode !== 'learn' && !intro
-  const meta = [MODE_LABEL[mode], family?.family.name ?? sideNl(line.side)].join(' · ')
+  const meta = [t(MODE_LABEL[mode]), family?.family.name ?? sideNl(line.side)].join(' · ')
   const single = startPly > 0 && endPly - startPly <= 1
   const recent = [displayPly - 2, displayPly - 1].filter(p => p >= 0 && p < sans.length)
-  const boardLabel = `Schaakbord, je speelt ${line.side === 'white' ? 'wit' : 'zwart'}${userTurn ? ', jij bent aan zet' : ''}`
+  const boardLabel = userTurn ? t('Schaakbord, je speelt {side}, jij bent aan zet', { side: sideLower(line.side) }) : t('Schaakbord, je speelt {side}', { side: sideLower(line.side) })
 
   const explain = (part?: 'stats' | 'rest') => (
     <Explanation
@@ -462,9 +474,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       tone={MODE_TONE[mode]}
       label={meta}
       title={<span className="line-clamp-2 text-balance">{line.title}</span>}
-      sub={single ? 'Losse positie: vind de zet die je eerder leerde.' : undefined}
+      sub={single ? t('Losse positie: vind de zet die je eerder leerde.') : undefined}
       action={!wide && recent.length > 0 && (
-        <ol className="flex shrink-0 flex-wrap justify-end gap-1.5 pb-0.5" aria-label="Laatste zetten">
+        <ol className="flex shrink-0 flex-wrap justify-end gap-1.5 pb-0.5" aria-label={t('Laatste zetten')}>
           {recent.map((p, i) => {
             const latest = p === displayPly - 1
             const label = p % 2 === 0 ? `${moveNumberLabel(p)}${sans[p]}` : i === 0 || recent.length === 1 ? `${moveNumberLabel(p)}${sans[p]}` : sans[p]
@@ -477,7 +489,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   // Desktop: de zet die je nu zoekt als "3.?" achter de gespeelde zetten (ontwerp 15b)
   const nextPly = userTurn && viewPly === null && !showFull && !intro ? ply : undefined
   const moreButton = (
-    <IconButton icon={<Ellipsis size={18} />} label="Meer" onClick={() => setMenuOpen(true)} expanded={menuOpen} square={wide && !!modes} row={wide && !modes} hint={wide ? 'Meer: bord draaien, alle zetten, zet typen (T); ← → bladert door eerdere zetten' : undefined} />
+    <IconButton icon={<Ellipsis size={18} />} label={t('Meer')} onClick={() => setMenuOpen(true)} expanded={menuOpen} square={wide && !!modes} row={wide && !modes} hint={wide ? t('Meer: bord draaien, alle zetten, zet typen (T); ← → bladert door eerdere zetten') : undefined} />
   )
 
   return (
@@ -486,7 +498,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       <TrainingTopBar
         value={result || !userPlies.length ? (done ? 1 : 0) : doneUser / userPlies.length}
         count={`${doneUser}/${userPlies.length}`}
-        countLabel={`${doneUser} van ${plural(userPlies.length, 'zet', 'zetten')} gespeeld`}
+        countLabel={tn(userPlies.length, '{done} van {n} zet gespeeld', '{done} van {n} zetten gespeeld', { done: doneUser })}
         onClose={onClose}
         closeLabel={closeLabel}
         full={fullScreen}
@@ -500,8 +512,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         {!wide && <div className="mb-3.5 px-2 sm:px-0">{heading}</div>}
         <div className="relative">
           {intro && (
-            <button className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/25 lg:hidden" onClick={() => setIntro(false)} aria-label="Start de training">
-              <span className="btn btn-primary px-8 py-3 text-base shadow-lg">Start</span>
+            <button className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/25 lg:hidden" onClick={() => setIntro(false)} aria-label={t('Start de training')}>
+              <span className="btn btn-primary px-8 py-3 text-base shadow-lg">{tr('Start', 'Start')}</span>
             </button>
           )}
           <Board
@@ -527,8 +539,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                 <>
                   {userPlies.length > 1 && userPlies.length <= 16
                     ? <MoveSquares plies={userPlies} ply={ply} state={plyState} />
-                    : <ProgressBar className="flex-1" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label="Voortgang in deze lijn" />}
-                  <span className="shrink-0 text-xs tabular-nums text-muted">{doneUser}/{plural(userPlies.length, 'zet', 'zetten')}</span>
+                    : <ProgressBar className="flex-1" value={userPlies.length ? doneUser / userPlies.length : done ? 1 : 0} label={t('Voortgang in deze lijn')} />}
+                  <span className="shrink-0 text-xs tabular-nums text-muted">{doneUser}/{tn(userPlies.length, '{n} zet', '{n} zetten')}</span>
                 </>
               )}
               {!showFull && !intro && <TypeToggle open={typing} onToggle={toggleTyping} className="ml-auto -mr-2" />}
@@ -539,8 +551,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
           )}
           {viewPly !== null && !showFull && !result && (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-info-soft px-3 py-2 text-sm text-info-ink">
-              <span>Je bekijkt een eerdere stelling (na {plural(viewPly, 'halve zet', 'halve zetten')}).</span>
-              <button className="min-h-11 font-semibold underline" onClick={() => setViewPly(null)}>Terug naar training</button>
+              <span>{tn(viewPly, 'Je bekijkt een eerdere stelling (na {n} halve zet).', 'Je bekijkt een eerdere stelling (na {n} halve zetten).')}</span>
+              <button className="min-h-11 font-semibold underline" onClick={() => setViewPly(null)}>{t('Terug naar training')}</button>
             </div>
           )}
           {!result && !showFull && !intro && typing && (
@@ -566,7 +578,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             startPly={startPly}
             selected={viewPly}
             onSelect={p => setViewPly(v => (v === p ? null : p))}
-            actions={renderEnd ? renderEnd(result, restart) : <button className="btn btn-primary w-full" onClick={restart}>Nog een keer</button>}
+            actions={renderEnd ? renderEnd(result, restart) : <button className="btn btn-primary w-full" onClick={restart}>{t('Nog een keer')}</button>}
             extra={renderEndExtra?.(result)}
             title={endTitle}
           />
@@ -574,8 +586,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
           <>
             {intro ? (
               <div className="card order-2 p-4 animate-fade-up lg:order-none">
-                <p className="text-sm text-muted">Speel de zet van de pijl; de computer speelt de tegenstander.</p>
-                <button className="btn btn-primary mt-3 w-full max-lg:hidden" onClick={() => setIntro(false)}>Start <kbd className="ml-1 hidden rounded border border-white/40 px-1 text-xs font-normal lg:inline">Enter</kbd></button>
+                <p className="text-sm text-muted">{t('Speel de zet van de pijl; de computer speelt de tegenstander.')}</p>
+                <button className="btn btn-primary mt-3 w-full max-lg:hidden" onClick={() => setIntro(false)}>{tr('Start', 'Start')} <kbd className="ml-1 hidden rounded border border-white/40 px-1 text-xs font-normal lg:inline">Enter</kbd></button>
               </div>
             ) : (
               // Desktop over het hele scherm: een goede zet staat in de groene balk onderin, niet hier
@@ -585,40 +597,40 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
             {!intro && (wide ? (
               // Desktop (ontwerp 15b): twee bij twee, met de sneltoets op de knop; Meer staat onderaan het paneel
               <div className="grid grid-cols-2 gap-2.5">
-                <IconButton icon={<Lightbulb size={18} />} label="Hint" shortcut="H" onClick={hint} disabled={!canHint} row />
-                <IconButton icon={<BookOpen size={18} />} label="Uitleg" shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} row />
-                <IconButton icon={<Undo2 size={18} />} label="Terug" shortcut="Z" onClick={previousMove} disabled={ply <= startPly} row />
-                <IconButton icon={<RotateCcw size={18} />} label="Opnieuw" shortcut="R" onClick={restart} row />
+                <IconButton icon={<Lightbulb size={18} />} label={t('Hint')} shortcut="H" onClick={hint} disabled={!canHint} row />
+                <IconButton icon={<BookOpen size={18} />} label={t('Uitleg')} shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} row />
+                <IconButton icon={<Undo2 size={18} />} label={t('Terug')} shortcut="Z" onClick={previousMove} disabled={ply <= startPly} row />
+                <IconButton icon={<RotateCcw size={18} />} label={t('Opnieuw')} shortcut="R" onClick={restart} row />
               </div>
             ) : (
               <div className="order-1 grid grid-cols-4 gap-2 lg:order-none">
-                <IconButton icon={<Lightbulb size={18} />} label="Hint" shortcut="H" onClick={hint} disabled={!canHint} />
-                <IconButton icon={<BookOpen size={18} />} label="Uitleg" shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} />
-                <IconButton icon={<Undo2 size={18} />} label="Terug" shortcut="Z" onClick={previousMove} disabled={ply <= startPly} />
+                <IconButton icon={<Lightbulb size={18} />} label={t('Hint')} shortcut="H" onClick={hint} disabled={!canHint} />
+                <IconButton icon={<BookOpen size={18} />} label={t('Uitleg')} shortcut="U" onClick={() => setShowExplain(s => !s)} pressed={showExplain} />
+                <IconButton icon={<Undo2 size={18} />} label={t('Terug')} shortcut="Z" onClick={previousMove} disabled={ply <= startPly} />
                 {moreButton}
               </div>
             ))}
             {mode === 'mastery' && userTurn && (plyState[ply]?.mistakes ?? 0) > 0 && (
-              <button className="btn btn-quiet order-1 lg:order-none" onClick={showMove}>Ik weet het niet: toon de zet</button>
+              <button className="btn btn-quiet order-1 lg:order-none" onClick={showMove}>{t('Ik weet het niet: toon de zet')}</button>
             )}
 
             {showFull && (
               <div className="card order-3 p-4 animate-fade-up lg:order-none">
-                <div className="mb-2 text-sm font-semibold">Volledige variant (bekijkmodus, telt niet mee)</div>
+                <div className="mb-2 text-sm font-semibold">{t('Volledige variant (bekijkmodus, telt niet mee)')}</div>
                 <MoveList sans={sans.slice(0, endPly)} current={displayPly} onSelect={setViewPly} />
                 <div className="mt-3 flex gap-2">
-                  <button className="btn btn-ghost min-h-11 flex-1" onClick={() => setViewPly(v => Math.max(0, (v ?? endPly) - 1))} aria-label="Vorige zet"><ChevronLeft size={18} aria-hidden /></button>
-                  <button className="btn btn-ghost min-h-11 flex-1" onClick={() => setViewPly(v => Math.min(endPly, (v ?? endPly) + 1))} aria-label="Volgende zet"><ChevronRight size={18} aria-hidden /></button>
-                  <button className="btn btn-primary min-h-11 flex-[2]" onClick={() => { setShowFull(false); setViewPly(null) }}>Terug naar training</button>
+                  <button className="btn btn-ghost min-h-11 flex-1" onClick={() => setViewPly(v => Math.max(0, (v ?? endPly) - 1))} aria-label={t('Vorige zet')}><ChevronLeft size={18} aria-hidden /></button>
+                  <button className="btn btn-ghost min-h-11 flex-1" onClick={() => setViewPly(v => Math.min(endPly, (v ?? endPly) + 1))} aria-label={t('Volgende zet')}><ChevronRight size={18} aria-hidden /></button>
+                  <button className="btn btn-primary min-h-11 flex-[2]" onClick={() => { setShowFull(false); setViewPly(null) }}>{t('Terug naar training')}</button>
                 </div>
               </div>
             )}
 
             {(showMoves || startPly > 0) && !showFull && (
               <div className="card order-3 p-4 lg:order-none">
-                <div className="mb-2 text-sm font-semibold">{startPly > 0 ? 'Zo ontstond deze stelling' : 'Gespeelde zetten'}</div>
+                <div className="mb-2 text-sm font-semibold">{startPly > 0 ? t('Zo ontstond deze stelling') : t('Gespeelde zetten')}</div>
                 <MoveList sans={sans.slice(0, ply)} current={viewPly ?? ply} onSelect={p => setViewPly(p >= ply ? null : p)} />
-                {currentName && <div className="mt-2 text-xs text-muted">Stelling: {currentName}</div>}
+                {currentName && <div className="mt-2 text-xs text-muted">{t('Stelling:')} {currentName}</div>}
               </div>
             )}
 
@@ -631,7 +643,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                 <div className="flex items-stretch gap-2">
                   {modes && (
                     <div className="min-w-0 flex-1">
-                      <Tabs<TrainMode> stretch label="Soort training" value={modes.value} onChange={modes.onChange} options={MODE_CHOICES.map(c => ({ value: c.value, label: c.label }))} />
+                      <Tabs<TrainMode> stretch label={t('Soort training')} value={modes.value} onChange={modes.onChange} options={MODE_CHOICES.map(c => ({ value: c.value, label: t(c.label) }))} />
                     </div>
                   )}
                   {moreButton}
@@ -642,14 +654,14 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
         )}
       </aside>
 
-      <TrainingSheet open={showExplain && !wide && !result} onClose={() => setShowExplain(false)} title="Uitleg" cards>
+      <TrainingSheet open={showExplain && !wide && !result} onClose={() => setShowExplain(false)} title={tr('Uitleg', 'Explanation')} cards>
         {explain()}
       </TrainingSheet>
 
       {/* Meer (ontwerp 12f): de trainingssoort en de overige acties in één vel. Op desktop staat de soort al onderaan het paneel. */}
-      <TrainingSheet open={menuOpen && !result} onClose={closeMenu} title={modes && !wide ? 'Hoe wil je trainen?' : 'Meer'} cards>
+      <TrainingSheet open={menuOpen && !result} onClose={closeMenu} title={modes && !wide ? t('Hoe wil je trainen?') : t('Meer')} cards>
         {modes && !wide && (
-          <ul className="flex flex-col gap-2.5" aria-label="Trainingssoort">
+          <ul className="flex flex-col gap-2.5" aria-label={t('Trainingssoort')}>
             {MODE_CHOICES.map(c => {
               const on = c.value === modes.value
               return (
@@ -657,8 +669,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
                   <button type="button" className={`tap flex w-full items-center gap-3 rounded-2xl! px-3.5 py-3 text-left ${on ? 'tap-on' : ''}`} aria-pressed={on} onClick={() => { closeMenu(); modes.onChange(c.value) }}>
                     <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-surface text-brand-strong' : 'bg-surface-2 text-ink'}`}>{c.icon}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-bold leading-tight">{c.label}</span>
-                      <span className={`block text-[13px] ${on ? 'text-brand-strong' : 'text-muted'}`}>{c.text}</span>
+                      <span className="block font-bold leading-tight">{t(c.label)}</span>
+                      <span className={`block text-[13px] ${on ? 'text-brand-strong' : 'text-muted'}`}>{t(c.text)}</span>
                     </span>
                     <CircleCheck size={22} strokeWidth={2.25} aria-hidden className={`shrink-0 ${on ? 'text-brand' : 'text-line'}`} />
                   </button>
@@ -668,11 +680,11 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
           </ul>
         )}
         <div className="card divide-y-2 divide-surface-2 overflow-hidden">
-          <SheetRow icon={<RotateCcw size={18} />} label="Opnieuw beginnen" shortcut="R" onClick={() => { restart(); closeMenu() }} />
-          <SheetRow icon={<Eye size={18} />} label={showFull ? 'Terug naar training' : 'Toon volledige variant'} onClick={() => { setShowFull(s => !s); setViewPly(null); closeMenu() }} />
-          <SheetRow icon={<ArrowDownUp size={18} />} label="Bord draaien" onClick={() => { setFlipped(f => !f); closeMenu() }} pressed={flipped} />
-          <SheetRow icon={<ListOrdered size={18} />} label={showMoves ? 'Verberg alle zetten' : 'Bekijk alle zetten'} onClick={() => { setShowMoves(s => !s); closeMenu() }} />
-          {!showFull && !intro && <SheetRow icon={<Keyboard size={18} />} label={typing ? 'Zet typen verbergen' : 'Zet typen'} shortcut="T" onClick={() => { closeMenu(); toggleTyping() }} />}
+          <SheetRow icon={<RotateCcw size={18} />} label={t('Opnieuw beginnen')} shortcut="R" onClick={() => { restart(); closeMenu() }} />
+          <SheetRow icon={<Eye size={18} />} label={showFull ? t('Terug naar training') : t('Toon volledige variant')} onClick={() => { setShowFull(s => !s); setViewPly(null); closeMenu() }} />
+          <SheetRow icon={<ArrowDownUp size={18} />} label={t('Bord draaien')} onClick={() => { setFlipped(f => !f); closeMenu() }} pressed={flipped} />
+          <SheetRow icon={<ListOrdered size={18} />} label={showMoves ? t('Verberg alle zetten') : t('Bekijk alle zetten')} onClick={() => { setShowMoves(s => !s); closeMenu() }} />
+          {!showFull && !intro && <SheetRow icon={<Keyboard size={18} />} label={typing ? t('Zet typen verbergen') : t('Zet typen')} shortcut="T" onClick={() => { closeMenu(); toggleTyping() }} />}
         </div>
       </TrainingSheet>
     </div>
@@ -708,13 +720,13 @@ function MoveChips({ sans, upto, next }: { sans: string[]; upto: number; next?: 
   const off = 'border-line bg-surface-2 text-ink'
   const on = 'border-brand bg-brand-soft text-brand-strong'
   return (
-    <ol className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Zetten tot nu toe">
-      {from > 0 && <li className="self-center px-0.5 text-[15px] font-bold text-muted" aria-label={plural(from, 'eerdere halve zet', 'eerdere halve zetten')}>…</li>}
+    <ol className="mt-2.5 flex flex-wrap gap-1.5" aria-label={t('Zetten tot nu toe')}>
+      {from > 0 && <li className="self-center px-0.5 text-[15px] font-bold text-muted" aria-label={tn(from, '{n} eerdere halve zet', '{n} eerdere halve zetten')}>…</li>}
       {plies.map(p => {
         const latest = next === undefined && p === upto - 1
         return <li key={p} className={`${chip} ${latest ? on : off}`} aria-current={latest ? 'step' : undefined}>{p % 2 === 0 || p === from ? moveNumberLabel(p) : ''}{sans[p]}</li>
       })}
-      {next !== undefined && <li className={`${chip} ${on}`} aria-current="step"><span aria-hidden>{moveNumberLabel(next)}?</span><span className="sr-only">jij bent aan zet</span></li>}
+      {next !== undefined && <li className={`${chip} ${on}`} aria-current="step"><span aria-hidden>{moveNumberLabel(next)}?</span><span className="sr-only">{t('jij bent aan zet')}</span></li>}
     </ol>
   )
 }
@@ -735,7 +747,7 @@ function SheetRow({ icon, label, onClick, shortcut, pressed }: { icon: ReactNode
 function MoveSquares({ plies, ply, state }: { plies: number[]; ply: number; state: Record<number, PlyState> }) {
   const good = plies.filter(p => p < ply && !(state[p]?.mistakes || state[p]?.hints || state[p]?.shown)).length
   return (
-    <ol className="flex flex-1 gap-1.5" aria-label={`${good} van ${plies.length} zetten in één keer goed`}>
+    <ol className="flex flex-1 gap-1.5" aria-label={t('{good} van {n} zetten in één keer goed', { good, n: plies.length })}>
       {plies.map(p => {
         const s = state[p]
         const tone = p >= ply ? (p === plies.find(x => x >= ply) ? 'bg-track ring-2 ring-brand/60' : 'bg-track') : s?.mistakes || s?.hints || s?.shown ? 'bg-danger' : 'bg-brand'
@@ -800,20 +812,20 @@ const FEEDBACK_STYLE: Record<FeedbackKind | 'status', { box: string; tile: strin
 function FeedbackBox({ feedback, opponentLine, userTurn, done, showFull, chips }: { feedback: Feedback; opponentLine: string | null; userTurn: boolean; done: boolean; showFull: boolean; /** De zetten staan al als blokjes in beeld (desktop): de zet van de tegenstander bij "Speel …" alleen voorlezen */ chips?: boolean }) {
   const fb = showFull ? null : feedback
   const style = FEEDBACK_STYLE[fb?.kind ?? 'status']
-  const status = showFull ? 'Bekijkmodus.' : done ? 'Lijn afgerond.' : userTurn ? 'Jij bent aan zet.' : 'De tegenstander is aan zet…'
+  const status = showFull ? t('Bekijkmodus.') : done ? t('Lijn afgerond.') : userTurn ? t('Jij bent aan zet.') : t('De tegenstander is aan zet…')
   const title = fb?.title ?? (fb ? null : status)
   const showStatus = !!fb && fb.kind !== 'learn' && (opponentLine || fb.kind === 'correct')
   return (
     <div className={`order-first flex items-start gap-3 rounded-[18px] border-2 p-3.5 lg:order-none ${style.box} ${feedback?.kind === 'wrong' && !showFull ? 'animate-shake' : ''}`} aria-live="polite" aria-atomic="true">
       <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.tile}`}>{style.icon}</span>
       <div className="min-w-0 pt-px">
-        {fb && <span className="sr-only">{style.label}: </span>}
+        {fb && <span className="sr-only">{t(style.label)}: </span>}
         {title && <div className={`text-base font-extrabold leading-snug ${style.title}`}>{title}</div>}
         <div className={`mt-0.5 text-sm leading-snug ${fb?.kind === 'learn' || !fb ? 'text-muted' : 'text-ink'}`}>
           {fb?.text}
           {opponentLine && !showFull && <span className={chips && fb?.kind === 'learn' ? 'sr-only' : fb?.text ? 'block' : ''}>{opponentLine}</span>}
           {showStatus && <span className="block font-semibold">{status}</span>}
-          {showFull && 'Je bekijkt de hele variant; dit telt niet mee.'}
+          {showFull && t('Je bekijkt de hele variant; dit telt niet mee.')}
         </div>
       </div>
     </div>
@@ -821,9 +833,9 @@ function FeedbackBox({ feedback, opponentLine, userTurn, done, showFull, chips }
 }
 
 export function MoveList({ sans, current, onSelect, startPly = 0, marked }: { sans: string[]; current: number; onSelect?: (ply: number) => void; startPly?: number; marked?: Set<number> }) {
-  if (!sans.length) return <div className="text-sm text-muted">Nog geen zetten.</div>
+  if (!sans.length) return <div className="text-sm text-muted">{t('Nog geen zetten.')}</div>
   return (
-    <ol className="flex max-h-48 flex-wrap gap-x-1 gap-y-1 overflow-y-auto font-mono text-sm scrollbar-thin" aria-label="Zetten">
+    <ol className="flex max-h-48 flex-wrap gap-x-1 gap-y-1 overflow-y-auto font-mono text-sm scrollbar-thin" aria-label={t('Zetten')}>
       {sans.map((s, i) => {
         const ply = startPly + i
         const miss = marked?.has(ply)
@@ -834,7 +846,7 @@ export function MoveList({ sans, current, onSelect, startPly = 0, marked }: { sa
               className={`min-h-8 rounded px-1 ${current === ply + 1 ? 'bg-brand text-on-brand' : miss ? 'bg-danger-soft text-danger-ink underline decoration-dotted' : 'hover:bg-surface-2'}`}
               onClick={() => onSelect?.(ply + 1)}
               aria-current={current === ply + 1 ? 'step' : undefined}
-              aria-label={miss ? `${s}, hier ging het mis` : undefined}
+              aria-label={miss ? t('{san}, hier ging het mis', { san: s }) : undefined}
             >
               {s}
             </button>
@@ -848,7 +860,17 @@ export function MoveList({ sans, current, onSelect, startPly = 0, marked }: { sa
 function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, actions, extra, title: customTitle }: { line: TrainingLine; mode: TrainMode; result: LineResult; sans: string[]; startPly: number; selected: number | null; onSelect: (ply: number) => void; actions: ReactNode; extra?: ReactNode; title?: string }) {
   const single = (line.endPly ?? line.uci.length) - startPly <= 1
   const perfect = result.mistakes + result.hints + result.shown === 0
-  const title = customTitle ?? (mode === 'learn' ? 'Variant doorlopen' : single ? (perfect ? 'Goed onthouden' : 'Afgerond') : perfect ? 'Foutloos gespeeld' : 'Variant afgerond')
+  const title = customTitle ?? (mode === 'learn' ? t('Variant doorlopen') : single ? (perfect ? t('Goed onthouden') : t('Afgerond')) : perfect ? t('Foutloos gespeeld') : t('Variant afgerond'))
+  // Niet meer onderin vastgeplakt: in Safari op iOS viel die balk half onder de werkbalk en over de titel.
+  // In plaats daarvan schuift de knop (met de titel erboven) vanzelf in beeld als de variant klaar is.
+  const actionsRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = actionsRef.current
+    if (!el) return
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const id = requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }))
+    return () => cancelAnimationFrame(id)
+  }, [])
   return (
     <div className="card p-5 animate-pop" aria-live="polite">
       <h2 className="text-xl font-bold">{title}</h2>
@@ -858,23 +880,23 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
           <Stars count={result.stars} size="text-2xl" />
         </div>
       )}
-      {single && <p className="mt-2 text-sm">{perfect ? 'Het interval wordt langer: je ziet deze stelling later pas terug.' : 'Deze stelling komt over 10 minuten terug.'}</p>}
+      {single && <p className="mt-2 text-sm">{perfect ? t('Het interval wordt langer: je ziet deze stelling later pas terug.') : t('Deze stelling komt over 10 minuten terug.')}</p>}
       {/* Direct onder de titel, en op mobiel onderin vastgeplakt: nooit scrollen om verder te kunnen */}
-      <div className={`mt-4 grid grid-cols-1 gap-2 ${STICKY_ACTIONS} max-lg:-mx-5 max-lg:px-5`}>{actions}</div>
+      <div ref={actionsRef} className="mt-4 grid grid-cols-1 gap-2 scroll-mb-[calc(6rem+env(safe-area-inset-bottom))]">{actions}</div>
       {!single && <ResultNumbers result={result} />}
       <BadgesEarned badges={result.badges} className="mt-3" />
       {result.misses.length > 0 && !single && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold">Hier ging het mis</h3>
+          <h3 className="text-sm font-semibold">{t('Hier ging het mis')}</h3>
           <ul className="mt-1 space-y-1 text-sm">
             {result.misses.map(m => (
               <li key={m.ply}>
                 <button className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-surface-2 ${selected === m.ply ? 'bg-surface-2' : ''}`} onClick={() => onSelect(m.ply)} aria-pressed={selected === m.ply}>
                   <span className="font-mono text-muted">{moveNumberLabel(m.ply)}</span>
                   <span>
-                    {m.played.length ? <>Jij: <span className="font-mono">{m.played.join(', ')}</span> · </> : null}
-                    juist: <b className="font-mono">{m.expected}</b>
-                    {m.shown ? ' (getoond)' : m.hinted ? ' (met hint)' : ''}
+                    {m.played.length ? <>{t('Jij:')} <span className="font-mono">{m.played.join(', ')}</span> · </> : null}
+                    {t('juist:')} <b className="font-mono">{m.expected}</b>
+                    {m.shown ? ` (${t('getoond')})` : m.hinted ? ` (${t('met hint')})` : ''}
                   </span>
                 </button>
               </li>
@@ -884,7 +906,7 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
       )}
       {!single && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold">De hele lijn</h3>
+          <h3 className="text-sm font-semibold">{t('De hele lijn')}</h3>
           <div className="mt-1"><MoveList sans={sans.slice(0, line.endPly ?? line.uci.length)} current={selected ?? -1} marked={new Set(result.misses.map(m => m.ply))} onSelect={p => onSelect(p - 1)} /></div>
         </div>
       )}
@@ -896,8 +918,8 @@ function EndPanel({ line, mode, result, sans, startPly, selected, onSelect, acti
 export function ResultNumbers({ result }: { result: LineResult }) {
   return (
     <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
-      <div className="flex flex-col-reverse rounded-xl bg-surface-2 p-2"><dt className="text-muted">direct goed</dt><dd className="text-lg font-bold tabular-nums">{result.correctFirstTry}/{result.userMoves}</dd></div>
-      <div className="flex flex-col-reverse rounded-xl bg-surface-2 p-2"><dt className="text-muted">{result.mistakes === 1 ? 'fout' : 'fouten'}</dt><dd className="text-lg font-bold tabular-nums">{result.mistakes}</dd></div>
+      <div className="flex flex-col-reverse rounded-xl bg-surface-2 p-2"><dt className="text-muted">{t('direct goed')}</dt><dd className="text-lg font-bold tabular-nums">{result.correctFirstTry}/{result.userMoves}</dd></div>
+      <div className="flex flex-col-reverse rounded-xl bg-surface-2 p-2"><dt className="text-muted">{result.mistakes === 1 ? t('fout') : t('fouten')}</dt><dd className="text-lg font-bold tabular-nums">{result.mistakes}</dd></div>
       <div className="flex flex-col-reverse rounded-xl bg-surface-2 p-2"><dt className="text-muted">XP</dt><dd className="text-lg font-bold tabular-nums">+{result.xp}</dd></div>
     </dl>
   )
@@ -927,27 +949,27 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
     <div className="space-y-3.5 animate-fade-up">
       {info && part !== 'stats' && (
         <section className="card flex flex-col gap-2.5 p-3.5">
-          <h3 className="text-xs font-bold uppercase tracking-[0.04em] text-muted">Het idee</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.04em] text-muted">{t('Het idee')}</h3>
           <p className="text-base font-medium leading-[1.45]">{info.idea}</p>
           <ol className="space-y-2 text-sm leading-snug">
-            {info.plans.slice(0, 3).map((t, i) => <li key={t} className="flex gap-2.5"><span aria-hidden className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-extrabold text-brand-strong">{i + 1}</span><span className="pt-px">{t}</span></li>)}
+            {info.plans.slice(0, 3).map((plan, i) => <li key={plan} className="flex gap-2.5"><span aria-hidden className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-extrabold text-brand-strong">{i + 1}</span><span className="pt-px">{plan}</span></li>)}
           </ol>
         </section>
       )}
       {part !== 'rest' && <section className="card px-3.5 py-3 lg:px-4 lg:py-3.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <h3 className="text-[15px] font-bold">Wat wordt hier gespeeld?</h3>
-          <span className="text-xs text-muted">{useBand ? 'jouw niveau' : 'alle niveaus'} · score {side === 'white' ? 'wit' : 'zwart'}</span>
+          <h3 className="text-[15px] font-bold">{t('Wat wordt hier gespeeld?')}</h3>
+          <span className="text-xs text-muted">{useBand ? t('jouw niveau') : t('alle niveaus')} · {t('score {side}', { side: sideLower(side) })}</span>
         </div>
-        <p className="sr-only">{toMove === 'white' ? 'Wit' : 'Zwart'} aan zet.</p>
+        <p className="sr-only">{t('{side} aan zet.', { side: sideNl(toMove) })}</p>
         {hideAnswer ? (
           <div className="mt-2 rounded-xl bg-surface-2 p-3 text-sm">
-            <p className="text-muted">De statistiek verklapt de zet die je nu moet spelen.</p>
-            <button className="btn btn-ghost mt-2 min-h-11" onClick={onReveal}>Toch tonen (telt als hint)</button>
+            <p className="text-muted">{t('De statistiek verklapt de zet die je nu moet spelen.')}</p>
+            <button className="btn btn-ghost mt-2 min-h-11" onClick={onReveal}>{t('Toch tonen (telt als hint)')}</button>
           </div>
         ) : rows.length ? (
           <table className="mt-1.5 w-full text-sm">
-            <thead className="sr-only"><tr><th>Zet</th><th>Hoe vaak gespeeld</th><th>Aandeel</th><th>Score {side === 'white' ? 'wit' : 'zwart'}</th></tr></thead>
+            <thead className="sr-only"><tr><th>{t('Zet')}</th><th>{t('Hoe vaak gespeeld')}</th><th>{t('Aandeel')}</th><th>{t('Score {side}', { side: sideLower(side) })}</th></tr></thead>
             <tbody className="divide-y-2 divide-surface-2">
               {rows.map(r => (
                 <tr key={r.san} className={part === 'stats' ? 'h-[34px]' : 'h-[38px]'}>
@@ -960,14 +982,14 @@ function Explanation({ fen, name, info, stats, side, elo, lastSan, famIndex, fam
             </tbody>
           </table>
         ) : (
-          <p className="mt-1.5 text-sm text-muted">Geen statistiek voor deze stelling.</p>
+          <p className="mt-1.5 text-sm text-muted">{t('Geen statistiek voor deze stelling.')}</p>
         )}
       </section>}
       {part !== 'stats' && (name || lastSan || lineNames.length > 0) && (
         <section className="card space-y-0.5 px-3.5 py-3 text-sm text-muted">
-          {name && <div>Lichess-naam: <span className="text-ink">{name}</span></div>}
-          {lastSan && <div>Laatste zet: {lastSan}, {describeSan(lastSan)}</div>}
-          {lineNames.length > 0 && <div>Komt voor in {plural(lineNames.length, 'benoemde variant', 'benoemde varianten')}{lineNames.length <= 4 ? `: ${lineNames.join(' · ')}` : ''}.</div>}
+          {name && <div>{t('Lichess-naam:')} <span className="text-ink">{name}</span></div>}
+          {lastSan && <div>{t('Laatste zet:')} {lastSan}, {describeSan(lastSan)}</div>}
+          {lineNames.length > 0 && <div>{tn(lineNames.length, 'Komt voor in {n} benoemde variant', 'Komt voor in {n} benoemde varianten')}{lineNames.length <= 4 ? `: ${lineNames.join(' · ')}` : ''}.</div>}
         </section>
       )}
     </div>

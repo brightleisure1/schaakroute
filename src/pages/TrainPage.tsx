@@ -13,6 +13,7 @@ import { Confetti, ErrorBox, useWide } from '../components/ui'
 import { BoardLoading } from '../components/PieceMotion'
 import { useCloseTraining } from '../components/TrainingModeChrome'
 import type { FamilyFile, TrainMode, Variation } from '../lib/types'
+import { t, tn, tr } from '../lib/i18n'
 
 const MODE_NAME: Record<string, string> = { learn: 'Leren', practice: 'Oefenen', mastery: 'Uit het hoofd' }
 
@@ -46,7 +47,7 @@ export function TrainPage() {
 
   if (error) return <ErrorBox error={error} />
   if (!file || !line) return <BoardLoading />
-  if (!variation) return <ErrorBox error="Variant niet gevonden" />
+  if (!variation) return <ErrorBox error={t('Variant niet gevonden')} />
 
   function switchMode(m: TrainMode) {
     if (m === mode) return
@@ -58,10 +59,13 @@ export function TrainPage() {
 
   const pending = pendingMode && (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-info-soft px-4 py-3 text-sm text-info-ink lg:mb-0" role="alertdialog" aria-live="assertive">
-      <span>Je bent halverwege deze variant. Naar <b>{MODE_NAME[pendingMode]}</b> gaan begint de lijn opnieuw.</span>
+      <span>{tr(
+        <>Je bent halverwege deze variant. Naar <b>{t(MODE_NAME[pendingMode])}</b> gaan begint de lijn opnieuw.</>,
+        <>You're halfway through this variation. Switching to <b>{t(MODE_NAME[pendingMode])}</b> restarts the line.</>,
+      )}</span>
       <span className="flex gap-2">
-        <button className="btn btn-primary min-h-11" onClick={() => { const m = pendingMode; setPendingMode(null); setSearch({ mode: m }) }} autoFocus>Toch overschakelen</button>
-        <button className="btn btn-ghost min-h-11" onClick={() => setPendingMode(null)}>Blijven</button>
+        <button className="btn btn-primary min-h-11" onClick={() => { const m = pendingMode; setPendingMode(null); setSearch({ mode: m }) }} autoFocus>{t('Toch overschakelen')}</button>
+        <button className="btn btn-ghost min-h-11" onClick={() => setPendingMode(null)}>{t('Blijven')}</button>
       </span>
     </div>
   )
@@ -80,7 +84,7 @@ export function TrainPage() {
         sessionId={sessionId}
         onProgressChange={p => { inProgress.current = p }}
         onClose={close}
-        closeLabel={`Stoppen, terug naar ${file.family.name}`}
+        closeLabel={t('Stoppen, terug naar {name}', { name: file.family.name })}
         modes={{ value: mode, onChange: switchMode }}
         fullScreen
         notice={wide ? pending : undefined}
@@ -97,16 +101,16 @@ function EndActions({ file, variation, mode, restart }: { file: FamilyFile; vari
   const progress = useProgressMap(file.family.id)
   const next = courseOrder(file).find(v => v.id !== variation.id && !progress.get(v.id)?.completions)
   const primary = mode === 'learn'
-    ? { label: 'Nu zelf oefenen, zonder pijlen', go: () => nav('?mode=practice') }
+    ? { label: t('Nu zelf oefenen, zonder pijlen'), go: () => nav('?mode=practice') }
     : next
-      ? { label: `Volgende variant: ${displayName(next, file.family.name)}`, go: () => nav(`/train/${file.family.id}/${next.id}?mode=learn`) }
-      : { label: 'Dezelfde variant opnieuw', go: restart }
+      ? { label: t('Volgende variant: {name}', { name: displayName(next, file.family.name) }), go: () => nav(`/train/${file.family.id}/${next.id}?mode=learn`) }
+      : { label: t('Dezelfde variant opnieuw'), go: restart }
 
   // Enter = de hoofdactie, ook zonder muis
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement
-      if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SELECT'].includes(t.tagName)) {
+      const el = e.target as HTMLElement
+      if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SELECT'].includes(el.tagName)) {
         e.preventDefault()
         primary.go()
       }
@@ -122,8 +126,8 @@ function EndActions({ file, variation, mode, restart }: { file: FamilyFile; vari
         <span className="flex shrink-0 items-center gap-1"><kbd className="hidden rounded border border-current/40 px-1 text-xs font-normal opacity-80 lg:inline">Enter</kbd><ArrowRight size={18} aria-hidden /></span>
       </button>
       {mode === 'learn'
-        ? <button className="btn btn-ghost min-h-11" onClick={restart}>Nog eens doorlopen</button>
-        : next && <button className="btn btn-ghost min-h-11" onClick={restart}>Dezelfde variant opnieuw</button>}
+        ? <button className="btn btn-ghost min-h-11" onClick={restart}>{t('Nog eens doorlopen')}</button>
+        : next && <button className="btn btn-ghost min-h-11" onClick={restart}>{t('Dezelfde variant opnieuw')}</button>}
     </>
   )
 }
@@ -136,27 +140,30 @@ function EndExtras({ file, variation, mode }: { file: FamilyFile; variation: Var
 
   async function addToRepertoire(repId?: number) {
     let id = repId
-    if (!id) id = (await db.repertoires.add({ name: `Mijn ${file.family.name}`, side: file.family.side, familyId: file.family.id, createdAt: Date.now(), updatedAt: Date.now() })) as number
+    if (!id) id = (await db.repertoires.add({ name: t('Mijn {name}', { name: file.family.name }), side: file.family.side, familyId: file.family.id, createdAt: Date.now(), updatedAt: Date.now() })) as number
     const r = await addLine(id, file.family.side, variation.uci)
     setRepMsg(r.conflicts.length
-      ? `Toegevoegd. Op ${r.conflicts.length === 1 ? 'één plek' : `${r.conflicts.length} plekken`} had je al een andere hoofdzet (${r.conflicts.map(c => `${c.existing} i.p.v. ${c.added}`).join(', ')}); de nieuwe zet is als alternatief bewaard.`
-      : r.added ? `${r.added} ${r.added === 1 ? 'zet' : 'zetten'} toegevoegd aan je repertoire.` : 'Deze variant staat al in je repertoire.')
+      ? t('Toegevoegd. Op {places} had je al een andere hoofdzet ({list}); de nieuwe zet is als alternatief bewaard.', {
+        places: tn(r.conflicts.length, 'één plek', '{n} plekken'),
+        list: r.conflicts.map(c => t('{a} i.p.v. {b}', { a: c.existing, b: c.added })).join(', '),
+      })
+      : r.added ? tn(r.added, '{n} zet toegevoegd aan je repertoire.', '{n} zetten toegevoegd aan je repertoire.') : t('Deze variant staat al in je repertoire.'))
   }
 
   return (
     <>
-      <Link className="btn btn-ghost min-h-11" to={`/opening/${file.family.id}`}>Terug naar de variantenboom</Link>
+      <Link className="btn btn-ghost min-h-11" to={`/opening/${file.family.id}`}>{t('Terug naar de variantenboom')}</Link>
       <details className="rounded-xl border border-line p-3">
-        <summary className="cursor-pointer text-sm font-semibold">Toevoegen aan repertoire</summary>
+        <summary className="cursor-pointer text-sm font-semibold">{t('Toevoegen aan repertoire')}</summary>
         <div className="mt-2 flex flex-wrap gap-2">
           {reps.map(r => <button key={r.id} className="btn btn-ghost min-h-11" onClick={() => addToRepertoire(r.id)}>+ {r.name}</button>)}
-          <button className="btn btn-ghost min-h-11" onClick={() => addToRepertoire()}>+ Nieuw repertoire</button>
+          <button className="btn btn-ghost min-h-11" onClick={() => addToRepertoire()}>+ {t('Nieuw repertoire')}</button>
         </div>
         {repMsg && <p className="mt-2 text-sm text-brand-strong" role="status">{repMsg}</p>}
       </details>
       {related.length > 0 && (
         <details className="rounded-xl border border-line p-3">
-          <summary className="cursor-pointer text-sm font-semibold">Verwante varianten ({related.length})</summary>
+          <summary className="cursor-pointer text-sm font-semibold">{t('Verwante varianten ({n})', { n: related.length })}</summary>
           <ul className="mt-2 space-y-1">
             {related.map(v => (
               <li key={v.id}>

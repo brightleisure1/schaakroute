@@ -1,5 +1,6 @@
 import { formatMoves } from './chess'
 import type { FamilySummary, Side } from './types'
+import { t } from './i18n'
 
 export interface OpeningGroup {
   key: string
@@ -17,10 +18,10 @@ export function groupByFirstMove(families: FamilySummary[], side: Side): Opening
   const own = families.filter(f => f.side === side)
   const main = MAIN_FIRST_MOVES.map(move => ({
     key: move,
-    label: side === 'white' ? `Begint met 1. ${move}` : `Tegen 1. ${move}`,
+    label: side === 'white' ? t('Begint met 1. {move}', { move }) : t('Tegen 1. {move}', { move }),
     families: own.filter(f => f.rootSan[0] === move),
   }))
-  const other = { key: 'other', label: 'Andere eerste zetten', families: own.filter(f => !MAIN_FIRST_MOVES.includes(f.rootSan[0])) }
+  const other = { key: 'other', label: t('Andere eerste zetten'), families: own.filter(f => !MAIN_FIRST_MOVES.includes(f.rootSan[0])) }
   return [...main, other].filter(g => g.families.length)
 }
 

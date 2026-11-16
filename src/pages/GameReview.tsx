@@ -8,14 +8,15 @@ import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
 import { useAsync } from '../lib/hooks'
 import {
-  CLASS_INFO, CLASS_ORDER, ENGINE_NAME, reviewRatings, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
+  CLASS_INFO, CLASS_ORDER, ENGINE_NAME, playerName, reviewRatings, bookInfo, decodeShare, encodeShare, gameToPgn, highlightsOf, isOwnGame, fetchLichessGame, findChesscomGame, gameFromPgn, parseGameLink, classifyGame, explainMove, fetchChesscomRecent, fetchLichessRecent, formatScore, summarize, winPct,
   type Highlight, type HighlightKind, type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board, MiniBoard } from '../components/Board'
 import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
 import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
-import { Empty, ErrorBox, FocusBar, PageHeader, STICKY_ACTIONS, Spinner, Tabs, plural, useSettings } from '../components/ui'
+import { Empty, ErrorBox, FocusBar, PageHeader, STICKY_ACTIONS, Spinner, Tabs, useSettings } from '../components/ui'
+import { locale, t, tn, tr } from '../lib/i18n'
 import type { Side } from '../lib/types'
 import { Download, Lock, Search, User } from 'lucide-react'
 import { IconField, Note, Segmented } from '../components/Choice'
@@ -40,8 +41,8 @@ function readDepth(): number {
 const SOURCE_NAME = { lichess: 'Lichess', chesscom: 'Chess.com', pgn: 'PGN' } as const
 const SOURCE_KEY = 'schaakroute.analyseBron'
 
-const fmtPct = (v: number) => v.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-const fmtDate = (t: number) => new Date(t).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' })
+const fmtPct = (v: number) => v.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+const fmtDate = (t: number) => new Date(t).toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' })
 
 function outcome(g: ReviewGame): 'win' | 'loss' | 'draw' | 'open' {
   if (g.result === '*') return 'open'
@@ -101,7 +102,7 @@ export function GameReviewList() {
       await saveSettings(source === 'lichess' ? { lichessUser: username } : { chesscomUser: username })
     } catch (e) {
       if (ticket !== request.current) return
-      setErr(e instanceof TypeError ? `Kon ${SOURCE_NAME[source]} niet bereiken. Controleer je internetverbinding.` : (e as Error).message)
+      setErr(e instanceof TypeError ? t('Kon {source} niet bereiken. Controleer je internetverbinding.', { source: SOURCE_NAME[source] }) : (e as Error).message)
     } finally {
       if (ticket === request.current) setBusy(false)
     }
@@ -146,20 +147,20 @@ export function GameReviewList() {
       else if (link?.kind === 'chesscom') {
         if (link.type === 'computer') {
           setBotLink(`https://www.chess.com/game/computer/${link.id}`)
-          throw new Error('Partijen tegen een bot haalt Chess.com niet op voor andere apps. Kopieer de PGN op Chess.com en plak die hier: open de partij, tik op Delen (het pijltje) → PGN → Kopiëren.')
+          throw new Error(t('Partijen tegen een bot haalt Chess.com niet op voor andere apps. Kopieer de PGN op Chess.com en plak die hier: open de partij, tik op Delen (het pijltje) → PGN → Kopiëren.'))
         }
         const known = await db.reviews.get('cc:' + link.id)
         game = known?.game ?? games?.find(g => g.id === 'cc:' + link.id) ?? null
         if (!game && settings?.chesscomUser) game = await findChesscomGame(settings.chesscomUser, link.id)
         if (!game) throw new Error(settings?.chesscomUser
-          ? `Deze partij staat niet in de partijen van ${settings.chesscomUser}. Kopieer op Chess.com de PGN (Delen → PGN) en plak die hier.`
-          : 'Chess.com-partijen zoek ik op via je gebruikersnaam. Haal eerst je Chess.com-partijen op (tabblad Chess.com), of plak de PGN (Delen → PGN op Chess.com).')
+          ? t('Deze partij staat niet in de partijen van {name}. Kopieer op Chess.com de PGN (Delen → PGN) en plak die hier.', { name: settings.chesscomUser })
+          : t('Chess.com-partijen zoek ik op via je gebruikersnaam. Haal eerst je Chess.com-partijen op (tabblad Chess.com), of plak de PGN (Delen → PGN op Chess.com).'))
       } else if (/^\s*(\[|1\.)/.test(text)) game = gameFromPgn(text, myNames)
-      else throw new Error('Dit herken ik niet. Plak een link naar een partij op Lichess of Chess.com, of een PGN.')
+      else throw new Error(t('Dit herken ik niet. Plak een link naar een partij op Lichess of Chess.com, of een PGN.'))
       setPaste('')
       await open(game)
     } catch (e) {
-      setPasteErr(e instanceof TypeError ? 'Kon de partij niet ophalen. Controleer je internetverbinding.' : (e as Error).message)
+      setPasteErr(e instanceof TypeError ? t('Kon de partij niet ophalen. Controleer je internetverbinding.') : (e as Error).message)
     } finally {
       setPasteBusy(false)
     }
@@ -176,21 +177,21 @@ export function GameReviewList() {
   const lockIcon = <Lock size={15} strokeWidth={2.25} />
   return (
     <div className="space-y-5">
-      <PageHeader title="Partij-analyse" subtitle="Zie per zet hoe goed hij was, van briljant tot blunder." />
+      <PageHeader title={t('Partij-analyse')} subtitle={t('Zie per zet hoe goed hij was, van briljant tot blunder.')} />
       <div className="space-y-4 lg:max-w-2xl">
-        <section className="space-y-3 rounded-[22px] border-2 border-line bg-surface p-4" aria-label="Partijen kiezen om te analyseren">
-          <Segmented name="review-source" label="Waar komt de partij vandaan?" value={pasteMode ? 'pgn' : source}
+        <section className="space-y-3 rounded-[22px] border-2 border-line bg-surface p-4" aria-label={t('Partijen kiezen om te analyseren')}>
+          <Segmented name="review-source" label={t('Waar komt de partij vandaan?')} value={pasteMode ? 'pgn' : source}
             onChange={v => { if (v === 'pgn') setPasteMode(true); else { setPasteMode(false); if (v !== source) pickSource(v) } }}
-            options={[{ value: 'lichess', label: 'Lichess' }, { value: 'chesscom', label: 'Chess.com' }, { value: 'pgn', label: 'Plak PGN' }]} />
+            options={[{ value: 'lichess', label: 'Lichess' }, { value: 'chesscom', label: 'Chess.com' }, { value: 'pgn', label: t('Plak PGN') }]} />
           {pasteMode ? (
             <form className="space-y-3" onSubmit={openPasted}>
-              <label htmlFor="review-paste" className="sr-only">Link of PGN van één partij</label>
+              <label htmlFor="review-paste" className="sr-only">{t('Link of PGN van één partij')}</label>
               <textarea id="review-paste" className="input !min-h-28 !rounded-[14px] !border-2 font-mono text-sm" rows={4} spellCheck={false} autoCapitalize="none"
-                placeholder="Plak een link (Lichess of Chess.com) of een PGN" value={paste} onChange={e => setPaste(e.target.value)} />
+                placeholder={t('Plak een link (Lichess of Chess.com) of een PGN')} value={paste} onChange={e => setPaste(e.target.value)} />
               <fieldset>
-                <legend className="sr-only">Hoe grondig analyseren</legend>
+                <legend className="sr-only">{t('Hoe grondig analyseren')}</legend>
                 <div className="grid grid-cols-2 gap-2">
-                  {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
+                  {[{ d: QUICK_DEPTH, label: t('Snel'), hint: t('± halve minuut') }, { d: DEEP_DEPTH, label: t('Grondig'), hint: t('paar minuten') }].map(o => (
                     <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center rounded-[14px]! px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
                       <input type="radio" name={`review-depth-${pasteMode ? 'p' : 'u'}`} className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
                       <span className="text-sm font-bold">{o.label}</span>
@@ -200,13 +201,13 @@ export function GameReviewList() {
                 </div>
               </fieldset>
               <div>
-                <button className={`btn btn-primary w-full ${pasteBusy ? 'btn-busy' : ''}`} disabled={pasteBusy || !paste.trim()} aria-busy={pasteBusy} aria-describedby={!paste.trim() ? reasonId : undefined}>{pasteBusy ? <BusyKnight /> : <Search size={20} strokeWidth={2.25} aria-hidden />}{pasteBusy ? 'Bezig…' : 'Analyseren'}</button>
-                {!paste.trim() && <p id={reasonId} className="btn-reason">Plak eerst een link of PGN.</p>}
+                <button className={`btn btn-primary w-full ${pasteBusy ? 'btn-busy' : ''}`} disabled={pasteBusy || !paste.trim()} aria-busy={pasteBusy} aria-describedby={!paste.trim() ? reasonId : undefined}>{pasteBusy ? <BusyKnight /> : <Search size={20} strokeWidth={2.25} aria-hidden />}{pasteBusy ? t('Bezig…') : t('Analyseren')}</button>
+                {!paste.trim() && <p id={reasonId} className="btn-reason">{t('Plak eerst een link of PGN.')}</p>}
               </div>
               {pasteErr && <ErrorBox error={pasteErr} />}
-              {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">Partij openen op Chess.com <ExternalLink size={14} aria-hidden /></a>}
-              <p className="text-[13px] leading-snug text-muted">Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.</p>
-              <Note icon={lockIcon}>Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
+              {botLink && <a className="btn btn-ghost w-full" href={botLink} target="_blank" rel="noreferrer">{t('Partij openen op Chess.com')} <ExternalLink size={14} aria-hidden /></a>}
+              <p className="text-[13px] leading-snug text-muted">{t('Ook voor partijen tegen een bot: op Chess.com via Delen → PGN → Kopiëren.')}</p>
+              <Note icon={lockIcon}>{t('Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.')}</Note>
             </form>
           ) : (
             <form className="space-y-3" onSubmit={load}>
@@ -214,19 +215,19 @@ export function GameReviewList() {
                 <div className="flex min-h-[3.75rem] items-center gap-3 rounded-[14px] border-2 border-line bg-surface py-2 pl-2.5 pr-1.5 shadow-[0_3px_0_var(--line)]">
                   <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-brand-soft text-brand-strong"><User size={18} strokeWidth={2.25} /></span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xs text-muted">{SOURCE_NAME[source]}<span className="sr-only">, gebruikersnaam</span></span>
+                    <span className="block text-xs text-muted">{SOURCE_NAME[source]}<span className="sr-only">{t(', gebruikersnaam')}</span></span>
                     <span className="block truncate font-bold">{stored}</span>
                   </span>
-                  <button type="button" className="min-h-11 rounded-lg px-2.5 text-sm font-bold text-brand-strong hover:bg-brand-soft" onClick={() => { setEditing(true); setName(stored ?? '') }} aria-label={`Gebruikersnaam ${stored} wijzigen`}>wijzig</button>
+                  <button type="button" className="min-h-11 rounded-lg px-2.5 text-sm font-bold text-brand-strong hover:bg-brand-soft" onClick={() => { setEditing(true); setName(stored ?? '') }} aria-label={t('Gebruikersnaam {name} wijzigen', { name: stored ?? '' })}>{t('wijzig')}</button>
                 </div>
               ) : (
-                <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={`Gebruikersnaam op ${SOURCE_NAME[source]}`} placeholder={`Gebruikersnaam op ${SOURCE_NAME[source]}`}
+                <IconField key={source} icon={<User size={18} strokeWidth={2.25} />} label={t('Gebruikersnaam op {source}', { source: SOURCE_NAME[source] })} placeholder={t('Gebruikersnaam op {source}', { source: SOURCE_NAME[source] })}
                   autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus={editing} value={name ?? stored ?? ''} onChange={e => setName(e.target.value)} />
               )}
               <fieldset>
-                <legend className="sr-only">Hoe grondig analyseren</legend>
+                <legend className="sr-only">{t('Hoe grondig analyseren')}</legend>
                 <div className="grid grid-cols-2 gap-2">
-                  {[{ d: QUICK_DEPTH, label: 'Snel', hint: '± halve minuut' }, { d: DEEP_DEPTH, label: 'Grondig', hint: 'paar minuten' }].map(o => (
+                  {[{ d: QUICK_DEPTH, label: t('Snel'), hint: t('± halve minuut') }, { d: DEEP_DEPTH, label: t('Grondig'), hint: t('paar minuten') }].map(o => (
                     <label key={o.d} className={`tap flex min-h-12 cursor-pointer flex-col justify-center rounded-[14px]! px-3 py-1.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${depthPref === o.d ? 'tap-on' : ''}`}>
                       <input type="radio" name={`review-depth-${pasteMode ? 'p' : 'u'}`} className="sr-only" checked={depthPref === o.d} onChange={() => pickDepth(o.d)} />
                       <span className="text-sm font-bold">{o.label}</span>
@@ -236,11 +237,11 @@ export function GameReviewList() {
                 </div>
               </fieldset>
               <div>
-                <button className={`btn btn-primary w-full ${busy ? 'btn-busy' : ''}`} disabled={busy || !username} aria-busy={busy} aria-describedby={!username ? reasonId : undefined}>{busy ? <BusyKnight /> : <Download size={20} strokeWidth={2.25} aria-hidden />}{busy ? 'Partijen ophalen…' : 'Partijen ophalen'}</button>
-                {!username && <p id={reasonId} className="btn-reason">Vul eerst je gebruikersnaam in.</p>}
+                <button className={`btn btn-primary w-full ${busy ? 'btn-busy' : ''}`} disabled={busy || !username} aria-busy={busy} aria-describedby={!username ? reasonId : undefined}>{busy ? <BusyKnight /> : <Download size={20} strokeWidth={2.25} aria-hidden />}{busy ? t('Partijen ophalen…') : t('Partijen ophalen')}</button>
+                {!username && <p id={reasonId} className="btn-reason">{t('Vul eerst je gebruikersnaam in.')}</p>}
               </div>
-              {known && <p className="text-[13px] leading-snug text-muted">Dezelfde naam geldt voor <Link to="/import" className="underline">Mijn partijen</Link>. Je vult hem één keer in.</p>}
-              <Note icon={lockIcon}>Je laatste 30 partijen. Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.</Note>
+              {known && <p className="text-[13px] leading-snug text-muted">{tr(<>Dezelfde naam geldt voor <Link to="/import" className="underline">Mijn partijen</Link>. Je vult hem één keer in.</>, <>The same name is used for <Link to="/import" className="underline">My games</Link>. You only enter it once.</>)}</p>}
+              <Note icon={lockIcon}>{t('Je laatste 30 partijen. Stockfish rekent op je eigen apparaat; er wordt niets verstuurd.')}</Note>
             </form>
           )}
         </section>
@@ -251,19 +252,19 @@ export function GameReviewList() {
         {err && <ErrorBox error={err} />}
         <section aria-labelledby="games-title">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 id="games-title" className="text-lg font-extrabold">Je partijen{allGames.length ? <span className="font-normal text-muted"> · {allGames.length}</span> : null}</h2>
+            <h2 id="games-title" className="text-lg font-extrabold">{t('Je partijen')}{allGames.length ? <span className="font-normal text-muted"> · {allGames.length}</span> : null}</h2>
             <Link to="/analyse/briljant" className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold"
               style={{ background: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 14%, transparent)`, color: `color-mix(in srgb, ${CLASS_INFO.brilliant.color} 70%, var(--ink))` }}>
-              <MoveClassIcon cls="brilliant" size={18} />Mijn briljante zetten{brilliants ? ` (${brilliants})` : ''}
+              <MoveClassIcon cls="brilliant" size={18} />{t('Mijn briljante zetten')}{brilliants ? ` (${brilliants})` : ''}
             </Link>
           </div>
-          {busy && <div className="mb-2"><Spinner label={`Partijen ophalen van ${SOURCE_NAME[source]}…`} /></div>}
-          {games && games.length === 0 && <p className="mb-2 text-sm text-muted">{shownFor} heeft nog geen gewone schaakpartijen op {SOURCE_NAME[source]}.</p>}
+          {busy && <div className="mb-2"><Spinner label={t('Partijen ophalen van {source}…', { source: SOURCE_NAME[source] })} /></div>}
+          {games && games.length === 0 && <p className="mb-2 text-sm text-muted">{t('{name} heeft nog geen gewone schaakpartijen op {source}.', { name: shownFor, source: SOURCE_NAME[source] })}</p>}
           {allGames.length === 0
-            ? !busy && <p className="rounded-[18px] border-2 border-dashed border-line p-4 text-sm text-muted">Vul je gebruikersnaam in en haal je partijen op. Kies daarna een partij om te analyseren.</p>
+            ? !busy && <p className="rounded-[18px] border-2 border-dashed border-line p-4 text-sm text-muted">{t('Vul je gebruikersnaam in en haal je partijen op. Kies daarna een partij om te analyseren.')}</p>
             : <GameRows games={allGames} saved={savedById} onOpen={open} />}
           {saved.length > 0 && (
-            <div className="mt-2 text-right"><button className="btn btn-quiet text-sm" onClick={async () => { if (confirm('Alle opgeslagen analyses wissen?')) await db.reviews.clear() }}>Analyses wissen</button></div>
+            <div className="mt-2 text-right"><button className="btn btn-quiet text-sm" onClick={async () => { if (confirm(t('Alle opgeslagen analyses wissen?'))) await db.reviews.clear() }}>{t('Analyses wissen')}</button></div>
           )}
         </section>
       </div>
@@ -279,29 +280,30 @@ function withOpening(g: ReviewGame, names?: Record<string, [string, string, stri
 }
 
 /** "vandaag", "gisteren", een weekdag in de laatste week, anders de datum */
-function relDay(t: number): string {
-  const d = new Date(t)
+function relDay(ts: number): string {
+  const d = new Date(ts)
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
   const days = Math.round((start(new Date()) - start(d)) / 86_400_000)
-  if (days === 0) return 'vandaag'
-  if (days === 1) return 'gisteren'
-  if (days > 1 && days < 7) return d.toLocaleDateString('nl-NL', { weekday: 'short' }).replace('.', '')
-  return fmtDate(t)
+  if (days === 0) return t('vandaag')
+  if (days === 1) return t('gisteren')
+  if (days > 1 && days < 7) return d.toLocaleDateString(locale(), { weekday: 'short' }).replace('.', '')
+  return fmtDate(ts)
 }
 
-const RESULT_TILE = {
-  win: { letter: 'W', label: 'Winst', cls: 'bg-brand-soft text-brand-strong' },
-  loss: { letter: 'V', label: 'Verlies', cls: 'bg-danger-soft text-danger-ink' },
-  draw: { letter: 'R', label: 'Remise', cls: 'bg-surface-2 text-muted' },
-  open: { letter: '…', label: 'Bezig', cls: 'bg-info-soft text-info-ink' },
-}
+// Een functie (geen vaste waarde), zodat letters en labels in de gekozen taal komen
+const resultTile = (o: ReturnType<typeof outcome>) => ({
+  win: { letter: 'W', label: t('Winst'), cls: 'bg-brand-soft text-brand-strong' },
+  loss: { letter: tr('V', 'L'), label: t('Verlies'), cls: 'bg-danger-soft text-danger-ink' },
+  draw: { letter: tr('R', 'D'), label: t('Remise'), cls: 'bg-surface-2 text-muted' },
+  open: { letter: '…', label: t('Bezig'), cls: 'bg-info-soft text-info-ink' },
+})[o]
 
 function GameRows({ games, saved, onOpen }: { games: ReviewGame[]; saved: Map<string, GameReviewRecord>; onOpen: (g: ReviewGame) => void }) {
   return (
     <ul className="overflow-hidden rounded-[18px] border-2 border-line bg-surface">
       {games.map((g, i) => {
         const opp = g.myColor === 'white' ? g.black : g.white
-        const o = RESULT_TILE[outcome(g)]
+        const o = resultTile(outcome(g))
         const rec = saved.get(g.id)
         const acc = rec && isAnalysed(rec) ? rec.accuracy?.[g.myColor] : undefined
         const blunders = rec?.blunders?.[g.myColor]
@@ -310,15 +312,15 @@ function GameRows({ games, saved, onOpen }: { games: ReviewGame[]; saved: Map<st
             <button className="flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => onOpen(g)}>
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-sm font-extrabold ${o.cls}`} aria-label={o.label}>{o.letter}</span>
               <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-1.5"><span className="truncate font-bold">{opp.name}</span>{opp.rating && <span className="text-sm text-muted">{opp.rating}</span>}</span>
+                <span className="flex items-baseline gap-1.5"><span className="truncate font-bold">{playerName(opp.name)}</span>{opp.rating && <span className="text-sm text-muted">{opp.rating}</span>}</span>
                 <span className="block truncate text-[13px] text-muted">{[g.opening, relDay(g.playedAt)].filter(Boolean).join(' · ')}</span>
               </span>
               {acc !== undefined ? (
                 <span className="shrink-0 text-right">
                   <span className="block font-extrabold tabular-nums">{Math.round(acc)}%</span>
                   {blunders !== undefined && (blunders > 0
-                    ? <span className="rounded-md bg-danger-soft px-1.5 text-[11px] font-bold text-danger-ink">{plural(blunders, 'blunder', 'blunders')}</span>
-                    : <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-bold text-brand-strong">geen blunders</span>)}
+                    ? <span className="rounded-md bg-danger-soft px-1.5 text-[11px] font-bold text-danger-ink">{tn(blunders, '{n} blunder', '{n} blunders')}</span>
+                    : <span className="rounded-md bg-brand-soft px-1.5 text-[11px] font-bold text-brand-strong">{t('geen blunders')}</span>)}
                 </span>
               ) : <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />}
             </button>
@@ -336,7 +338,7 @@ async function evalPosition(fen: string, depth = QUICK_DEPTH): Promise<PosEval> 
   if (c.isCheckmate()) return { cp: c.turn() === 'w' ? -10000 : 10000 }
   if (c.isStalemate() || c.isInsufficientMaterial()) return { cp: 0 }
   const a = await analyse(fen, { depth, multipv: 2 })
-  if (!a?.lines[0]) throw new Error('Stockfish kon niet laden. Probeer de pagina opnieuw te laden.')
+  if (!a?.lines[0]) throw new Error(t('Stockfish kon niet laden. Probeer de pagina opnieuw te laden.'))
   const stm = c.turn() === 'w' ? 1 : -1
   const conv = (l: { cp?: number; mate?: number }) => (l.mate !== undefined ? { mate: stm * l.mate } : { cp: stm * (l.cp ?? 0) })
   const first = conv(a.lines[0])
@@ -432,8 +434,8 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
     for (const s of game.san.slice(0, ply)) c.move(s)
     renderShareImage({
       fen: c.fen(), orientation: move.side, from: move.uci.slice(0, 2), to: move.uci.slice(2, 4), cls: move.cls, moveText: move.san,
-      player: (move.side === 'white' ? game.white : game.black).name,
-      sub: `Zet ${Math.floor(move.ply / 2) + 1} · tegen ${(move.side === 'white' ? game.black : game.white).name} · ${fmtDate(game.playedAt)}`,
+      player: playerName((move.side === 'white' ? game.white : game.black).name),
+      sub: t('Zet {n} · tegen {name} · {date}', { n: Math.floor(move.ply / 2) + 1, name: playerName((move.side === 'white' ? game.black : game.white).name), date: fmtDate(game.playedAt) }),
     }).then(blob => {
       if (cancelled) return
       url = URL.createObjectURL(blob)
@@ -446,7 +448,7 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
   async function shareImage() {
     if (!image || image === 'error' || !move) return
     const file = new File([image.blob], fileName, { type: 'image/png' })
-    const text = `${SHARE_TITLE[move.cls]} ${formatLine([move.san], move.ply)} tegen ${opp.name}\n${shareUrl(game, ply)}`
+    const text = `${t('{title} {move} tegen {name}', { title: SHARE_TITLE[move.cls], move: formatLine([move.san], move.ply), name: playerName(opp.name) })}\n${shareUrl(game, ply)}`
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: 'SchaakRoute', text })
@@ -461,7 +463,7 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
     a.href = image.url
     a.download = fileName
     a.click()
-    setStatus('Plaatje opgeslagen.')
+    setStatus(t('Plaatje opgeslagen.'))
   }
 
   async function copy(text: string, done: string) {
@@ -482,7 +484,7 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
         if ((e as Error).name === 'AbortError') return
       }
     }
-    await copy(url, 'Link gekopieerd. Plak hem waar je wilt.')
+    await copy(url, t('Link gekopieerd. Plak hem waar je wilt.'))
   }
 
   return (
@@ -490,39 +492,39 @@ function ShareDialog({ game, ply, move, onClose }: { game: ReviewGame; ply: numb
       <div className="absolute inset-0 bg-black/40 animate-fade-in" aria-hidden onClick={onClose} />
       <div className="safe-bottom relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-4 shadow-2xl animate-fade-up sm:rounded-3xl">
         <div className="mb-2 flex items-center justify-between">
-          <h2 id="share-title" className="text-lg font-bold">Delen</h2>
-          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={onClose} aria-label="Sluiten"><X size={22} aria-hidden /></button>
+          <h2 id="share-title" className="text-lg font-bold">{t('Delen')}</h2>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={onClose} aria-label={t('Sluiten')}><X size={22} aria-hidden /></button>
         </div>
         {ply > 0 && move && (
           <div className="mb-3 overflow-hidden rounded-xl bg-surface-2" style={{ aspectRatio: '1200 / 630' }}>
             {image && image !== 'error'
-              ? <img src={image.url} alt={`Deelplaatje: ${SHARE_TITLE[move.cls]} ${move.san}`} className="block h-full w-full" />
-              : <div className="flex h-full items-center justify-center text-sm text-muted">{image === 'error' ? 'Plaatje maken lukte niet; deel de link.' : 'Plaatje maken…'}</div>}
+              ? <img src={image.url} alt={t('Deelplaatje: {title} {move}', { title: SHARE_TITLE[move.cls], move: move.san })} className="block h-full w-full" />
+              : <div className="flex h-full items-center justify-center text-sm text-muted">{image === 'error' ? t('Plaatje maken lukte niet; deel de link.') : t('Plaatje maken…')}</div>}
           </div>
         )}
         <div className="grid gap-2">
           {ply > 0 && move && (
             <>
               <button ref={first} className="btn btn-primary min-h-12 justify-start" disabled={!image || image === 'error'} onClick={shareImage}>
-                <MoveClassIcon cls={move.cls} size={22} />Plaatje van deze zet delen
+                <MoveClassIcon cls={move.cls} size={22} />{t('Plaatje van deze zet delen')}
               </button>
-              <button className="btn btn-ghost min-h-12 justify-start" onClick={() => share(shareUrl(game, ply), `Bekijk ${moveText} uit mijn partij tegen ${opp.name}`)}>
-                <Share2 size={20} aria-hidden />Link naar deze zet <span className="font-mono font-normal opacity-80">{formatLine([move.san], move.ply)}</span>
+              <button className="btn btn-ghost min-h-12 justify-start" onClick={() => share(shareUrl(game, ply), t('Bekijk {move} uit mijn partij tegen {name}', { move: moveText, name: playerName(opp.name) }))}>
+                <Share2 size={20} aria-hidden />{t('Link naar deze zet')} <span className="font-mono font-normal opacity-80">{formatLine([move.san], move.ply)}</span>
               </button>
             </>
           )}
-          <button ref={ply > 0 && move ? undefined : first} className={`btn ${ply > 0 && move ? 'btn-ghost' : 'btn-primary'} min-h-12 justify-start`} onClick={() => share(shareUrl(game), `Bekijk mijn partij tegen ${opp.name}`)}>
-            <Share2 size={20} aria-hidden />Hele partij delen
+          <button ref={ply > 0 && move ? undefined : first} className={`btn ${ply > 0 && move ? 'btn-ghost' : 'btn-primary'} min-h-12 justify-start`} onClick={() => share(shareUrl(game), t('Bekijk mijn partij tegen {name}', { name: playerName(opp.name) }))}>
+            <Share2 size={20} aria-hidden />{t('Hele partij delen')}
           </button>
-          <button className="btn btn-ghost min-h-12 justify-start" onClick={() => copy(gameToPgn(game), 'PGN gekopieerd.')}>PGN kopiëren</button>
+          <button className="btn btn-ghost min-h-12 justify-start" onClick={() => copy(gameToPgn(game), t('PGN gekopieerd.'))}>{t('PGN kopiëren')}</button>
         </div>
         {status && <p className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong" role="status">{status}</p>}
         {manual && (
-          <label className="mt-3 block text-sm">Kopieer zelf:
+          <label className="mt-3 block text-sm">{t('Kopieer zelf:')}
             <textarea className="input mt-1 h-24 font-mono text-xs" readOnly value={manual} onFocus={e => e.currentTarget.select()} autoFocus />
           </label>
         )}
-        <p className="mt-3 text-xs text-muted">Wie de link opent, ziet de partij in SchaakRoute en laat hem daar zelf analyseren.</p>
+        <p className="mt-3 text-xs text-muted">{t('Wie de link opent, ziet de partij in SchaakRoute en laat hem daar zelf analyseren.')}</p>
       </div>
     </div>
   )
@@ -541,8 +543,8 @@ export function SharedGameView() {
       navigate(ply ? replayUrl(game, ply) : `/analyse/${encodeURIComponent(game.id)}`, { replace: true })
     })()
   }, [shared, navigate])
-  if (!shared) return <Empty title="Deze link klopt niet" action={<Link className="btn btn-primary" to="/analyse">Naar partij-analyse</Link>}>De gedeelde partij kon niet gelezen worden. Misschien is de link niet helemaal gekopieerd.</Empty>
-  return <Spinner label="Gedeelde partij openen…" />
+  if (!shared) return <Empty title={t('Deze link klopt niet')} action={<Link className="btn btn-primary" to="/analyse">{t('Naar partij-analyse')}</Link>}>{t('De gedeelde partij kon niet gelezen worden. Misschien is de link niet helemaal gekopieerd.')}</Empty>
+  return <Spinner label={t('Gedeelde partij openen…')} />
 }
 
 export function GameReviewView() {
@@ -551,7 +553,7 @@ export function GameReviewView() {
   const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
   // Oude links met een zetnummer gaan meteen naar het naspelen
   if (params.get('zet')) return <Navigate to={`/analyse/${encodeURIComponent(id)}/naspelen?zet=${params.get('zet')}`} replace />
-  if (record === null) return <Spinner label="Partij laden…" />
+  if (record === null) return <Spinner label={t('Partij laden…')} />
   if (!record) return <Navigate to="/analyse" replace />
   return <ReviewOverview record={record} />
 }
@@ -559,7 +561,7 @@ export function GameReviewView() {
 export function ReviewReplayView() {
   const { id = '' } = useParams()
   const record = useLiveQuery(() => db.reviews.get(id), [id], null as GameReviewRecord | null | undefined)
-  if (record === null) return <BoardLoading label="Partij laden…" />
+  if (record === null) return <BoardLoading label={t('Partij laden…')} />
   if (!record) return <Navigate to="/analyse" replace />
   return <ReviewReplay record={record} />
 }
@@ -617,11 +619,11 @@ function AnalysisProgress({ active, loaded, progress, done, total, error }: { ac
   const deepening = active && progress?.deepening
   return (
     <div className="flex flex-col items-center gap-3 rounded-[18px] border-2 border-line bg-surface p-4 text-center" aria-live="polite">
-      <div className="text-[15px] font-bold">{deepening ? `Grondige analyse (diepte ${progress?.depth})…` : active ? 'Stockfish analyseert…' : 'Analyse klaar'} <span className="font-medium tabular-nums text-muted">{count}/{total}</span></div>
-      <AnalysisPawn value={total ? count / total : 0} label="Voortgang van de analyse" />
+      <div className="text-[15px] font-bold">{deepening ? t('Grondige analyse (diepte {n})…', { n: progress?.depth ?? '' }) : active ? t('Stockfish analyseert…') : t('Analyse klaar')} <span className="font-medium tabular-nums text-muted">{count}/{total}</span></div>
+      <AnalysisPawn value={total ? count / total : 0} label={t('Voortgang van de analyse')} />
       {error ? <div className="w-full text-left"><ErrorBox error={error} /></div> : <p className="max-w-[300px] text-[13px] leading-snug text-muted">{deepening
-        ? 'De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat.'
-        : 'Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.'}</p>}
+        ? t('De huidige beoordeling blijft staan tot dit klaar is. Dit gebeurt op je eigen apparaat.')
+        : t('Dit gebeurt op je eigen apparaat. Je kunt intussen al door de partij bladeren.')}</p>}
     </div>
   )
 }
@@ -648,13 +650,13 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
       <div className={`min-w-0 rounded-[16px] p-3 ${mine ? 'bg-brand-soft' : 'bg-surface-2'}`}>
         <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
           <span className={`inline-block h-3.5 w-3.5 shrink-0 rounded-sm border border-line ${side === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-hidden />
-          <span className="truncate">{p.name}</span>{mine && <span className="sr-only">(jij)</span>}
+          <span className="truncate">{playerName(p.name)}</span>{mine && <span className="sr-only">{t('(jij)')}</span>}
         </div>
         {ready ? (
           <>
             <div className="mt-1 text-[32px] leading-none font-extrabold tracking-tight tabular-nums">{fmtPct(s.accuracy).replace(/%$/, '')}<span className="text-lg">%</span></div>
-            <div className="text-xs text-muted">nauwkeurigheid</div>
-            <div className="mt-1 text-sm">partijrating <b className="tabular-nums">{s.rating ?? '–'}</b></div>
+            <div className="text-xs text-muted">{t('nauwkeurigheid')}</div>
+            <div className="mt-1 text-sm">{t('partijrating')} <b className="tabular-nums">{s.rating ?? '–'}</b></div>
           </>
         ) : <div className="mt-2 h-14 animate-pulse rounded-lg bg-surface/60" aria-hidden />}
       </div>
@@ -664,28 +666,28 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div>
-        <Link to="/analyse" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink"><ChevronLeft size={16} aria-hidden />Partij-analyse</Link>
-        <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">{game.white.name} <span className="text-muted">–</span> {game.black.name}</h1>
+        <Link to="/analyse" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink"><ChevronLeft size={16} aria-hidden />{t('Partij-analyse')}</Link>
+        <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">{playerName(game.white.name)} <span className="text-muted">–</span> {playerName(game.black.name)}</h1>
         <p className="text-sm text-muted">
-          {[game.result === '*' ? 'Nog bezig' : game.result.replace('1/2-1/2', '½-½'), book.name, fmtDate(game.playedAt)].filter(Boolean).join(' · ')}
+          {[game.result === '*' ? t('Nog bezig') : game.result.replace('1/2-1/2', '½-½'), book.name, fmtDate(game.playedAt)].filter(Boolean).join(' · ')}
           {game.url && <>{' · '}<a className="inline-flex items-center gap-1 underline hover:text-ink" href={game.url} target="_blank" rel="noreferrer">{SOURCE_NAME[game.source]}<ExternalLink size={12} aria-hidden /></a></>}
         </p>
       </div>
 
       <AnalysisProgress active={!ready || !!progress?.deepening} loaded={!!evals} progress={progress} done={done} total={fens.length} error={error} />
 
-      <section className="rounded-[22px] border-2 border-line bg-surface p-3" aria-label="Nauwkeurigheid en verloop">
+      <section className="rounded-[22px] border-2 border-line bg-surface p-3" aria-label={t('Nauwkeurigheid en verloop')}>
         <div className="grid grid-cols-2 gap-2">
           <SideCard side={me} />
           <SideCard side={opp} />
         </div>
         {evals && evals.length > 1 && <div className="mt-3"><EvalGraph evals={evals} total={game.san.length} moves={moves} onPick={p => navigate(replayUrl(game, p))} /></div>}
-        {ready && <p className="mt-2 text-xs text-muted">Partijrating op {scale}-schaal: de rating die typisch bij deze nauwkeurigheid hoort. Tik op het verloop om naar die zet te gaan.</p>}
+        {ready && <p className="mt-2 text-xs text-muted">{t('Partijrating op {scale}-schaal: de rating die typisch bij deze nauwkeurigheid hoort. Tik op het verloop om naar die zet te gaan.', { scale })}</p>}
       </section>
 
       {ready && (
-        <section className="overflow-hidden rounded-[22px] border-2 border-line bg-surface" aria-label="Zetten per soort">
-          <p className="sr-only">Tik op een soort zet om naar de eerste te gaan: links jouw zetten, rechts die van je tegenstander.</p>
+        <section className="overflow-hidden rounded-[22px] border-2 border-line bg-surface" aria-label={t('Zetten per soort')}>
+          <p className="sr-only">{t('Tik op een soort zet om naar de eerste te gaan: links jouw zetten, rechts die van je tegenstander.')}</p>
           <ul className="divide-y divide-line">
             {rows.map(k => {
               const hot = k === 'blunder' && sum[me].counts[k] > 0
@@ -696,14 +698,14 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
                 <li key={k} className={`grid grid-cols-[1fr_3.5rem] ${hot ? 'bg-danger-soft' : ''}`}>
                   <button className="grid min-h-12 grid-cols-[3.5rem_1fr_3.5rem] items-center text-sm enabled:hover:bg-surface-2 disabled:cursor-default" disabled={!mine && !theirs}
                     onClick={() => { const m = mine ?? theirs; if (m) navigate(replayUrl(game, m.ply + 1)) }}
-                    aria-label={`${CLASS_INFO[k].label}: ${sum[me].counts[k]} van jou${mine ? `, ga naar je eerste ${label} zet` : theirs ? `, ga naar de eerste van je tegenstander` : ''}`}>
+                    aria-label={t('{label}: {n} van jou', { label: CLASS_INFO[k].label, n: sum[me].counts[k] }) + (mine ? t(', ga naar je eerste {label} zet', { label }) : theirs ? t(', ga naar de eerste van je tegenstander') : '')}>
                     <span className={`text-center text-base font-bold tabular-nums ${hot ? 'text-danger-ink' : ''}`}>{sum[me].counts[k]}</span>
                     <span className={`flex items-center justify-center gap-2 font-semibold ${hot ? 'text-danger-ink' : ''}`}><MoveClassIcon cls={k} size={20} />{CLASS_INFO[k].label}</span>
                     <span aria-hidden className="flex justify-center text-muted">{(mine || theirs) && <ChevronRight size={16} />}</span>
                   </button>
                   <button className="min-h-12 text-center text-base tabular-nums text-muted enabled:hover:bg-surface-2 disabled:cursor-default" disabled={!theirs}
                     onClick={() => theirs && navigate(replayUrl(game, theirs.ply + 1))}
-                    aria-label={`${sum[opp].counts[k]} van je tegenstander${theirs ? `, ga naar de eerste ${label} zet` : ''}`}>{sum[opp].counts[k]}</button>
+                    aria-label={t('{n} van je tegenstander', { n: sum[opp].counts[k] }) + (theirs ? t(', ga naar de eerste {label} zet', { label }) : '')}>{sum[opp].counts[k]}</button>
                 </li>
               )
             })}
@@ -711,25 +713,25 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
           {sum[me].missedBrilliants > 0 && (
             <button className="flex min-h-11 w-full items-center justify-center gap-2 border-t border-line px-3 py-2 text-sm hover:bg-surface-2"
               onClick={() => { const m = moves.find(x => x.side === me && x.missedBrilliant); if (m) navigate(replayUrl(game, m.ply + 1)) }}>
-              <MoveClassIcon cls="brilliant" size={18} />Gemiste briljante zetten: <b>{sum[me].missedBrilliants}</b><ChevronRight size={16} aria-hidden className="text-muted" />
+              <MoveClassIcon cls="brilliant" size={18} />{t('Gemiste briljante zetten:')} <b>{sum[me].missedBrilliants}</b><ChevronRight size={16} aria-hidden className="text-muted" />
             </button>
           )}
         </section>
       )}
 
       <p className="text-center text-xs text-muted">
-        {ENGINE_NAME} · diepte {record.depth}{record.depth >= DEEP_DEPTH ? ' (grondig)' : ''} · op je eigen apparaat
-        {ready && record.depth < DEEP_DEPTH && !progress?.deepening && <> · <button className="underline hover:text-ink" onClick={() => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } })}>Grondiger analyseren</button></>}
+        {ENGINE_NAME} · {t('diepte {n}', { n: record.depth })}{record.depth >= DEEP_DEPTH ? ` (${t('grondig')})` : ''} · {t('op je eigen apparaat')}
+        {ready && record.depth < DEEP_DEPTH && !progress?.deepening && <> · <button className="underline hover:text-ink" onClick={() => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } })}>{t('Grondiger analyseren')}</button></>}
       </p>
 
       <div className={`grid gap-2 ${myErrors > 0 ? 'grid-cols-[1.4fr_1fr]' : 'grid-cols-1'} ${STICKY_ACTIONS}`}>
         {myErrors > 0 && (
           <button className="btn btn-primary" disabled={!ready} onClick={() => navigate(`/analyse/${encodeURIComponent(game.id)}/fouten`)}>
-            <Dumbbell size={20} aria-hidden />Train je {plural(myErrors, 'fout', 'fouten')}
+            <Dumbbell size={20} aria-hidden />{tn(myErrors, 'Train je {n} fout', 'Train je {n} fouten')}
           </button>
         )}
         <Link to={replayUrl(game)} className={myErrors > 0 ? 'tap flex min-h-[54px] items-center justify-center gap-2 font-bold' : 'btn btn-primary'}>
-          <Play size={18} aria-hidden />Naspelen
+          <Play size={18} aria-hidden />{t('Naspelen')}
         </Link>
       </div>
     </div>
@@ -777,7 +779,7 @@ function ReviewReplay({ record }: { record: GameReviewRecord }) {
   const Player = ({ p, side, score }: { p: { name: string; rating?: number }; side: Side; score?: string }) => (
     <div className="flex items-center gap-2 py-1.5 text-sm">
       <span className={`inline-block h-3.5 w-3.5 shrink-0 rounded-sm border border-line ${side === 'white' ? 'bg-white' : 'bg-neutral-800'}`} aria-hidden />
-      <span className="truncate font-semibold">{p.name}</span>{p.rating && <span className="text-muted">{p.rating}</span>}
+      <span className="truncate font-semibold">{playerName(p.name)}</span>{p.rating && <span className="text-muted">{p.rating}</span>}
       {score && <span className="ml-auto font-mono text-xs font-bold tabular-nums text-muted">{score}</span>}
     </div>
   )
@@ -786,20 +788,20 @@ function ReviewReplay({ record }: { record: GameReviewRecord }) {
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6">
       <div className="mx-auto w-full max-w-[min(92vw,620px)] lg:max-w-[min(640px,calc(100dvh-140px))]">
         <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-bg/95 px-2 py-1.5 backdrop-blur sm:-mx-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0">
-          <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={close} aria-label="Sluiten, terug naar het overzicht"><X size={22} aria-hidden /></button>
+          <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={close} aria-label={t('Sluiten, terug naar het overzicht')}><X size={22} aria-hidden /></button>
           <div className="min-w-0 flex-1">
-            <div className="truncate font-bold">{game.white.name} – {game.black.name}</div>
-            <div className="text-xs text-muted">zet {ply} van {total}</div>
+            <div className="truncate font-bold">{playerName(game.white.name)} – {playerName(game.black.name)}</div>
+            <div className="text-xs text-muted">{t('zet {n} van {m}', { n: ply, m: total })}</div>
           </div>
-          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setOrientation(o => (o === 'white' ? 'black' : 'white'))} aria-label="Bord draaien" title="Bord draaien"><FlipVertical2 size={20} aria-hidden /></button>
-          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setSharing(true)} aria-label="Delen" title="Delen"><Share2 size={20} aria-hidden /></button>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setOrientation(o => (o === 'white' ? 'black' : 'white'))} aria-label={t('Bord draaien')} title={t('Bord draaien')}><FlipVertical2 size={20} aria-hidden /></button>
+          <button className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink" onClick={() => setSharing(true)} aria-label={t('Delen')} title={t('Delen')}><Share2 size={20} aria-hidden /></button>
         </div>
 
-        <Player p={top} side={topSide} score={evals ? formatScore(evalNow).replace('.', ',') : undefined} />
+        <Player p={top} side={topSide} score={evals ? tr(formatScore(evalNow).replace('.', ','), formatScore(evalNow)) : undefined} />
         <div className="flex items-stretch gap-1.5">
           <EvalBar e={evalNow} orientation={orientation} />
           <div className="relative min-w-0 flex-1">
-            <Board fen={fens[ply]} orientation={orientation} lastMove={lastMove} arrows={arrows} id="review" label={`Partijstelling na ${ply} halve zetten`} />
+            <Board fen={fens[ply]} orientation={orientation} lastMove={lastMove} arrows={arrows} id="review" label={t('Partijstelling na {n} halve zetten', { n: ply })} />
             {current && lastMove && <SquareBadge square={lastMove[1]} cls={current.cls} orientation={orientation} />}
           </div>
         </div>
@@ -812,11 +814,11 @@ function ReviewReplay({ record }: { record: GameReviewRecord }) {
         {evals && evals.length > 1 && <EvalGraph evals={evals} total={total} ply={ply} moves={moves} onPick={go} compact />}
         <MoveChips san={game.san} moves={moves} ply={ply} onPick={go} />
         <div className={`grid grid-cols-[auto_auto_1fr] gap-2 ${STICKY_ACTIONS}`}>
-          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply - 1)} disabled={ply === 0} aria-label="Vorige zet"><ChevronLeft size={22} aria-hidden /></button>
-          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply + 1)} disabled={ply === total} aria-label="Volgende zet"><ChevronRight size={22} aria-hidden /></button>
+          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply - 1)} disabled={ply === 0} aria-label={t('Vorige zet')}><ChevronLeft size={22} aria-hidden /></button>
+          <button className="tap flex h-[54px] w-[54px] items-center justify-center" onClick={() => go(ply + 1)} disabled={ply === total} aria-label={t('Volgende zet')}><ChevronRight size={22} aria-hidden /></button>
           {nextError
-            ? <button className="btn btn-primary" onClick={() => setPly(nextError.ply + 1)}><SkipForward size={20} aria-hidden />Volgende fout</button>
-            : <button className="btn btn-primary" onClick={close}>Naar het overzicht</button>}
+            ? <button className="btn btn-primary" onClick={() => setPly(nextError.ply + 1)}><SkipForward size={20} aria-hidden />{t('Volgende fout')}</button>
+            : <button className="btn btn-primary" onClick={close}>{t('Naar het overzicht')}</button>}
         </div>
       </div>
       {sharing && <ShareDialog game={game} ply={ply} move={current} onClose={() => setSharing(false)} />}
@@ -836,18 +838,18 @@ function replyLine(fenAfter: string, e: PosEval | undefined): string[] {
 }
 
 function ReplayComment({ move, ply, ready, game, replyLine }: { move?: ReviewedMove; ply: number; ready: boolean; game: ReviewGame; replyLine: string[] }) {
-  if (ply === 0) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">Beginstelling. Blader met de knoppen onderaan of tik op een zet.</div>
-  if (!move || !ready) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">Deze zet wordt nog beoordeeld…</div>
+  if (ply === 0) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">{t('Beginstelling. Blader met de knoppen onderaan of tik op een zet.')}</div>
+  if (!move || !ready) return <div className="rounded-[18px] border-2 border-line bg-surface p-4 text-sm text-muted">{t('Deze zet wordt nog beoordeeld…')}</div>
   const info = CLASS_INFO[move.cls]
-  const player = (move.side === 'white' ? game.white : game.black).name
+  const player = playerName((move.side === 'white' ? game.white : game.black).name)
   const label = formatLine([move.san], move.ply)
   const isError = ERRORS.includes(move.cls)
   const better = move.bestSan && move.bestUci !== move.uci ? formatLine([move.bestSan], move.ply) : null
   let text = explainMove(move)
   if (isError && better) {
-    text = `Beter was ${better}.`
-    if (replyLine.length) text += ` Na ${label} volgt ${formatLine(replyLine, move.ply + 1)}.`
-    if (move.missedBrilliant) text += ' Dat was een briljante zet geweest!'
+    text = t('Beter was {best}.', { best: better })
+    if (replyLine.length) text += ' ' + t('Na {move} volgt {line}.', { move: label, line: formatLine(replyLine, move.ply + 1) })
+    if (move.missedBrilliant) text += ' ' + t('Dat was een briljante zet geweest!')
   }
   return (
     <div className="rounded-[18px] border-2 p-4" aria-live="polite"
@@ -859,7 +861,7 @@ function ReplayComment({ move, ply, ready, game, replyLine }: { move?: ReviewedM
           <div className="font-extrabold" style={{ color: `color-mix(in srgb, ${info.color} 75%, var(--ink))` }}>{info.label} · {label}</div>
           <p className="mt-0.5 text-sm">{text}</p>
           {!isError && move.bestLine.length > 1 && move.bestUci !== move.uci && move.cls !== 'book' && (
-            <p className="mt-1 text-xs text-muted">Beste lijn: <span className="font-mono">{formatLine(move.bestLine, move.ply)}</span></p>
+            <p className="mt-1 text-xs text-muted">{t('Beste lijn:')} <span className="font-mono">{formatLine(move.bestLine, move.ply)}</span></p>
           )}
         </div>
       </div>
@@ -876,7 +878,7 @@ function MoveChips({ san, moves, ply, onPick }: { san: string[]; moves: Reviewed
     if (box && el) box.scrollLeft = el.parentElement!.offsetLeft - box.clientWidth / 2 + el.clientWidth / 2
   }, [ply, moves.length])
   return (
-    <nav aria-label="Zetten">
+    <nav aria-label={t('Zetten')}>
       <ol ref={ref} className="relative -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1 [scrollbar-width:none]">
         {san.map((s, i) => {
           const m = moves[i]
@@ -923,7 +925,7 @@ function EvalBar({ e, orientation }: { e: PosEval | undefined; orientation: Side
   const white = winPct(e)
   const score = formatScore(e)
   return (
-    <div className={`relative w-2.5 shrink-0 overflow-hidden rounded-md bg-neutral-700 sm:w-3.5 ${orientation === 'black' ? 'rotate-180' : ''}`} role="img" aria-label={`Evaluatie ${score}`}>
+    <div className={`relative w-2.5 shrink-0 overflow-hidden rounded-md bg-neutral-700 sm:w-3.5 ${orientation === 'black' ? 'rotate-180' : ''}`} role="img" aria-label={t('Evaluatie {score}', { score })}>
       <div className="absolute inset-x-0 bottom-0 bg-neutral-100 transition-[height] duration-500" style={{ height: `${white}%` }} />
     </div>
   )
@@ -944,7 +946,7 @@ function EvalGraph({ evals, total, ply, moves, onPick, compact }: { evals: PosEv
   const area = `M0,100 L${pts.join(' L')} L${evals.length - 1},100 Z`
   return (
     <div className="overflow-hidden rounded-[14px]">
-      <svg viewBox={`0 0 ${W} 100`} preserveAspectRatio="none" className={`block w-full cursor-pointer bg-neutral-700 ${compact ? 'h-12' : 'h-20'}`} role="img" aria-label="Verloop van de evaluatie. Tik om naar die zet te gaan."
+      <svg viewBox={`0 0 ${W} 100`} preserveAspectRatio="none" className={`block w-full cursor-pointer bg-neutral-700 ${compact ? 'h-12' : 'h-20'}`} role="img" aria-label={t('Verloop van de evaluatie. Tik om naar die zet te gaan.')}
         onClick={e => {
           const r = e.currentTarget.getBoundingClientRect()
           onPick(Math.round(((e.clientX - r.left) / r.width) * W))
@@ -968,7 +970,7 @@ export function MistakeTrainerView() {
   // Eén keer vastleggen: tussentijdse updates van het record (nauwkeurigheid) mogen de trainer niet herstarten
   const [snapshot, setSnapshot] = useState<GameReviewRecord | null>(null)
   useEffect(() => { if (record && !snapshot) setSnapshot(record) }, [record, snapshot])
-  if (record === null || (record && !snapshot)) return <BoardLoading label="Partij laden…" />
+  if (record === null || (record && !snapshot)) return <BoardLoading label={t('Partij laden…')} />
   if (!record || !snapshot) return <Navigate to="/analyse" replace />
   return <MistakeTrainer record={snapshot} />
 }
@@ -992,9 +994,9 @@ function MistakeTrainer({ record }: { record: GameReviewRecord }) {
   const [added, setAdded] = useState<number | null>(null)
   useEffect(() => { if (items && !queue) setQueue(items.map((_, i) => i)) }, [items, queue])
 
-  if (!analysed) return <Empty title="Deze partij is nog niet geanalyseerd" action={<Link className="btn btn-primary" to={back}>Naar de analyse</Link>}>Laat Stockfish eerst de partij beoordelen.</Empty>
-  if (!items || !queue) return <Spinner label="Fouten zoeken…" />
-  if (!items.length) return <Empty title="Geen fouten om te trainen" action={<Link className="btn btn-primary" to={back}>Terug naar de analyse</Link>}>In deze partij maakte je geen onnauwkeurigheden, fouten of blunders. Knap!</Empty>
+  if (!analysed) return <Empty title={t('Deze partij is nog niet geanalyseerd')} action={<Link className="btn btn-primary" to={back}>{t('Naar de analyse')}</Link>}>{t('Laat Stockfish eerst de partij beoordelen.')}</Empty>
+  if (!items || !queue) return <Spinner label={t('Fouten zoeken…')} />
+  if (!items.length) return <Empty title={t('Geen fouten om te trainen')} action={<Link className="btn btn-primary" to={back}>{t('Terug naar de analyse')}</Link>}>{t('In deze partij maakte je geen onnauwkeurigheden, fouten of blunders. Knap!')}</Empty>
 
   const close = () => navigate(back)
   if (pos >= queue.length) {
@@ -1002,26 +1004,26 @@ function MistakeTrainer({ record }: { record: GameReviewRecord }) {
     const failed = items.map((it, i) => (solved.get(it.ply) ? -1 : i)).filter(i => i >= 0)
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <FocusBar value={1} count={`${items.length} / ${items.length}`} sub="Fouten-trainer" onClose={close} closeLabel="Terug naar de analyse" />
+        <FocusBar value={1} count={`${items.length} / ${items.length}`} sub={t('Fouten-trainer')} onClose={close} closeLabel={t('Terug naar de analyse')} />
         <div className="card p-5 text-center">
-          <h1 className="text-2xl font-bold">{firstTry === items.length ? 'Alles in één keer goed!' : 'Klaar met je fouten'}</h1>
-          <p className="mt-1 text-muted">{firstTry} van {plural(items.length, 'stelling', 'stellingen')} goed, zonder hint en in één keer.</p>
+          <h1 className="text-2xl font-bold">{firstTry === items.length ? t('Alles in één keer goed!') : t('Klaar met je fouten')}</h1>
+          <p className="mt-1 text-muted">{tn(items.length, '{m} van {n} stelling goed, zonder hint en in één keer.', '{m} van {n} stellingen goed, zonder hint en in één keer.', { m: firstTry })}</p>
           <ul className="mt-4 divide-y divide-line text-left text-sm">
             {items.map(it => (
               <li key={it.ply} className="flex items-center gap-2 py-2">
                 <MoveClassIcon cls={it.played.cls} size={20} />
                 <span className="font-mono">{formatLine([it.played.san], it.ply)}</span>
                 <span className="text-muted">→ {it.bestSan}</span>
-                <span className={`ml-auto font-semibold ${solved.get(it.ply) ? 'text-brand-strong' : 'text-danger-ink'}`}>{solved.get(it.ply) ? 'goed' : 'nog oefenen'}</span>
+                <span className={`ml-auto font-semibold ${solved.get(it.ply) ? 'text-brand-strong' : 'text-danger-ink'}`}>{solved.get(it.ply) ? t('goed') : t('nog oefenen')}</span>
               </li>
             ))}
           </ul>
           <div className="mt-5 grid gap-2">
             {added === null
-              ? <button className="btn btn-primary min-h-12" onClick={async () => setAdded(await saveMistakeCards(items, p => !!solved.get(p), game.myColor))}>Zet deze stellingen in Herhalen</button>
-              : <p className="rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong">{added ? `${plural(added, 'stelling', 'stellingen')} toegevoegd aan Herhalen.` : 'Deze stellingen staan al in Herhalen.'} Wat je nog moet oefenen komt meteen terug.</p>}
-            {failed.length > 0 && <button className="btn btn-ghost min-h-12" onClick={() => { setQueue(failed); setPos(0); setRound(r => r + 1) }}>Mislukte opnieuw ({failed.length})</button>}
-            <Link className="btn btn-quiet min-h-12" to={back}>Terug naar de analyse</Link>
+              ? <button className="btn btn-primary min-h-12" onClick={async () => setAdded(await saveMistakeCards(items, p => !!solved.get(p), game.myColor))}>{t('Zet deze stellingen in Herhalen')}</button>
+              : <p className="rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong">{added ? tn(added, '{n} stelling toegevoegd aan Herhalen.', '{n} stellingen toegevoegd aan Herhalen.') : t('Deze stellingen staan al in Herhalen.')} {t('Wat je nog moet oefenen komt meteen terug.')}</p>}
+            {failed.length > 0 && <button className="btn btn-ghost min-h-12" onClick={() => { setQueue(failed); setPos(0); setRound(r => r + 1) }}>{t('Mislukte opnieuw ({n})', { n: failed.length })}</button>}
+            <Link className="btn btn-quiet min-h-12" to={back}>{t('Terug naar de analyse')}</Link>
           </div>
         </div>
       </div>
@@ -1031,7 +1033,7 @@ function MistakeTrainer({ record }: { record: GameReviewRecord }) {
   const item = items[queue[pos]]
   return (
     <div>
-      <FocusBar value={pos / queue.length} count={`${pos + 1} / ${queue.length}`} sub={round ? 'Fouten-trainer · herkansing' : 'Fouten-trainer'} onClose={close} closeLabel="Stoppen, terug naar de analyse" />
+      <FocusBar value={pos / queue.length} count={`${pos + 1} / ${queue.length}`} sub={round ? t('Fouten-trainer · herkansing') : t('Fouten-trainer')} onClose={close} closeLabel={t('Stoppen, terug naar de analyse')} />
       <MistakeStep key={`${round}-${item.ply}`} item={item} game={game} fens={fens} evals={record.evals}
         onDone={ok => { if (round === 0) setSolved(m => new Map(m).set(item.ply, ok)); else if (ok) setSolved(m => new Map(m).set(item.ply, true)) }}
         onNext={() => setPos(p => p + 1)} last={pos + 1 >= queue.length} />
@@ -1089,7 +1091,7 @@ function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
   function showSolution() {
     setSolution(true)
     setBoard({ fen: item.fen, last: null })
-    finish(false, `De beste zet was ${item.bestSan}.`, 'info')
+    finish(false, t('De beste zet was {move}.', { move: item.bestSan }), 'info')
   }
 
   async function onMove(from: string, to: string, promotion?: string) {
@@ -1100,17 +1102,17 @@ function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
     const uci = m.from + m.to + (m.promotion ?? '')
     setBoard({ fen: c.fen(), last: [m.from, m.to] })
     const clean = tries === 0 && !hint
-    if (uci === item.bestUci) return finish(clean, `Precies! ${m.san} is de beste zet.`), true
-    if (uci === item.played.uci) return wrong(`${m.san} speelde je in de partij. Zoek iets beters.`), true
+    if (uci === item.bestUci) return finish(clean, t('Precies! {move} is de beste zet.', { move: m.san })), true
+    if (uci === item.played.uci) return wrong(t('{move} speelde je in de partij. Zoek iets beters.', { move: m.san })), true
     setPhase('checking')
-    setFeedback({ kind: 'info', text: `Stockfish bekijkt ${m.san}…` })
+    setFeedback({ kind: 'info', text: t('Stockfish bekijkt {move}…', { move: m.san }) })
     try {
       const e = await evalPosition(c.fen())
       const loss = forMe(winPct(evals[item.ply])) - forMe(winPct(e))
-      if (loss <= 2.5) finish(clean, `Ook goed! ${m.san} is bijna net zo sterk als ${item.bestSan}.`)
-      else wrong(`${m.san} is niet goed genoeg${loss > 20 ? ': dat verliest veel' : ''}. Probeer het nog eens.`)
+      if (loss <= 2.5) finish(clean, t('Ook goed! {move} is bijna net zo sterk als {best}.', { move: m.san, best: item.bestSan }))
+      else wrong(loss > 20 ? t('{move} is niet goed genoeg: dat verliest veel. Probeer het nog eens.', { move: m.san }) : t('{move} is niet goed genoeg. Probeer het nog eens.', { move: m.san }))
     } catch {
-      wrong(`Kon ${m.san} niet beoordelen. Probeer de beste zet te vinden.`)
+      wrong(t('Kon {move} niet beoordelen. Probeer de beste zet te vinden.', { move: m.san }))
     }
     return true
   }
@@ -1121,36 +1123,36 @@ function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
       <div className="-mx-2 sm:mx-auto sm:w-full sm:max-w-[min(92vw,620px)] lg:max-w-[min(640px,calc(100dvh-160px))]">
-        <Board fen={board.fen} orientation={me} movable={phase === 'solve' ? me : undefined} onMove={(f, t, p) => { void onMove(f, t, p) }}
-          lastMove={board.last} arrows={arrows} hintSquare={hint && phase === 'solve' ? item.bestUci.slice(0, 2) : null} flash={flash} id="mistake" label="Vind een betere zet" />
+        <Board fen={board.fen} orientation={me} movable={phase === 'solve' ? me : undefined} onMove={(f, to, p) => { void onMove(f, to, p) }}
+          lastMove={board.last} arrows={arrows} hintSquare={hint && phase === 'solve' ? item.bestUci.slice(0, 2) : null} flash={flash} id="mistake" label={t('Vind een betere zet')} />
       </div>
       <aside className="card space-y-3 p-4" aria-live="polite">
         {phase === 'preview' ? (
-          <p className="text-sm text-muted">Voorgespeeld: de zetten vóór je fout…</p>
+          <p className="text-sm text-muted">{t('Voorgespeeld: de zetten vóór je fout…')}</p>
         ) : (
           <>
             <div className="flex items-center gap-3">
               <MoveClassIcon cls={item.played.cls} size={28} />
               <div>
-                <h2 className="font-bold">Vind een betere zet</h2>
-                <p className="text-sm text-muted">In de partij speelde je <b className="font-mono" style={{ color: info.color }}>{item.played.san}</b> ({info.label.toLowerCase()}).</p>
+                <h2 className="font-bold">{t('Vind een betere zet')}</h2>
+                <p className="text-sm text-muted">{tr(<>In de partij speelde je <b className="font-mono" style={{ color: info.color }}>{item.played.san}</b> ({info.label.toLowerCase()}).</>, <>In the game you played <b className="font-mono" style={{ color: info.color }}>{item.played.san}</b> ({info.label.toLowerCase()}).</>)}</p>
               </div>
             </div>
             {feedback && (
               <p className={`rounded-lg px-3 py-2 text-sm ${feedback.kind === 'good' ? 'bg-brand-soft text-brand-strong' : feedback.kind === 'bad' ? 'bg-danger-soft text-danger-ink' : 'bg-info-soft text-info-ink'}`}>{feedback.text}</p>
             )}
             {phase === 'done' && item.played.bestLine.length > 1 && (
-              <p className="text-sm text-muted">Beste lijn: <span className="font-mono">{formatLine(item.played.bestLine, item.ply)}</span></p>
+              <p className="text-sm text-muted">{t('Beste lijn:')} <span className="font-mono">{formatLine(item.played.bestLine, item.ply)}</span></p>
             )}
             {phase === 'done' ? (
-              <button className="btn btn-primary min-h-12 w-full" autoFocus onClick={onNext}>{last ? 'Afronden' : 'Volgende fout'}</button>
+              <button className="btn btn-primary min-h-12 w-full" autoFocus onClick={onNext}>{last ? t('Afronden') : t('Volgende fout')}</button>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <button className="btn btn-ghost min-h-11" disabled={hint || phase !== 'solve'} onClick={() => setHint(true)}>Hint</button>
-                <button className="btn btn-ghost min-h-11" disabled={phase !== 'solve'} onClick={showSolution}>Toon oplossing</button>
+                <button className="btn btn-ghost min-h-11" disabled={hint || phase !== 'solve'} onClick={() => setHint(true)}>{t('Hint')}</button>
+                <button className="btn btn-ghost min-h-11" disabled={phase !== 'solve'} onClick={showSolution}>{t('Toon oplossing')}</button>
               </div>
             )}
-            {phase === 'solve' && tries > 0 && <p className="text-xs text-muted">Nog {2 - tries} poging over.</p>}
+            {phase === 'solve' && tries > 0 && <p className="text-xs text-muted">{t('Nog {n} poging over.', { n: 2 - tries })}</p>}
           </>
         )}
       </aside>
@@ -1184,44 +1186,45 @@ function useHighlights(): FoundHighlight[] | null {
   }, [settings, names.data, reviews])
 }
 
-const HIGHLIGHT_TABS = [
-  { value: 'brilliant', label: 'Briljant' },
-  { value: 'great', label: 'Geweldig' },
-  { value: 'missed', label: 'Gemist' },
+// Een functie (geen vaste waarde), zodat de labels in de gekozen taal komen
+const highlightTabs = () => [
+  { value: 'brilliant', label: CLASS_INFO.brilliant.label },
+  { value: 'great', label: CLASS_INFO.great.label },
+  { value: 'missed', label: tr('Gemist', 'Missed') },
 ] as const
 
 export function BrilliantsView() {
   const all = useHighlights()
   const [tab, setTab] = useState<HighlightKind>('brilliant')
-  if (!all) return <Spinner label="Briljante zetten zoeken…" />
+  if (!all) return <Spinner label={t('Briljante zetten zoeken…')} />
   const count = (k: HighlightKind) => all.filter(h => h.kind === k).length
   const shown = all.filter(h => h.kind === tab)
   const games = new Set(all.map(h => h.record.id)).size
   return (
     <div className="space-y-5">
-      <PageHeader back="/analyse" title="Mijn briljante zetten"
-        subtitle="Je beste momenten uit je geanalyseerde partijen. Tik op een stelling om de partij op die zet te openen." />
+      <PageHeader back="/analyse" title={t('Mijn briljante zetten')}
+        subtitle={t('Je beste momenten uit je geanalyseerde partijen. Tik op een stelling om de partij op die zet te openen.')} />
       <div className="grid grid-cols-3 gap-2 sm:max-w-md">
-        {HIGHLIGHT_TABS.map(t => (
-          <div key={t.value} className="card flex flex-col items-center gap-1 p-3 text-center">
-            <span className={t.value === 'missed' ? 'opacity-45 grayscale' : undefined}><MoveClassIcon cls={t.value === 'missed' ? 'brilliant' : t.value} size={26} /></span>
-            <span className="text-2xl font-extrabold tabular-nums">{count(t.value)}</span>
-            <span className="text-xs text-muted">{t.value === 'missed' ? 'gemist' : t.label.toLowerCase()}</span>
+        {highlightTabs().map(h => (
+          <div key={h.value} className="card flex flex-col items-center gap-1 p-3 text-center">
+            <span className={h.value === 'missed' ? 'opacity-45 grayscale' : undefined}><MoveClassIcon cls={h.value === 'missed' ? 'brilliant' : h.value} size={26} /></span>
+            <span className="text-2xl font-extrabold tabular-nums">{count(h.value)}</span>
+            <span className="text-xs text-muted">{h.value === 'missed' ? t('gemist') : h.label.toLowerCase()}</span>
           </div>
         ))}
       </div>
-      <Tabs value={tab} onChange={setTab} options={HIGHLIGHT_TABS.map(t => ({ value: t.value, label: `${t.label} (${count(t.value)})` }))} />
+      <Tabs value={tab} onChange={setTab} options={highlightTabs().map(h => ({ value: h.value, label: `${h.label} (${count(h.value)})` }))} />
       {shown.length === 0 ? (
-        <Empty title={tab === 'missed' ? 'Geen gemiste briljante zetten' : `Nog geen ${tab === 'brilliant' ? 'briljante' : 'geweldige'} zetten`}
-          action={<Link className="btn btn-primary" to="/analyse">Partijen analyseren</Link>}>
-          {all.length || games ? 'Analyseer meer partijen; elke briljante zet die je speelt komt hier vanzelf bij.' : 'Analyseer je partijen; elke briljante zet die je speelt komt hier vanzelf bij.'}
+        <Empty title={tab === 'missed' ? t('Geen gemiste briljante zetten') : tab === 'brilliant' ? t('Nog geen briljante zetten') : t('Nog geen geweldige zetten')}
+          action={<Link className="btn btn-primary" to="/analyse">{t('Partijen analyseren')}</Link>}>
+          {all.length || games ? t('Analyseer meer partijen; elke briljante zet die je speelt komt hier vanzelf bij.') : t('Analyseer je partijen; elke briljante zet die je speelt komt hier vanzelf bij.')}
         </Empty>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {shown.map(h => <HighlightCard key={`${h.record.id}-${h.move.ply}`} h={h} />)}
         </ul>
       )}
-      <p className="text-xs text-muted">Alleen zetten uit partijen waarin jij speelde ({plural(games, 'partij', 'partijen')} met hoogtepunten). Gedeelde partijen van anderen tellen niet mee.</p>
+      <p className="text-xs text-muted">{tn(games, 'Alleen zetten uit partijen waarin jij speelde ({n} partij met hoogtepunten). Gedeelde partijen van anderen tellen niet mee.', 'Alleen zetten uit partijen waarin jij speelde ({n} partijen met hoogtepunten). Gedeelde partijen van anderen tellen niet mee.')}</p>
     </div>
   )
 }
@@ -1242,10 +1245,10 @@ function HighlightCard({ h }: { h: FoundHighlight }) {
         </div>
         <div className="p-3">
           <div className="flex items-center gap-1.5 font-bold">
-            {missed ? <>Briljant was <span className="font-mono">{h.move.bestSan}</span></> : <span className="font-mono">{formatLine([h.move.san], h.move.ply)}</span>}
+            {missed ? tr(<>Briljant was <span className="font-mono">{h.move.bestSan}</span></>, <>Brilliant was <span className="font-mono">{h.move.bestSan}</span></>) : <span className="font-mono">{formatLine([h.move.san], h.move.ply)}</span>}
           </div>
-          {missed && <div className="text-xs text-muted">je speelde <span className="font-mono">{h.move.san}</span></div>}
-          <div className="truncate text-xs text-muted">tegen {opp.name} · {fmtDate(g.playedAt)}</div>
+          {missed && <div className="text-xs text-muted">{tr(<>je speelde <span className="font-mono">{h.move.san}</span></>, <>you played <span className="font-mono">{h.move.san}</span></>)}</div>}
+          <div className="truncate text-xs text-muted">{t('tegen {name}', { name: playerName(opp.name) })} · {fmtDate(g.playedAt)}</div>
         </div>
       </Link>
     </li>

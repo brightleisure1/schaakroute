@@ -3,7 +3,8 @@ import { Link, Navigate, useParams } from 'react-router'
 import { familyProgress, useCardMap, useFamily, useProgressMap, userCardIds } from '../lib/hooks'
 import { displayName } from '../lib/data'
 import { variationLine } from '../lib/daily'
-import { learnLessons } from '../lib/course'
+import { learnLessons, lessonTitle } from '../lib/course'
+import { t, tn } from '../lib/i18n'
 import { endSession, startSession } from '../lib/progress'
 import { db } from '../lib/db'
 import { AUTO_NEXT_MS, MAX_REDO, knownUserMoves, moveNo, planVariation, redoSteps, userPliesOf, type LessonStep, type StepKind } from '../lib/lessonPlan'
@@ -48,11 +49,11 @@ export function Course() {
 
   return (
     <div>
-      <PageHeader back={`/opening/${file.family.id}`} title={`Cursus · ${file.family.name}`} subtitle={`${allLessons.length} lessen · ${inCourse} varianten`}
-        actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? 'Ga verder' : 'Start eerste les'}</Link>} />
+      <PageHeader back={`/opening/${file.family.id}`} title={t('Cursus · {name}', { name: file.family.name })} subtitle={t('{n} lessen · {m} varianten', { n: allLessons.length, m: inCourse })}
+        actions={firstOpen && <Link to={`/les/${file.family.id}/${firstOpen.id}`} className="btn btn-primary">{learnedCount ? t('Ga verder') : t('Start eerste les')}</Link>} />
       <div className="card mb-6 p-4">
         <ProgressBar value={inCourse ? doneInCourse / inCourse : 0} />
-        <div className="mt-1 text-sm text-muted">{doneInCourse} van {inCourse} varianten afgerond</div>
+        <div className="mt-1 text-sm text-muted">{t('{done} van {n} varianten afgerond', { done: doneInCourse, n: inCourse })}</div>
       </div>
       <ol className="relative space-y-8">
         {levels.map(({ level, lessons }, li) => {
@@ -61,22 +62,22 @@ export function Course() {
             <li key={level}>
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-bold">Niveau {li + 1} · {LEVELS[level].title}</h2>
+                  <h2 className="text-lg font-bold">{t('Niveau {n} · {title}', { n: li + 1, title: t(LEVELS[level].title) })}</h2>
                 </div>
-                <span className="text-sm tabular-nums text-muted">{done}/{lessons.length} lessen</span>
+                <span className="text-sm tabular-nums text-muted">{t('{done}/{n} lessen', { done, n: lessons.length })}</span>
               </div>
               <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {lessons.map(lesson => {
                   const s = lessonState(lesson, file, progress)
                   const current = firstOpen?.id === lesson.id
                   return (
-                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} title={`${lesson.title}: ${s.done} van ${s.vs.length} varianten afgerond`} aria-current={current ? 'step' : undefined} className={`tap flex items-center gap-3 p-3 ${current ? 'border-brand!' : ''}`}>
+                    <Link key={lesson.id} to={`/les/${file.family.id}/${lesson.id}`} title={t('{title}: {done} van {n} varianten afgerond', { title: lessonTitle(lesson.title), done: s.done, n: s.vs.length })} aria-current={current ? 'step' : undefined} className={`tap flex items-center gap-3 p-3 ${current ? 'border-brand!' : ''}`}>
                       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold ${s.complete ? 'bg-brand text-on-brand' : current ? 'bg-brand-soft text-brand-strong' : 'bg-surface-2 text-muted'}`}>
-                        {s.complete ? <Check size={20} aria-label="afgerond" /> : <span aria-label={`${s.done} van ${s.vs.length} afgerond`}>{s.done}/{s.vs.length}</span>}
+                        {s.complete ? <Check size={20} aria-label={t('afgerond')} /> : <span aria-label={t('{done} van {n} afgerond', { done: s.done, n: s.vs.length })}>{s.done}/{s.vs.length}</span>}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-semibold leading-snug line-clamp-2">{lesson.title}</span>
-                        <span className="block text-xs text-muted">{s.vs.length} {s.vs.length === 1 ? 'variant' : 'varianten'}{current ? ' · hier ben je' : ''}</span>
+                        <span className="block font-semibold leading-snug line-clamp-2">{lessonTitle(lesson.title)}</span>
+                        <span className="block text-xs text-muted">{tn(s.vs.length, '{n} variant', '{n} varianten')}{current ? ` · ${t('hier ben je')}` : ''}</span>
                       </span>
                       {s.complete && <Stars count={s.stars} size="text-sm" />}
                     </Link>
@@ -87,10 +88,10 @@ export function Course() {
           )
         })}
         <li>
-          <h2 className="text-lg font-bold">Herhalen</h2>
+          <h2 className="text-lg font-bold">{t('Herhalen')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="tap p-4"><div className="font-semibold">Complete varianten uit het hoofd</div><div className="text-sm text-muted">{learnedCount} geleerde varianten</div></Link>
-            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="tap p-4"><div className="font-semibold">Losse posities herhalen</div><div className="text-sm text-muted">{p.positions} geleerde posities</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=lines`} className="tap p-4"><div className="font-semibold">{t('Complete varianten uit het hoofd')}</div><div className="text-sm text-muted">{t('{n} geleerde varianten', { n: learnedCount })}</div></Link>
+            <Link to={`/mastery?family=${file.family.id}&type=positions`} className="tap p-4"><div className="font-semibold">{t('Losse posities herhalen')}</div><div className="text-sm text-muted">{t('{n} geleerde posities', { n: p.positions })}</div></Link>
           </div>
         </li>
       </ol>
@@ -157,12 +158,12 @@ export function LessonRun() {
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
         <Confetti fire={1} />
         <Trophy size={40} strokeWidth={1.5} aria-hidden className="mx-auto text-star" />
-        <h2 className="mt-2 text-xl font-bold">Les afgerond: {lesson.title}</h2>
+        <h2 className="mt-2 text-xl font-bold">{t('Les afgerond: {title}', { title: lessonTitle(lesson.title) })}</h2>
         <div className="mt-2"><Stars count={stars} size="text-3xl" /></div>
         <ResultNumbers result={total} />
         <div className="mt-4 grid gap-2">
-          {nextLesson && <Link to={`/les/${file.family.id}/${nextLesson.id}`} className="btn btn-primary">Volgende les: {nextLesson.title}</Link>}
-          <Link to={`/cursus/${file.family.id}`} className="btn btn-ghost">Terug naar het leerpad</Link>
+          {nextLesson && <Link to={`/les/${file.family.id}/${nextLesson.id}`} className="btn btn-primary">{t('Volgende les: {title}', { title: lessonTitle(nextLesson.title) })}</Link>}
+          <Link to={`/cursus/${file.family.id}`} className="btn btn-ghost">{t('Terug naar het leerpad')}</Link>
         </div>
       </div>
     )
@@ -173,12 +174,13 @@ export function LessonRun() {
   const vIndex = lesson.variationIds.indexOf(v.id)
   const side = file.family.side
   const user = userPliesOf(v.uci.length, side).filter(p => p >= step.startPly && p < step.endPly)
-  const range = user.length ? `${moveNo(user[0])}${user.length > 1 ? `–${moveNo(user[user.length - 1])}` : ''}` : ''
+  // "zet 3" of "zet 3–5" (in het Engels "move 3" of "moves 3–5")
+  const range = !user.length ? t('zet') : user.length > 1 ? t('zet {a}–{b}', { a: moveNo(user[0]), b: moveNo(user[user.length - 1]) }) : t('zet {a}', { a: moveNo(user[0]) })
   const label: Record<StepKind, string> = {
-    learn: `Kijk en speel na: zet ${range}`,
-    recall: `Nu uit je hoofd: zet ${range}`,
-    final: step.startPly === 0 ? 'De hele variant uit je hoofd' : `Alle nieuwe zetten uit je hoofd: zet ${range}`,
-    redo: `Fout herstellen: zet ${range}`,
+    learn: t('Kijk en speel na: {moves}', { moves: range }),
+    recall: t('Nu uit je hoofd: {moves}', { moves: range }),
+    final: step.startPly === 0 ? t('De hele variant uit je hoofd') : t('Alle nieuwe zetten uit je hoofd: {moves}', { moves: range }),
+    redo: t('Fout herstellen: {moves}', { moves: range }),
   }
   const stepsOfVariation = steps.filter(s => s.variationId === v.id)
   const posInVariation = stepsOfVariation.indexOf(step)
@@ -211,24 +213,24 @@ export function LessonRun() {
   // Herstelstappen worden pas na deze stap ingepland; het label kijkt daarom ook naar de fouten van nu
   const nextLabel = (r: LineResult) => {
     const failed = r.mistakes + r.hints + r.shown > 0
-    if (step.kind === 'learn') return 'Nu zelf, zonder pijlen'
-    if (step.kind === 'final' && (failed || misses.current.get(v.id)?.size)) return 'Fouten herstellen'
-    if (step.kind === 'redo' && failed && (step.attempt ?? 1) < MAX_REDO) return 'Verder, deze zet komt nog terug'
-    if (next?.variationId === v.id) return next.kind === 'redo' ? 'Volgende fout herstellen' : next.kind === 'final' ? 'Nu alles uit je hoofd' : 'Volgende zetten leren'
-    if (vIndex + 1 < lesson.variationIds.length) return `Verder: ${displayName(file.variations.find(x => x.id === lesson.variationIds[vIndex + 1])!, file.family.name)}`
-    return 'Les afronden'
+    if (step.kind === 'learn') return t('Nu zelf, zonder pijlen')
+    if (step.kind === 'final' && (failed || misses.current.get(v.id)?.size)) return t('Fouten herstellen')
+    if (step.kind === 'redo' && failed && (step.attempt ?? 1) < MAX_REDO) return t('Verder, deze zet komt nog terug')
+    if (next?.variationId === v.id) return next.kind === 'redo' ? t('Volgende fout herstellen') : next.kind === 'final' ? t('Nu alles uit je hoofd') : t('Volgende zetten leren')
+    if (vIndex + 1 < lesson.variationIds.length) return t('Verder: {name}', { name: displayName(file.variations.find(x => x.id === lesson.variationIds[vIndex + 1])!, file.family.name) })
+    return t('Les afronden')
   }
-  const endTitle = (r: LineResult) => step.kind === 'learn' ? 'Bekeken. Nu uit je hoofd.'
-    : r.mistakes + r.hints + r.shown === 0 ? 'Goed gedaan!' : step.kind === 'redo' ? 'Nog niet helemaal' : 'Afgerond, met fouten'
+  const endTitle = (r: LineResult) => step.kind === 'learn' ? t('Bekeken. Nu uit je hoofd.')
+    : r.mistakes + r.hints + r.shown === 0 ? t('Goed gedaan!') : step.kind === 'redo' ? t('Nog niet helemaal') : t('Afgerond, met fouten')
 
   return (
     <div>
       <Confetti fire={fire} />
       <div className="mb-4 flex items-center justify-between gap-3">
-        <Link to={`/cursus/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Leerpad</Link>
+        <Link to={`/cursus/${file.family.id}`} className="inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← {t('Leerpad')}</Link>
         <div className="flex-1 sm:max-w-sm">
           <ProgressBar value={(vIndex + Math.max(0, posInVariation) / Math.max(1, stepsOfVariation.length)) / lesson.variationIds.length} />
-          <div className="mt-1 text-right text-xs text-muted">{lesson.variationIds.length > 1 ? `Variant ${vIndex + 1} van ${lesson.variationIds.length} · ` : ''}{label[step.kind]}</div>
+          <div className="mt-1 text-right text-xs text-muted">{lesson.variationIds.length > 1 ? `${t('Variant {n} van {m}', { n: vIndex + 1, m: lesson.variationIds.length })} · ` : ''}{label[step.kind]}</div>
         </div>
       </div>
       <StepTrainer

@@ -8,6 +8,7 @@ import { isUserPly } from '../lib/trainer'
 import { CropBoard } from './CropBoard'
 import { keyMoves, shortName } from './VariationItem'
 import { pct } from './ui'
+import { t } from '../lib/i18n'
 
 // Gedeelde bouwstenen voor de schermen Openingen (10i), Opening (10j) en Varianten (10k) uit ontwerpronde 10.
 
@@ -90,7 +91,7 @@ export function rowMetaMap(file: FamilyFile, progress: Map<string, VariationProg
 }
 
 export function StatusBadge({ status, className = '' }: { status: RowStatus; className?: string }) {
-  return <span className={`whitespace-nowrap rounded-full px-2.5 py-[3px] text-xs font-bold ${STATUS[status].cls} ${className}`}>{STATUS[status].label}</span>
+  return <span className={`whitespace-nowrap rounded-full px-2.5 py-[3px] text-xs font-bold ${STATUS[status].cls} ${className}`}>{t(STATUS[status].label)}</span>
 }
 
 /**
@@ -113,15 +114,15 @@ export function VariationRow({ v, file, status, label, shareSuffix }: { v: Varia
           <span className="line-clamp-2 block text-[0.9375rem] font-bold leading-snug sm:truncate lg:text-base">{label ?? shortName(v, f.name)}</span>
           <span className="block text-[0.8125rem] text-muted lg:text-sm">
             {moves}
-            {share && <span className="lg:hidden">{moves ? ' · ' : ''}{share}{shareSuffix ? ' van de partijen' : ''}</span>}
+            {share && <span className="lg:hidden">{moves ? ' · ' : ''}{shareSuffix ? t('{pct} van de partijen', { pct: share }) : share}</span>}
           </span>
         </span>
-        <span className="hidden items-center gap-2.5 lg:flex" aria-label={share ? `${share} van de partijen` : 'te zeldzaam voor een percentage'}>
+        <span className="hidden items-center gap-2.5 lg:flex" aria-label={share ? t('{pct} van de partijen', { pct: share }) : t('te zeldzaam voor een percentage')}>
           <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-(--board-dark)" style={{ width: `${Math.min(100, v.freq * 100)}%` }} /></span>
           <span className="w-10 text-right text-sm font-bold tabular-nums">{share ?? '–'}</span>
         </span>
         <StatusBadge status={status} className="justify-self-end lg:justify-self-start" />
-        <span className="hidden min-h-10 items-center justify-center rounded-xl border-2 border-line bg-surface text-sm font-bold shadow-[0_2px_0_var(--line)] lg:flex">{learn ? 'Leren' : 'Oefenen'}</span>
+        <span className="hidden min-h-10 items-center justify-center rounded-xl border-2 border-line bg-surface text-sm font-bold shadow-[0_2px_0_var(--line)] lg:flex">{learn ? t('Leren') : t('Oefenen')}</span>
       </Link>
     </li>
   )
@@ -134,7 +135,7 @@ export const ROW_DIVIDE = 'divide-y-2 divide-surface-2 dark:divide-track'
 /** De beginzetten als kleine chips; de laatste (kenmerkende) zet in groen */
 export function MoveChips({ moves, className = '' }: { moves: string[]; className?: string }) {
   return (
-    <ol className={`flex flex-wrap gap-1.5 ${className}`} aria-label="Beginzetten">
+    <ol className={`flex flex-wrap gap-1.5 ${className}`} aria-label={t('Beginzetten')}>
       {moves.map((m, i) => {
         const last = i === moves.length - 1
         return <li key={i} className={`rounded-lg border px-[9px] py-[3px] text-[0.8125rem] font-bold lg:px-2.5 lg:text-base ${last ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-surface-2 text-ink'}`}>{m}</li>
@@ -160,9 +161,9 @@ export function OpeningSwitcher({ value, families, mine, onChange }: { value?: s
   }, [open])
   const own = families.filter(f => mine.includes(f.id))
   const groups = [
-    { title: 'Mijn openingen', list: own },
-    { title: 'Wit', list: families.filter(f => f.side === 'white' && !mine.includes(f.id)) },
-    { title: 'Zwart', list: families.filter(f => f.side === 'black' && !mine.includes(f.id)) },
+    { title: t('Mijn openingen'), list: own },
+    { title: t('Wit'), list: families.filter(f => f.side === 'white' && !mine.includes(f.id)) },
+    { title: t('Zwart'), list: families.filter(f => f.side === 'black' && !mine.includes(f.id)) },
   ].filter(g => g.list.length)
   const choose = (id: string) => { onChange(id); setOpen(false); btn.current?.focus() }
   return (
@@ -177,8 +178,8 @@ export function OpeningSwitcher({ value, families, mine, onChange }: { value?: s
       >
         <span className="w-11 shrink-0">{cur && <CropBoard epd={cur.rootEpd} uci={cur.rootUci} orientation={cur.side} coordsFrom="never" />}</span>
         <span className="min-w-0 flex-1">
-          <span className="block text-xs text-muted">Opening<span className="sr-only">: tik om te wisselen</span></span>
-          <span className="block truncate text-base font-bold">{cur ? `${cur.name} · ${cur.variationCount} varianten` : 'Kies een opening'}</span>
+          <span className="block text-xs text-muted">{t('Opening')}<span className="sr-only">: {t('tik om te wisselen')}</span></span>
+          <span className="block truncate text-base font-bold">{cur ? `${cur.name} · ${t('{n} varianten', { n: cur.variationCount })}` : t('Kies een opening')}</span>
         </span>
         <ChevronsUpDown size={18} aria-hidden className="shrink-0 text-muted" />
       </button>

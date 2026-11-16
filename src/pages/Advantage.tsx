@@ -17,13 +17,16 @@ import { Empty, ErrorBox, Spinner, nf, pct, useSettings } from '../components/ui
 import { BoardLoading, InlineWait } from '../components/PieceMotion'
 import { FamilyPicker } from './Variations'
 import type { Side, StatMove, StatsFile } from '../lib/types'
+import { t, tr } from '../lib/i18n'
 
 const BAND_LABEL = ['< 1200', '1200–1599', '1600–1999', '2000+']
 const bandFor = (elo: number) => (elo < 1200 ? 0 : elo < 1600 ? 1 : elo < 2000 ? 2 : 3)
+/** Aantal partijen; het Nederlands gebruikt altijd het meervoud */
+const games = (n: number) => tr(`${nf(n)} partijen`, `${nf(n)} ${n === 1 ? 'game' : 'games'}`)
 
 function ResultBar({ w, d, l, className = '' }: { w: number; d: number; l: number; className?: string }) {
   return (
-    <div className={`flex h-1.5 w-full gap-px overflow-hidden rounded-full ${className}`} title={`winst ${pct(w)} · remise ${pct(d)} · verlies ${pct(l)}`} aria-label={`winst ${pct(w)}, remise ${pct(d)}, verlies ${pct(l)}`}>
+    <div className={`flex h-1.5 w-full gap-px overflow-hidden rounded-full ${className}`} title={t('winst {w} · remise {d} · verlies {l}', { w: pct(w), d: pct(d), l: pct(l) })} aria-label={t('winst {w}, remise {d}, verlies {l}', { w: pct(w), d: pct(d), l: pct(l) })}>
       <div className="bg-brand" style={{ width: `${w * 100}%` }} />
       <div className="bg-line" style={{ width: `${d * 100}%` }} />
       <div className="bg-danger" style={{ width: `${l * 100}%` }} />
@@ -46,11 +49,10 @@ function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: St
   const maxFreq = Math.max(0.01, ...rows.map(r => r.freq))
   // Best scorende zet met genoeg partijen om iets te zeggen
   const best = rows.filter(r => r.s.n >= 30).sort((a, b) => b.s.score - a.s.score)[0]?.m[0]
-  const colorNl = side === 'white' ? 'wit' : 'zwart'
   return (
     <div>
       <div className="mb-1 grid grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] gap-3 px-2 text-xs font-semibold text-muted">
-        <span>Zet</span><span title={`Rating ${BAND_LABEL[band]}`}>Op jouw niveau</span><span className="text-right">Score {colorNl}</span>
+        <span>{t('Zet')}</span><span title={`Rating ${BAND_LABEL[band]}`}>{t('Op jouw niveau')}</span><span className="text-right">{side === 'white' ? t('Score wit') : t('Score zwart')}</span>
       </div>
       <ul className="space-y-0.5">
         {rows.map(({ m, mine, s, freq, allFreq }) => {
@@ -58,16 +60,16 @@ function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: St
           return (
             <li key={m[0]}>
               <Row className={`grid w-full grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] items-center gap-3 rounded-xl px-2 py-2 text-left ${highlight === m[0] ? 'bg-brand-soft' : ''} ${onPick ? 'transition hover:bg-surface-2' : ''}`} {...(onPick ? { onClick: () => onPick(m[0]) } : {})}>
-                <span className="flex items-center gap-1 text-base font-bold">{m[1]}{best === m[0] && <Star size={13} aria-label="best scorend" className="fill-star text-star" />}</span>
+                <span className="flex items-center gap-1 text-base font-bold">{m[1]}{best === m[0] && <Star size={13} aria-label={t('best scorend')} className="fill-star text-star" />}</span>
                 <span className="min-w-0">
                   <span className="flex items-center gap-2">
                     <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-(--board-dark)" style={{ width: `${(freq / maxFreq) * 100}%` }} /></span>
                     <span className="w-9 text-right text-sm font-semibold tabular-nums">{pct(freq)}</span>
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-muted">{nf(mine.n)} partijen<span className="hidden sm:inline"> · alle niveaus {pct(allFreq)}</span></span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">{games(mine.n)}<span className="hidden sm:inline"> · {t('alle niveaus {pct}', { pct: pct(allFreq) })}</span></span>
                 </span>
                 <span className="flex flex-col items-end gap-1.5">
-                  <span className={`rounded-lg px-2 py-0.5 text-sm font-bold tabular-nums ${scoreTone(s.score)}`} title={mine.n < 10 ? 'Te weinig partijen op jouw niveau: score over alle niveaus' : undefined}>{pct(s.score)}</span>
+                  <span className={`rounded-lg px-2 py-0.5 text-sm font-bold tabular-nums ${scoreTone(s.score)}`} title={mine.n < 10 ? t('Te weinig partijen op jouw niveau: score over alle niveaus') : undefined}>{pct(s.score)}</span>
                   <ResultBar w={s.win} d={s.draw} l={s.loss} />
                 </span>
               </Row>
@@ -76,10 +78,10 @@ function StatsTable({ moves, total, side, band, onPick, highlight }: { moves: St
         })}
       </ul>
       <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs text-muted">
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-brand" aria-hidden />winst</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-line" aria-hidden />remise</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-danger" aria-hidden />verlies</span>
-        <span>· score = winst + ½ remise</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-brand" aria-hidden />{t('winst')}</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-line" aria-hidden />{t('remise')}</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-danger" aria-hidden />{t('verlies')}</span>
+        <span>· {t('score = winst + ½ remise')}</span>
       </p>
     </div>
   )
@@ -108,17 +110,17 @@ export function Advantage() {
   const band = bandFor(settings.elo)
   const family = manifest.families.find(f => f.id === id)
   const openSheet = () => setSheet(true)
-  const filterKey = <FilterKey onClick={openSheet} expanded={sheet} active={mode === 'explore'} label="Opening en modus" />
-  const label = `Op jouw niveau · rating ${BAND_LABEL[band]}`
+  const filterKey = <FilterKey onClick={openSheet} expanded={sheet} active={mode === 'explore'} label={t('Opening en modus')} />
+  const label = t('Op jouw niveau · rating {band}', { band: BAND_LABEL[band] })
   const loading = !file || stats.loading
 
   return (
     <div className="flex flex-col gap-2.5">
       {loading || !stats.data ? (
         <>
-          <TrainingTopBar onClose={close} closeLabel="Stoppen met Op jouw niveau" />
-          <TrainingHeading tone="info" label={label} title={mode === 'train' ? 'Welke zet scoort het best?' : 'Wat wordt hier gespeeld?'} action={filterKey} />
-          {loading ? <BoardLoading label="Stelling laden…" /> : <ErrorBox error="Geen statistieken beschikbaar" />}
+          <TrainingTopBar onClose={close} closeLabel={t('Stoppen met Op jouw niveau')} />
+          <TrainingHeading tone="info" label={label} title={mode === 'train' ? t('Welke zet scoort het best?') : t('Wat wordt hier gespeeld?')} action={filterKey} />
+          {loading ? <BoardLoading label={t('Stelling laden…')} /> : <ErrorBox error={t('Geen statistieken beschikbaar')} />}
         </>
       ) : mode === 'train' ? (
         <AdvantageQuiz
@@ -137,8 +139,8 @@ export function Advantage() {
         />
       ) : (
         <>
-          <TrainingTopBar onClose={close} closeLabel="Stoppen met Op jouw niveau" />
-          <TrainingHeading tone="info" label={`${label} · verkennen`} title="Wat wordt hier gespeeld?" sub={family?.name} action={filterKey} />
+          <TrainingTopBar onClose={close} closeLabel={t('Stoppen met Op jouw niveau')} />
+          <TrainingHeading tone="info" label={`${label} · ${t('verkennen')}`} title={t('Wat wordt hier gespeeld?')} sub={family?.name} action={filterKey} />
           <Explorer key={file.family.id} rootUci={file.family.rootUci} side={file.family.side} stats={stats.data} elo={settings.elo} token={settings.lichessToken} names={names.data ?? {}} />
         </>
       )}
@@ -146,29 +148,29 @@ export function Advantage() {
       <TrainingSheet
         open={sheet}
         onClose={() => setSheet(false)}
-        title="Opening en modus"
-        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>Klaar</button>}
+        title={t('Opening en modus')}
+        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>{t('Klaar')}</button>}
       >
         <div>
-          <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>
+          <div className="mb-2 text-sm font-semibold" aria-hidden>{t('Opening')}</div>
           <div className="[&_select]:max-w-none">
             <FamilyPicker value={id ?? ''} onChange={v => nav(`/advantage/${v}`, { replace: true })} families={manifest.families} mine={settings.openings} />
           </div>
         </div>
         <PillChoice<Mode>
-          legend="Wat wil je doen?"
+          legend={t('Wat wil je doen?')}
           value={mode}
           onChange={setMode}
-          options={[{ value: 'train', label: 'Trainen' }, { value: 'explore', label: 'Verkennen' }]}
-          hint={mode === 'train' ? 'Tien vragen: kies uit vier zetten welke het best scoort op jouw niveau.' : 'Speel zelf zetten op het bord en zie wat er op jouw niveau gespeeld wordt en hoe het afloopt.'}
+          options={[{ value: 'train', label: t('Trainen') }, { value: 'explore', label: t('Verkennen') }]}
+          hint={mode === 'train' ? t('Tien vragen: kies uit vier zetten welke het best scoort op jouw niveau.') : t('Speel zelf zetten op het bord en zie wat er op jouw niveau gespeeld wordt en hoe het afloopt.')}
         />
         {mode === 'train' && (
           <button type="button" className="tap flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px]! px-4 font-bold" onClick={() => { setRound(r => r + 1); setSheet(false) }}>
-            ⟲ Opnieuw beginnen
+            ⟲ {t('Opnieuw beginnen')}
           </button>
         )}
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">
-          Praktische score = winst + ½ remise, in partijen van spelers met rating {BAND_LABEL[band]} (jouw rating is {settings.elo}; aan te passen in Instellingen).
+          {t('Praktische score = winst + ½ remise, in partijen van spelers met rating {band} (jouw rating is {elo}; aan te passen in Instellingen).', { band: BAND_LABEL[band], elo: settings.elo })}
         </p>
       </TrainingSheet>
     </div>
@@ -235,28 +237,28 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
       <div className="mx-auto w-full max-w-[min(92vw,600px)]">
         <Board id="explorer" fen={fen} orientation={side} movable={turn} onMove={play} lastMove={last} />
         <div className="mt-2 flex gap-2">
-          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold disabled:opacity-50" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>Terug</button>
-          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold" onClick={() => setUci(rootUci)}>⟲ Begin van de opening</button>
+          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold disabled:opacity-50" onClick={() => setUci(u => (u.length > 0 ? u.slice(0, -1) : u))} disabled={!uci.length}>{t('Terug')}</button>
+          <button type="button" className="tap flex min-h-11 flex-1 items-center justify-center rounded-[14px]! px-3 font-bold" onClick={() => setUci(rootUci)}>⟲ {t('Begin van de opening')}</button>
         </div>
       </div>
       <aside className="space-y-3">
         <div className="card p-4">
-          <div className="text-sm text-muted">{nameAt(names, uci) ?? 'Onbenoemde stelling'}</div>
+          <div className="text-sm text-muted">{nameAt(names, uci) ?? t('Onbenoemde stelling')}</div>
           <MoveList sans={san} current={san.length} onSelect={p => setUci(u => u.slice(0, p))} />
         </div>
         <div className="card p-4">
           <div className="mb-2 flex items-baseline justify-between">
-            <h3 className="font-bold">Wat wordt hier gespeeld</h3>
-            <span className="text-xs text-muted">{pos ? `${nf(pos.n)} partijen` : ''}</span>
+            <h3 className="font-bold">{t('Wat wordt hier gespeeld')}</h3>
+            <span className="text-xs text-muted">{pos ? games(pos.n) : ''}</span>
           </div>
-          {pos ? <StatsTable moves={pos.m} total={pos.n} side={side} band={band} onPick={u => setUci(x => [...x, u])} /> : <p className="text-sm text-muted">Deze stelling kwam te weinig voor in de steekproef (minder dan 20 partijen).</p>}
+          {pos ? <StatsTable moves={pos.m} total={pos.n} side={side} band={band} onPick={u => setUci(x => [...x, u])} /> : <p className="text-sm text-muted">{t('Deze stelling kwam te weinig voor in de steekproef (minder dan 20 partijen).')}</p>}
         </div>
         <div className="card p-4">
-          <h3 className="font-semibold">Live Lichess Explorer <span className="text-xs font-normal text-muted">(optioneel)</span></h3>
+          <h3 className="font-semibold">Live Lichess Explorer <span className="text-xs font-normal text-muted">{t('(optioneel)')}</span></h3>
           {!token ? (
-            <p className="mt-1 text-sm text-muted">Voeg een Lichess-token toe in Instellingen voor actuele aantallen.</p>
+            <p className="mt-1 text-sm text-muted">{t('Voeg een Lichess-token toe in Instellingen voor actuele aantallen.')}</p>
           ) : !live ? (
-            <button className="btn btn-ghost mt-2 w-full" onClick={fetchLive}>Haal live statistieken op (rating {ratingGroupsFor(elo).join(', ')})</button>
+            <button className="btn btn-ghost mt-2 w-full" onClick={fetchLive}>{t('Haal live statistieken op (rating {ratings})', { ratings: ratingGroupsFor(elo).join(', ') })}</button>
           ) : live.loading ? <InlineWait className="text-sm" /> : live.error ? <div className="text-sm text-danger-ink">{live.error}</div> : live.data && (
             <div className="mt-2">
               <table className="w-full text-sm tabular-nums">
@@ -281,8 +283,8 @@ function Explorer({ rootUci, side, stats, elo, token, names }: { rootUci: string
           )}
         </div>
         <div className="card p-4">
-          <h3 className="mb-2 font-semibold">Engine <span className="text-xs font-normal text-muted">(objectief, niet hetzelfde als praktisch succes)</span></h3>
-          <EvalButton fen={fen} multipv={3} label="Analyseer met Stockfish (3 beste zetten)" />
+          <h3 className="mb-2 font-semibold">Engine <span className="text-xs font-normal text-muted">{t('(objectief, niet hetzelfde als praktisch succes)')}</span></h3>
+          <EvalButton fen={fen} multipv={3} label={t('Analyseer met Stockfish (3 beste zetten)')} />
         </div>
       </aside>
     </div>
@@ -323,7 +325,6 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
   const pos = stats.positions[epdOf(fen)]
   const turn: Side = fen.split(' ')[1] === 'w' ? 'white' : 'black'
   const userTurn = turn === side
-  const colorNl = side === 'white' ? 'wit' : 'zwart'
   const [asked, setAsked] = useState(0)
   const [good, setGood] = useState(0)
   const [choice, setChoice] = useState<string | null>(null)
@@ -378,32 +379,32 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
   // Einde van de betrouwbare data: opnieuw vanaf de opening, de ronde loopt door
   useEffect(() => {
     if (!lineEnded || noData || finished || checked) return
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setUci(rootUci)
-      setNotice('Verder in deze lijn zijn er te weinig partijen. We beginnen opnieuw vanaf de opening.')
+      setNotice(t('Verder in deze lijn zijn er te weinig partijen. We beginnen opnieuw vanaf de opening.'))
     }, 900)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
   }, [lineEnded, noData, finished, checked]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // tegenstander: gewogen willekeurig op basis van wat er op jouw niveau gespeeld wordt
   useEffect(() => {
     if (userTurn || lineEnded || finished || !pos) return
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const opts = pos.m.map(m => ({ m, w: bandCount(m, band) || m[2] })).filter(x => x.w / pos.n >= 0.03 || x.w >= 30)
       const sum = opts.reduce((a, x) => a + x.w, 0)
       let r = Math.random() * sum
       const pick = opts.find(x => (r -= x.w) <= 0) ?? opts[0]
       if (pick) setUci(u => [...u, pick.m[0]])
     }, 600)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
   }, [fen, userTurn, lineEnded, finished]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sneltoetsen: 1 t/m 4 kiest een zet (niet tijdens typen in een veld)
   useEffect(() => {
     if (checked || finished || !choices.length) return
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null
-      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest('input, textarea, select, [role="dialog"]')) return
+      const el = e.target as HTMLElement | null
+      if (e.metaKey || e.ctrlKey || e.altKey || el?.closest('input, textarea, select, [role="dialog"]')) return
       const c = choices[Number(e.key) - 1]
       if (c) { e.preventDefault(); setChoice(c.uci) }
     }
@@ -419,8 +420,12 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
   const near = !!picked && !correct && gap <= 0.06
   const mostPlayed = !!picked && choices.every(c => c.freq <= picked.freq)
   const feedback = !picked ? null : correct
-    ? { lead: 'Goed gekozen.', text: `${picked.san} scoort ${pct(picked.score)} over ${nf(picked.n)} partijen, ${picked.uci === bestUci ? 'het best van deze zetten' : 'een van de best scorende keuzes'}.` }
-    : { lead: near ? 'Bijna.' : 'Niet de beste.', text: `${picked.san} ${mostPlayed ? 'wordt het meest gespeeld' : `scoort ${pct(picked.score)}`}, maar ${bestSan} scoort op jouw niveau ${Math.round(gap * 100)} procentpunt beter. Je speelt verder met jouw zet.` }
+    ? { lead: t('Goed gekozen.'), text: picked.uci === bestUci
+      ? t('{san} scoort {score} over {n} partijen, het best van deze zetten.', { san: picked.san, score: pct(picked.score), n: nf(picked.n) })
+      : t('{san} scoort {score} over {n} partijen, een van de best scorende keuzes.', { san: picked.san, score: pct(picked.score), n: nf(picked.n) }) }
+    : { lead: near ? t('Bijna.') : t('Niet de beste.'), text: mostPlayed
+      ? t('{san} wordt het meest gespeeld, maar {best} scoort op jouw niveau {gap} procentpunt beter. Je speelt verder met jouw zet.', { san: picked.san, best: bestSan ?? '', gap: Math.round(gap * 100) })
+      : t('{san} scoort {score}, maar {best} scoort op jouw niveau {gap} procentpunt beter. Je speelt verder met jouw zet.', { san: picked.san, score: pct(picked.score), best: bestSan ?? '', gap: Math.round(gap * 100) }) }
 
   function check() {
     if (!picked || checked) return
@@ -451,20 +456,20 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
     <TrainingTopBar
       value={asked / QUESTIONS}
       count={`${qNum}/${QUESTIONS}`}
-      countLabel={`Vraag ${qNum} van ${QUESTIONS}`}
+      countLabel={t('Vraag {n} van {total}', { n: qNum, total: QUESTIONS })}
       onClose={onClose}
-      closeLabel="Stoppen met Op jouw niveau"
+      closeLabel={t('Stoppen met Op jouw niveau')}
     />
   )
-  const heading = <TrainingHeading tone="info" label={label} title={finished ? 'Ronde klaar' : 'Welke zet scoort het best?'} sub={here ?? familyName} action={filterKey} />
+  const heading = <TrainingHeading tone="info" label={label} title={finished ? t('Ronde klaar') : t('Welke zet scoort het best?')} sub={here ?? familyName} action={filterKey} />
 
   if (noData) {
     return (
       <>
         {top}
         {heading}
-        <Empty title="Te weinig partijen" action={<button type="button" className="btn btn-primary" onClick={onOpenSheet}>Andere opening kiezen</button>}>
-          Voor deze opening zijn er op jouw niveau te weinig partijen in de steekproef om een vraag te stellen.
+        <Empty title={t('Te weinig partijen')} action={<button type="button" className="btn btn-primary" onClick={onOpenSheet}>{t('Andere opening kiezen')}</button>}>
+          {t('Voor deze opening zijn er op jouw niveau te weinig partijen in de steekproef om een vraag te stellen.')}
         </Empty>
       </>
     )
@@ -478,18 +483,18 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
 
         <div className="mx-auto w-full max-w-[clamp(240px,calc(100dvh-520px),100%)] sm:max-w-[clamp(300px,calc(100dvh-460px),480px)] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-w-[min(100%,600px,calc(100dvh-140px))]">
           <div className="rounded-xl shadow-[0_1px_0_var(--board-edge),0_10px_26px_rgba(30,40,30,0.14)]">
-            <Board id="practice" label={`Schaakbord, je speelt ${colorNl}`} fen={fen} orientation={side} lastMove={last} arrows={arrows} />
+            <Board id="practice" label={side === 'white' ? t('Schaakbord, je speelt wit') : t('Schaakbord, je speelt zwart')} fen={fen} orientation={side} lastMove={last} arrows={arrows} />
           </div>
         </div>
 
         <div className="flex flex-col gap-3.5 lg:col-start-2 lg:row-start-2">
           {finished ? (
             <div className="rounded-[18px] border-2 border-line bg-surface p-5 text-center animate-fade-up" role="status">
-              <div className="text-4xl font-extrabold tabular-nums text-info-ink">{good} <span className="text-2xl text-muted">van {QUESTIONS}</span></div>
-              <p className="mt-2 text-muted">keer koos je een van de best scorende zetten op jouw niveau.</p>
+              <div className="text-4xl font-extrabold tabular-nums text-info-ink">{good} <span className="text-2xl text-muted">{t('van {n}', { n: QUESTIONS })}</span></div>
+              <p className="mt-2 text-muted">{t('keer koos je een van de best scorende zetten op jouw niveau.')}</p>
             </div>
           ) : userTurn && !lineEnded ? (
-            <div role="group" aria-label="Kies de zet die volgens jou het best scoort" className="flex flex-col gap-2">
+            <div role="group" aria-label={t('Kies de zet die volgens jou het best scoort')} className="flex flex-col gap-2">
               {choices.map((c, i) => {
                 const selected = choice === c.uci
                 const isBest = c.uci === bestUci
@@ -498,7 +503,7 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
                   : selected && !correct ? (near ? 'border-accent! bg-accent-soft! shadow-[0_3px_0_var(--accent)]!' : 'border-danger! bg-danger-soft! shadow-[0_3px_0_var(--danger)]!')
                   : selected || isBest ? 'tap-on' : ''
                 const scoreCls = selected && !correct ? (near ? 'text-accent-ink' : 'text-danger-ink') : selected || isBest ? 'text-brand-strong' : 'text-ink'
-                const verdict = checked ? `, score ${pct(c.score)} over ${nf(c.n)} partijen${isBest ? ', beste keuze' : ''}${selected ? ', jouw keuze' : ''}` : ''
+                const verdict = checked ? `, ${t('score {score} over {n} partijen', { score: pct(c.score), n: nf(c.n) })}${isBest ? `, ${t('beste keuze')}` : ''}${selected ? `, ${t('jouw keuze')}` : ''}` : ''
                 return (
                   <button
                     key={c.uci}
@@ -506,7 +511,7 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
                     className={`tap grid min-h-[3.75rem] w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[14px]! px-3.5 py-2.5 text-left ${state}`}
                     aria-pressed={selected}
                     aria-disabled={checked || undefined}
-                    aria-label={`${c.san}${c.name ? `, ${c.name}` : ''}, ${pct(c.freq)} van de partijen${verdict}`}
+                    aria-label={`${c.san}${c.name ? `, ${c.name}` : ''}, ${t('{pct} van de partijen', { pct: pct(c.freq) })}${verdict}`}
                     aria-keyshortcuts={String(i + 1)}
                     onClick={() => { if (!checked) setChoice(c.uci) }}
                   >
@@ -514,9 +519,9 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
                     <span className="min-w-0">
                       {c.name && <span className={`block truncate text-sm font-bold ${selected && !checked ? 'text-brand-strong' : ''}`}>{c.name}</span>}
                       <span className="block truncate text-xs text-muted">
-                        {pct(c.freq)} van de partijen
-                        {checked && selected && ' · jouw keuze'}
-                        {checked && isBest && <> · <b className="font-bold text-brand-strong">beste keuze</b></>}
+                        {t('{pct} van de partijen', { pct: pct(c.freq) })}
+                        {checked && selected && ` · ${t('jouw keuze')}`}
+                        {checked && isBest && <> · <b className="font-bold text-brand-strong">{t('beste keuze')}</b></>}
                       </span>
                     </span>
                     {checked && (
@@ -531,13 +536,13 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
             </div>
           ) : (
             <div className="rounded-[18px] border-2 border-line bg-surface-2 px-4 py-3 text-sm text-muted" aria-live="polite">
-              {notice ?? 'De tegenstander kiest een zet zoals spelers van jouw niveau dat vaak doen…'}
+              {notice ?? t('De tegenstander kiest een zet zoals spelers van jouw niveau dat vaak doen…')}
             </div>
           )}
 
           {checked && !finished && pos && (
             <details className="text-sm">
-              <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-muted hover:text-ink">Alle zetten in deze stelling</summary>
+              <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-muted hover:text-ink">{t('Alle zetten in deze stelling')}</summary>
               <div className="mt-1 rounded-[18px] border-2 border-line bg-surface p-2">
                 <StatsTable moves={pos.m} total={pos.n} side={side} band={band} highlight={choice ?? undefined} />
               </div>
@@ -546,8 +551,8 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
 
           {finished ? (
             <BottomAction>
-              <button type="button" className="btn btn-primary w-full" onClick={onRestart} autoFocus>Nog een ronde</button>
-              <button type="button" className="tap flex min-h-12 w-full items-center justify-center rounded-[14px]! px-4 font-bold" onClick={onClose}>Sluiten</button>
+              <button type="button" className="btn btn-primary w-full" onClick={onRestart} autoFocus>{t('Nog een ronde')}</button>
+              <button type="button" className="tap flex min-h-12 w-full items-center justify-center rounded-[14px]! px-4 font-bold" onClick={onClose}>{t('Sluiten')}</button>
             </BottomAction>
           ) : (
             <BottomAction tone={checked ? (correct ? 'good' : near ? 'near' : 'bad') : undefined}>
@@ -563,9 +568,9 @@ function AdvantageQuiz({ rootUci, side, stats, elo, names, label, familyName, fi
                 disabled={!checked && (!picked || !userTurn || lineEnded)}
                 aria-describedby={!checked && !picked && userTurn && !lineEnded ? 'advantage-reason' : undefined}
               >
-                {checked ? (asked >= QUESTIONS ? 'Bekijk je resultaat' : 'Volgende') : 'Controleer'}
+                {checked ? (asked >= QUESTIONS ? t('Bekijk je resultaat') : t('Volgende')) : t('Controleer')}
               </button>
-              {!checked && !picked && userTurn && !lineEnded && <p id="advantage-reason" className="btn-reason mt-0! text-center">Kies eerst een zet.</p>}
+              {!checked && !picked && userTurn && !lineEnded && <p id="advantage-reason" className="btn-reason mt-0! text-center">{t('Kies eerst een zet.')}</p>}
             </BottomAction>
           )}
         </div>

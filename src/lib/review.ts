@@ -2,6 +2,7 @@ import { Chess, type Square } from 'chess.js'
 import { START_FEN, parseUci } from './chess'
 import type { Side } from './types'
 import MOVE_MODEL_JSON from './move-model.json'
+import { t, tr } from './i18n'
 
 // Partij-analyse: haalt je laatste partijen op (Lichess of Chess.com, gratis openbare API's zonder sleutel),
 // laat Stockfish lokaal iedere stelling beoordelen en geeft iedere zet een oordeel, van briljant tot blunder.
@@ -45,17 +46,19 @@ export type MoveClass = 'brilliant' | 'great' | 'best' | 'excellent' | 'good' | 
 
 export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder']
 
-export const CLASS_INFO: Record<MoveClass, { label: string; symbol: string; color: string }> = {
-  brilliant: { label: 'Briljant', symbol: '!!', color: '#139e9a' },
-  great: { label: 'Geweldig', symbol: '!', color: '#3b7fd4' },
-  best: { label: 'Beste', symbol: '★', color: '#4c9a35' },
-  excellent: { label: 'Uitstekend', symbol: '👍', color: '#68a645' },
-  good: { label: 'Goed', symbol: '✓', color: '#86a86a' },
-  book: { label: 'Theorie', symbol: '📖', color: '#a17f5c' },
-  inaccuracy: { label: 'Onnauwkeurig', symbol: '?!', color: '#e4a92a' },
-  mistake: { label: 'Fout', symbol: '?', color: '#e8791f' },
-  miss: { label: 'Gemist', symbol: '✕', color: '#e0533f' },
-  blunder: { label: 'Blunder', symbol: '??', color: '#c62d29' },
+// label is een getter, zodat hij in de gekozen taal komt (bij gebruik, niet bij het laden). Met tr() en niet t():
+// 'Goed' en 'Fout' betekenen elders in de app 'goed/fout beantwoord'; hier zijn het de namen van Chess.com.
+export const CLASS_INFO: Record<MoveClass, { readonly label: string; symbol: string; color: string }> = {
+  brilliant: { get label() { return tr('Briljant', 'Brilliant') }, symbol: '!!', color: '#139e9a' },
+  great: { get label() { return tr('Geweldig', 'Great') }, symbol: '!', color: '#3b7fd4' },
+  best: { get label() { return tr('Beste', 'Best') }, symbol: '★', color: '#4c9a35' },
+  excellent: { get label() { return tr('Uitstekend', 'Excellent') }, symbol: '👍', color: '#68a645' },
+  good: { get label() { return tr('Goed', 'Good') }, symbol: '✓', color: '#86a86a' },
+  book: { get label() { return tr('Theorie', 'Book') }, symbol: '📖', color: '#a17f5c' },
+  inaccuracy: { get label() { return tr('Onnauwkeurig', 'Inaccuracy') }, symbol: '?!', color: '#e4a92a' },
+  mistake: { get label() { return tr('Fout', 'Mistake') }, symbol: '?', color: '#e8791f' },
+  miss: { get label() { return tr('Gemist', 'Miss') }, symbol: '✕', color: '#e0533f' },
+  blunder: { get label() { return tr('Blunder', 'Blunder') }, symbol: '??', color: '#c62d29' },
 }
 
 export interface ReviewedMove {
@@ -500,22 +503,24 @@ export function estimateRating(accuracy: number, scale: RatingScale = 'lichess')
 /** Korte uitleg bij een zet, in gewone taal */
 export function explainMove(m: ReviewedMove): string {
   const text = explainClass(m)
-  return m.missedBrilliant && m.bestSan ? `${text} Er was een briljante zet: ${m.bestSan}!` : text
+  return m.missedBrilliant && m.bestSan ? `${text} ${t('Er was een briljante zet: {move}!', { move: m.bestSan })}` : text
 }
 
 function explainClass(m: ReviewedMove): string {
   const best = m.bestSan && m.bestUci !== m.uci ? m.bestSan : null
   switch (m.cls) {
-    case 'brilliant': return `${m.san} is briljant: je offert materiaal en het is de beste zet.`
-    case 'great': return `${m.san} is een geweldige zet: de enige zet die de stelling houdt.`
-    case 'best': return `${m.san} is de beste zet.`
-    case 'excellent': return `${m.san} is uitstekend, bijna net zo sterk als de beste zet${best ? ` (${best})` : ''}.`
-    case 'good': return `${m.san} is een goede zet.${best ? ` Beste was ${best}.` : ''}`
-    case 'book': return `${m.san} is een theoriezet.`
-    case 'inaccuracy': return `${m.san} is onnauwkeurig.${best ? ` Beter was ${best}.` : ''}`
-    case 'mistake': return `${m.san} is een fout.${best ? ` Beter was ${best}.` : ''}`
-    case 'miss': return `${m.san} is een gemiste kans: de tegenstander gaf iets weg.${best ? ` Met ${best} had je kunnen profiteren.` : ''}`
-    case 'blunder': return `${m.san} is een blunder.${best ? ` Beste was ${best}.` : ''}`
+    case 'brilliant': return t('{move} is briljant: je offert materiaal en het is de beste zet.', { move: m.san })
+    case 'great': return t('{move} is een geweldige zet: de enige zet die de stelling houdt.', { move: m.san })
+    case 'best': return t('{move} is de beste zet.', { move: m.san })
+    case 'excellent': return best
+      ? t('{move} is uitstekend, bijna net zo sterk als de beste zet ({best}).', { move: m.san, best })
+      : t('{move} is uitstekend, bijna net zo sterk als de beste zet.', { move: m.san })
+    case 'good': return t('{move} is een goede zet.', { move: m.san }) + (best ? ' ' + t('Beste was {best}.', { best }) : '')
+    case 'book': return t('{move} is een theoriezet.', { move: m.san })
+    case 'inaccuracy': return t('{move} is onnauwkeurig.', { move: m.san }) + (best ? ' ' + t('Beter was {best}.', { best }) : '')
+    case 'mistake': return t('{move} is een fout.', { move: m.san }) + (best ? ' ' + t('Beter was {best}.', { best }) : '')
+    case 'miss': return t('{move} is een gemiste kans: de tegenstander gaf iets weg.', { move: m.san }) + (best ? ' ' + t('Met {best} had je kunnen profiteren.', { best }) : '')
+    case 'blunder': return t('{move} is een blunder.', { move: m.san }) + (best ? ' ' + t('Beste was {best}.', { best }) : '')
   }
 }
 
@@ -541,12 +546,23 @@ const LICHESS_ENDING: Record<string, string> = {
   aborted: 'afgebroken', noStart: 'niet begonnen', insufficientMaterialClaim: 'remise', cheat: 'valsspelen',
 }
 
+/**
+ * Naam van een speler om te tonen. Ontbreekt de naam, dan bewaren we 'Wit', 'Zwart', 'Anoniem' of 'Stockfish niveau N'
+ * (Nederlands, want het zit in opgeslagen en gedeelde partijen); die vertalen we pas bij het tonen.
+ */
+export function playerName(name: string): string {
+  const fallback: Record<string, string> = { Wit: t('Wit'), Zwart: t('Zwart'), Anoniem: t('Anoniem') }
+  if (fallback[name]) return fallback[name]
+  const sf = name.match(/^Stockfish niveau (\d+)$/)
+  return sf ? t('Stockfish niveau {n}', { n: sf[1] }) : name
+}
+
 export async function fetchLichessRecent(username: string, max = 30): Promise<ReviewGame[]> {
   const url = `https://lichess.org/api/games/user/${encodeURIComponent(username)}?max=${max}&moves=true&opening=true&clocks=false&evals=false`
   const res = await fetch(url, { headers: { Accept: 'application/x-ndjson' } })
-  if (res.status === 404) throw new Error(`Lichess-gebruiker "${username}" niet gevonden`)
-  if (res.status === 429) throw new Error('Lichess vraagt even te wachten. Probeer het over een minuut opnieuw.')
-  if (!res.ok) throw new Error(`Lichess gaf foutcode ${res.status}`)
+  if (res.status === 404) throw new Error(t('Lichess-gebruiker "{name}" niet gevonden', { name: username }))
+  if (res.status === 429) throw new Error(t('Lichess vraagt even te wachten. Probeer het over een minuut opnieuw.'))
+  if (!res.ok) throw new Error(t('Lichess gaf foutcode {code}', { code: res.status }))
   const text = await res.text()
   return text.split('\n').filter(l => l.trim()).map(l => lichessGame(JSON.parse(l), [username])).filter((g): g is ReviewGame => !!g)
 }
@@ -570,10 +586,10 @@ export function lichessGame(g: any, myNames: string[]): ReviewGame | null {
 /** Eén Lichess-partij ophalen op ID (8 tekens) */
 export async function fetchLichessGame(id: string, myNames: string[]): Promise<ReviewGame> {
   const res = await fetch(`https://lichess.org/game/export/${id}?moves=true&opening=true&clocks=false&evals=false`, { headers: { Accept: 'application/json' } })
-  if (res.status === 404) throw new Error('Deze Lichess-partij bestaat niet (meer).')
-  if (!res.ok) throw new Error(`Lichess gaf foutcode ${res.status}`)
+  if (res.status === 404) throw new Error(t('Deze Lichess-partij bestaat niet (meer).'))
+  if (!res.ok) throw new Error(t('Lichess gaf foutcode {code}', { code: res.status }))
   const g = lichessGame(await res.json(), myNames)
-  if (!g) throw new Error('Dit is geen gewone schaakpartij vanaf de beginstelling.')
+  if (!g) throw new Error(t('Dit is geen gewone schaakpartij vanaf de beginstelling.'))
   return g
 }
 
@@ -649,12 +665,12 @@ export function gameFromPgn(pgn: string, myNames: string[]): ReviewGame {
   try {
     c.loadPgn(pgn.trim())
   } catch {
-    throw new Error('Dit lijkt geen geldige PGN. Kopieer de hele PGN, inclusief de regels tussen [ ].')
+    throw new Error(t('Dit lijkt geen geldige PGN. Kopieer de hele PGN, inclusief de regels tussen [ ].'))
   }
   const h = c.getHeaders()
-  if (h.SetUp === '1' || (h.FEN && !h.FEN.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'))) throw new Error('Alleen partijen vanaf de beginstelling kunnen geanalyseerd worden.')
+  if (h.SetUp === '1' || (h.FEN && !h.FEN.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'))) throw new Error(t('Alleen partijen vanaf de beginstelling kunnen geanalyseerd worden.'))
   const san = c.history()
-  if (!san.length) throw new Error('Deze PGN bevat geen zetten.')
+  if (!san.length) throw new Error(t('Deze PGN bevat geen zetten.'))
   const site = h.Link ?? h.Site ?? ''
   const source: ReviewGame['source'] = /chess\.com/i.test(site) ? 'chesscom' : /lichess\.org/i.test(site) ? 'lichess' : 'pgn'
   const white = { name: h.White && h.White !== '?' ? h.White : 'Wit', rating: Number(h.WhiteElo) || undefined }
@@ -676,8 +692,8 @@ export function gameFromPgn(pgn: string, myNames: string[]): ReviewGame {
 export async function fetchChesscomRecent(username: string, max = 30): Promise<ReviewGame[]> {
   const u = encodeURIComponent(username.toLowerCase())
   const res = await fetch(`https://api.chess.com/pub/player/${u}/games/archives`)
-  if (res.status === 404) throw new Error(`Chess.com-gebruiker "${username}" niet gevonden`)
-  if (!res.ok) throw new Error(`Chess.com gaf foutcode ${res.status}`)
+  if (res.status === 404) throw new Error(t('Chess.com-gebruiker "{name}" niet gevonden', { name: username }))
+  if (!res.ok) throw new Error(t('Chess.com gaf foutcode {code}', { code: res.status }))
   const { archives } = (await res.json()) as { archives: string[] }
   const out: ReviewGame[] = []
   // Van de laatste maand terug, tot er genoeg partijen zijn (hooguit drie maanden)
@@ -780,7 +796,7 @@ export function gameToPgn(g: ReviewGame): string {
   for (const s of g.san) c.move(s)
   const d = new Date(g.playedAt)
   const pad = (n: number) => String(n).padStart(2, '0')
-  c.setHeader('Event', g.speed ? `${g.speed} partij` : 'Partij')
+  c.setHeader('Event', g.speed ? t('{speed} partij', { speed: g.speed }) : t('Partij'))
   c.setHeader('Site', g.url ?? 'SchaakRoute')
   c.setHeader('Date', `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`)
   c.setHeader('White', g.white.name)

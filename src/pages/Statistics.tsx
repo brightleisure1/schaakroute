@@ -12,6 +12,7 @@ import { PageHeader, Spinner, Stars, nf, pct } from '../components/ui'
 import { EmptyKnight } from '../components/PieceMotion'
 import { ThickBar } from '../components/OpeningScreens'
 import { IconTile, type Tone } from '../components/SettingsList'
+import { locale, t, tn, tr } from '../lib/i18n'
 
 // Uitsluitend echte, lokaal opgeslagen gebruikersgegevens. Lege toestanden in plaats van voorbeelddata.
 
@@ -32,25 +33,25 @@ const CARD = 'rounded-[18px] border-2 border-line bg-surface p-4'
 /** Eerste keer (ontwerp 16b): één uitnodiging en wat er straks komt, in plaats van lege grafieken */
 function FirstTimeStats() {
   const soon: { icon: LucideIcon; label: string }[] = [
-    { icon: ChartColumn, label: 'Goed en fout per dag' },
-    { icon: Brain, label: 'Geleerde posities' },
-    { icon: ChartNoAxesCombined, label: 'Beheersing per opening' },
+    { icon: ChartColumn, label: t('Goed en fout per dag') },
+    { icon: Brain, label: t('Geleerde posities') },
+    { icon: ChartNoAxesCombined, label: t('Beheersing per opening') },
   ]
   return (
     <div className="space-y-5 lg:max-w-xl">
       <section className={`${CARD} flex flex-col items-center gap-2 p-5! text-center`} aria-labelledby="stats-first-title">
         <EmptyKnight size={56} className="mb-1 bg-brand-soft" />
-        <h2 id="stats-first-title" className="text-lg font-extrabold">Hier komt je voortgang</h2>
-        <p className="max-w-sm text-sm leading-snug text-muted">Na je eerste training zie je hier je reeks, je goede zetten en wat je hebt geleerd.</p>
-        <Link to="/dagelijks" className="btn btn-primary mt-2 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>
+        <h2 id="stats-first-title" className="text-lg font-extrabold">{t('Hier komt je voortgang')}</h2>
+        <p className="max-w-sm text-sm leading-snug text-muted">{t('Na je eerste training zie je hier je reeks, je goede zetten en wat je hebt geleerd.')}</p>
+        <Link to="/dagelijks" className="btn btn-primary mt-2 w-full"><Sun size={20} aria-hidden />{t('Start de dagtraining')}</Link>
       </section>
       <section aria-labelledby="stats-soon-title">
-        <h2 id="stats-soon-title" className="mb-2 px-0.5 text-xs font-bold uppercase tracking-[0.05em] text-muted">Komt vrij na je eerste training</h2>
+        <h2 id="stats-soon-title" className="mb-2 px-0.5 text-xs font-bold uppercase tracking-[0.05em] text-muted">{t('Komt vrij na je eerste training')}</h2>
         <ul className="divide-y-2 divide-line overflow-hidden rounded-[18px] border-2 border-line bg-surface">
           {soon.map(({ icon: Icon, label }) => (
             <li key={label} className="flex min-h-15 items-center gap-3 px-3.5 py-3 text-muted">
               <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2"><Icon size={18} /></span>
-              <span className="min-w-0 flex-1 font-semibold">{label}<span className="sr-only"> (nog op slot)</span></span>
+              <span className="min-w-0 flex-1 font-semibold">{label}<span className="sr-only"> {t('(nog op slot)')}</span></span>
               <Lock size={16} aria-hidden className="shrink-0" />
             </li>
           ))}
@@ -59,7 +60,7 @@ function FirstTimeStats() {
     </div>
   )
 }
-const shortDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+const shortDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
 
 export function Statistics() {
   const daily = useLiveQuery(() => db.daily.toArray(), [], [] as DailyActivity[])
@@ -87,7 +88,7 @@ export function Statistics() {
   if (!daily.length && !cardList.length) {
     return (
       <div>
-        <PageHeader title="Statistieken" />
+        <PageHeader title={t('Statistieken')} />
         <FirstTimeStats />
       </div>
     )
@@ -118,22 +119,22 @@ export function Statistics() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Statistieken" />
+      <PageHeader title={t('Statistieken')} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <StreakHero current={st.current} best={st.best} xp={xp} level={lvl.level} progress={lvl.progress} toNext={lvl.next - xp} />
         <ul className="grid grid-cols-2 gap-2.5">
-          <Tile icon={Check} tone="brand" label="Goede zetten" value={nf(totals.correct)} />
-          <Tile icon={X} tone="danger" label="Fouten" value={nf(totals.mistakes)} />
-          <Tile icon={Brain} tone="info" label="Geleerde posities" value={nf(learned)} />
-          <Tile icon={Timer} tone="accent" label="Trainingstijd" {...trainingTime(totals.seconds)} />
+          <Tile icon={Check} tone="brand" label={t('Goede zetten')} value={nf(totals.correct)} />
+          <Tile icon={X} tone="danger" label={t('Fouten')} value={nf(totals.mistakes)} />
+          <Tile icon={Brain} tone="info" label={t('Geleerde posities')} value={nf(learned)} />
+          <Tile icon={Timer} tone="accent" label={t('Trainingstijd')} {...trainingTime(totals.seconds)} />
         </ul>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <CorrectBars byDay={byDay} />
         <section className={CARD} aria-labelledby="heatmap-title">
-          <h2 id="heatmap-title" className="text-[15px] font-bold">Activiteit · 16 weken</h2>
+          <h2 id="heatmap-title" className="text-[15px] font-bold">{t('Activiteit · 16 weken')}</h2>
           <Heatmap byDay={byDay} />
         </section>
       </div>
@@ -141,11 +142,11 @@ export function Statistics() {
       {/* Ontwerp 12h: dezelfde kaarten als bovenaan, periode als pillen, staafjes met fouten bovenop */}
       <section className={`${CARD} flex flex-col gap-3`} aria-labelledby="daily-title">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="daily-title" className="min-w-0 text-[15px] font-bold leading-tight">Goed en fout per dag</h2>
-          <div className="flex shrink-0 gap-2" role="group" aria-label="Periode">
+          <h2 id="daily-title" className="min-w-0 text-[15px] font-bold leading-tight">{t('Goed en fout per dag')}</h2>
+          <div className="flex shrink-0 gap-2" role="group" aria-label={t('Periode')}>
             {RANGES.map(r => (
               <button key={r} type="button" className={`pill ${range === r ? 'pill-on' : 'font-medium!'}`} aria-pressed={range === r} onClick={() => setRange(r)}>
-                {r} d<span className="sr-only">agen</span>
+                {r} d<span className="sr-only">{tr('agen', 'ays')}</span>
               </button>
             ))}
           </div>
@@ -156,27 +157,27 @@ export function Statistics() {
       <section className="grid gap-4 lg:grid-cols-2">
         <LearnedChart days={days} values={cumulative} />
         <div className={CARD}>
-          <h2 className="mb-2 text-[15px] font-bold">Meer cijfers</h2>
+          <h2 className="mb-2 text-[15px] font-bold">{t('Meer cijfers')}</h2>
           <dl className="divide-y-2 divide-surface-2 text-sm">
-            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Nauwkeurigheid</dt><dd className="font-bold tabular-nums">{attempts ? pct(totals.correct / attempts) : '–'}</dd></div>
-            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Herhalingen</dt><dd className="font-bold tabular-nums">{nf(totals.reviews)}</dd></div>
-            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Posities met interval ≥ 7 dagen</dt><dd className="font-bold tabular-nums">{nf(mature)}</dd></div>
-            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">Volgend level</dt><dd className="font-bold tabular-nums">nog {nf(lvl.next - xp)} XP</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">{t('Nauwkeurigheid')}</dt><dd className="font-bold tabular-nums">{attempts ? pct(totals.correct / attempts) : '–'}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">{t('Herhalingen')}</dt><dd className="font-bold tabular-nums">{nf(totals.reviews)}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">{t('Posities met interval ≥ 7 dagen')}</dt><dd className="font-bold tabular-nums">{nf(mature)}</dd></div>
+            <div className="flex min-h-11 items-center justify-between gap-3"><dt className="text-muted">{t('Volgend level')}</dt><dd className="font-bold tabular-nums">{t('nog {n} XP', { n: nf(lvl.next - xp) })}</dd></div>
           </dl>
         </div>
       </section>
 
       <section className={CARD}>
-        <h2 className="mb-1 text-[15px] font-bold">Beheersing per opening</h2>
-        {famRows.length === 0 ? <p className="text-sm text-muted">Nog geen opening getraind.</p> : (
+        <h2 className="mb-1 text-[15px] font-bold">{t('Beheersing per opening')}</h2>
+        {famRows.length === 0 ? <p className="text-sm text-muted">{t('Nog geen opening getraind.')}</p> : (
           <ul className="divide-y-2 divide-surface-2">
             {famRows.map(({ f, p }) => (
               <li key={f.family.id} className="pb-2.5 pt-1 last:pb-0">
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <Link to={`/opening/${f.family.id}`} className="inline-flex min-h-10 min-w-0 items-center font-bold hover:underline"><span className="truncate">{f.family.name}</span></Link>
-                  <span className="shrink-0 tabular-nums text-muted">{nf(p.learned)} van {nf(p.total)}<span className="sr-only"> varianten geleerd, {p.positions} posities</span></span>
+                  <span className="shrink-0 tabular-nums text-muted">{t('{n} van {m}', { n: nf(p.learned), m: nf(p.total) })}<span className="sr-only"> {t('varianten geleerd, {n} posities', { n: p.positions })}</span></span>
                 </div>
-                <ThickBar value={p.pct} size="lg" label={`${f.family.name}: ${p.learned} van ${p.total} varianten geleerd`} />
+                <ThickBar value={p.pct} size="lg" label={t('{name}: {n} van {m} varianten geleerd', { name: f.family.name, n: p.learned, m: p.total })} />
               </li>
             ))}
           </ul>
@@ -185,31 +186,31 @@ export function Statistics() {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className={CARD}>
-          <h2 className="mb-3 text-[15px] font-bold">Moeilijkste varianten</h2>
-          {hardest.length === 0 ? <p className="text-sm text-muted">Nog geen fouten geregistreerd. Knap!</p> : (
+          <h2 className="mb-3 text-[15px] font-bold">{t('Moeilijkste varianten')}</h2>
+          {hardest.length === 0 ? <p className="text-sm text-muted">{t('Nog geen fouten geregistreerd. Knap!')}</p> : (
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted"><tr><th className="text-left">Variant</th><th className="text-right">Fouten/keer</th><th className="text-right">Beheersing</th></tr></thead>
+              <thead className="text-xs text-muted"><tr><th className="text-left">{t('Variant')}</th><th className="text-right">{t('Fouten/keer')}</th><th className="text-right">{t('Beheersing')}</th></tr></thead>
               <tbody>{hardest.map(r => (
                 <tr key={r.v.id} className="border-t border-line">
                   <td className="py-1.5"><Link className="inline-flex min-h-11 items-center hover:underline" to={`/train/${r.f.family.id}/${r.v.id}?mode=practice`}>{displayName(r.v, r.f.family.name)}</Link><div className="text-xs text-muted">{r.f.family.name}</div></td>
-                  <td className="text-right tabular-nums">{r.errRate.toFixed(1).replace('.', ',')}</td>
+                  <td className="text-right tabular-nums">{r.errRate.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
                   <td className="text-right tabular-nums">{r.m.score}%</td>
                 </tr>))}</tbody>
             </table>
           )}
         </div>
         <div className={CARD}>
-          <h2 className="mb-3 text-[15px] font-bold">Beheersing per variant</h2>
-          {varRows.length === 0 ? <p className="text-sm text-muted">Nog geen varianten afgerond.</p> : (
+          <h2 className="mb-3 text-[15px] font-bold">{t('Beheersing per variant')}</h2>
+          {varRows.length === 0 ? <p className="text-sm text-muted">{t('Nog geen varianten afgerond.')}</p> : (
             <div className="max-h-80 overflow-auto scrollbar-thin">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-surface text-xs text-muted"><tr><th className="text-left">Variant</th><th className="text-right">Keer</th><th className="text-right">Sterren</th><th className="text-right">Beheersing</th></tr></thead>
+                <thead className="sticky top-0 bg-surface text-xs text-muted"><tr><th className="text-left">{t('Variant')}</th><th className="text-right">{t('Keer')}</th><th className="text-right">{t('Sterren')}</th><th className="text-right">{t('Beheersing')}</th></tr></thead>
                 <tbody>{[...varRows].sort((a, b) => b.m.score - a.m.score).map(r => (
                   <tr key={r.v.id} className="border-t border-line">
                     <td className="py-1.5">{displayName(r.v, r.f.family.name)}<div className="text-xs text-muted">{r.f.family.name}</div></td>
                     <td className="text-right tabular-nums">{r.p.completions}</td>
                     <td className="text-right"><Stars count={r.p.bestStars} size="text-sm" /></td>
-                    <td className="text-right tabular-nums">{r.m.mastered ? 'beheerst' : `${r.m.score}%`}</td>
+                    <td className="text-right tabular-nums">{r.m.mastered ? t('beheerst') : `${r.m.score}%`}</td>
                   </tr>))}</tbody>
               </table>
             </div>
@@ -218,7 +219,7 @@ export function Statistics() {
       </section>
 
       <section className={CARD}>
-        <h2 className="mb-3 text-[15px] font-bold">Prestaties ({badges.length}/{BADGES.length})</h2>
+        <h2 className="mb-3 text-[15px] font-bold">{t('Prestaties ({n}/{m})', { n: badges.length, m: BADGES.length })}</h2>
         <ul className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {BADGES.map(b => {
             const has = badges.find(x => x.id === b.id)
@@ -228,9 +229,9 @@ export function Statistics() {
                   {has ? <b.icon size={20} /> : <Lock size={18} />}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{b.title}{!has && <span className="sr-only"> (nog niet behaald)</span>}</span>
+                  <span className="block text-sm font-semibold">{b.title}{!has && <span className="sr-only"> {t('(nog niet behaald)')}</span>}</span>
                   <span className="block text-sm text-muted">{b.description}</span>
-                  {has && <span className="block text-xs text-muted">behaald op {new Date(has.earnedAt).toLocaleDateString('nl-NL')}</span>}
+                  {has && <span className="block text-xs text-muted">{t('behaald op {date}', { date: new Date(has.earnedAt).toLocaleDateString(locale()) })}</span>}
                 </span>
               </li>
             )
@@ -254,29 +255,29 @@ function DailyBars({ days, byDay }: { days: string[]; byDay: Map<string, DailyAc
   return (
     <div>
       {table ? (
-        <div className="max-h-64 overflow-auto text-sm"><table className="w-full tabular-nums"><thead className="text-xs text-muted"><tr><th className="text-left">Dag</th><th className="text-right">Goed</th><th className="text-right">Fout</th></tr></thead>
+        <div className="max-h-64 overflow-auto text-sm"><table className="w-full tabular-nums"><thead className="text-xs text-muted"><tr><th className="text-left">{t('Dag')}</th><th className="text-right">{t('Goed')}</th><th className="text-right">{t('Fout')}</th></tr></thead>
           <tbody>{data.filter(x => x.c + x.m).reverse().map(x => <tr key={x.d} className="border-t border-line"><td>{shortDate(x.d)}</td><td className="text-right">{x.c}</td><td className="text-right">{x.m}</td></tr>)}</tbody></table></div>
       ) : (
         <>
-          <div className="flex items-end" style={{ height: H, gap }} role="img" aria-label={`Laatste ${data.length} dagen: ${nf(totalC)} goede zetten en ${nf(totalM)} fouten`}>
+          <div className="flex items-end" style={{ height: H, gap }} role="img" aria-label={t('Laatste {n} dagen: {c} goede zetten en {m} fouten', { n: data.length, c: nf(totalC), m: nf(totalM) })}>
             {data.map(x => {
               const hm = Math.round((x.m / max) * H)
               const hc = Math.round((x.c / max) * H)
               return (
-                <span key={x.d} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-[2px]" title={`${shortDate(x.d)}: ${x.c} goed, ${x.m} fout`}>
+                <span key={x.d} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-[2px]" title={t('{date}: {c} goed, {m} fout', { date: shortDate(x.d), c: x.c, m: x.m })}>
                   {x.m > 0 && <span className="rounded-[4px] bg-(--chart-2)" style={{ height: Math.max(3, hm) }} />}
                   <span className={`rounded-[4px] ${x.c ? 'bg-(--chart-1)' : 'bg-surface-2'}`} style={{ height: x.c ? Math.max(3, hc) : 3 }} />
                 </span>
               )
             })}
           </div>
-          <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(data[0].d)}</span><span>vandaag</span></div>
+          <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(data[0].d)}</span><span>{t('vandaag')}</span></div>
         </>
       )}
       <div className="mt-2 flex items-center gap-3.5 text-[13px] text-muted">
-        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-1)" aria-hidden />Goede zetten</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-2)" aria-hidden />Fouten</span>
-        <button type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-end px-1 text-xs font-semibold underline" onClick={() => setTable(t => !t)}>{table ? 'Grafiek' : 'Tabel'}</button>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-1)" aria-hidden />{t('Goede zetten')}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-(--chart-2)" aria-hidden />{t('Fouten')}</span>
+        <button type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-end px-1 text-xs font-semibold underline" onClick={() => setTable(v => !v)}>{table ? t('Grafiek') : t('Tabel')}</button>
       </div>
     </div>
   )
@@ -293,15 +294,15 @@ function LearnedChart({ days, values }: { days: string[]; values: number[] }) {
   return (
     <section className={CARD} aria-labelledby="learned-title">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="learned-title" className="text-[15px] font-bold">Geleerde posities</h2>
+        <h2 id="learned-title" className="text-[15px] font-bold">{t('Geleerde posities')}</h2>
         <span className="text-xl font-extrabold tabular-nums">{nf(last)}</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2.5 block w-full" role="img" aria-label={`Geleerde posities: ${nf(values[0] ?? 0)} op ${shortDate(days[0])}, ${nf(last)} vandaag`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2.5 block w-full" role="img" aria-label={t('Geleerde posities: {a} op {date}, {b} vandaag', { a: nf(values[0] ?? 0), date: shortDate(days[0]), b: nf(last) })}>
         <polygon points={`0,${H} ${pts} ${x(values.length - 1).toFixed(1)},${H}`} fill="var(--brand-soft)" />
         <polyline points={pts} fill="none" stroke="var(--chart-1)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
         <circle cx={x(values.length - 1)} cy={y(last)} r={5} fill="var(--chart-1)" stroke="var(--surface)" strokeWidth={2} />
       </svg>
-      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>vandaag</span></div>
+      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>{t('vandaag')}</span></div>
     </section>
   )
 }
@@ -315,16 +316,16 @@ function Heatmap({ byDay }: { byDay: Map<string, DailyActivity> }) {
   const cells = [...Array(offset).fill(null), ...days]
   return (
     <div className="mt-3">
-      <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: 'minmax(0, 1fr)' }} role="img" aria-label={`${active} van de ${days.length} dagen getraind`}>
+      <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: 'minmax(0, 1fr)' }} role="img" aria-label={t('{n} van de {m} dagen getraind', { n: active, m: days.length })}>
         {cells.map((d, i) => {
           if (!d) return <span key={i} />
           const a = byDay.get(d)
           const n = count(d)
           const level = n === 0 ? 0 : Math.ceil((n / max) * 3)
-          return <span key={d} title={`${shortDate(d)}: ${n} zetten${a?.dailyCompleted ? ' · dagtraining voltooid' : ''}`} className="aspect-square rounded-[4px]" style={{ background: HEAT[level] }} />
+          return <span key={d} title={`${t('{date}: {n} zetten', { date: shortDate(d), n })}${a?.dailyCompleted ? ` · ${t('dagtraining voltooid')}` : ''}`} className="aspect-square rounded-[4px]" style={{ background: HEAT[level] }} />
         })}
       </div>
-      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted" aria-hidden>minder {HEAT.map(c => <span key={c} className="h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />)} meer</div>
+      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted" aria-hidden>{t('minder')} {HEAT.map(c => <span key={c} className="h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />)} {t('meer')}</div>
     </div>
   )
 }
@@ -340,16 +341,16 @@ const HEAT = [
 /** Grote reekskaart bovenaan: dagen op rij, record, level en XP. Vaste donkergroene kaart, leesbaar in licht en donker. */
 function StreakHero({ current, best, xp, level, progress, toNext }: { current: number; best: number; xp: number; level: number; progress: number; toNext: number }) {
   return (
-    <section aria-label="Reeks en level" className="flex items-center gap-4 rounded-[22px] bg-[#1f4d33] p-[18px] text-white">
+    <section aria-label={t('Reeks en level')} className="flex items-center gap-4 rounded-[22px] bg-[#1f4d33] p-[18px] text-white">
       <Flame size={52} strokeWidth={2} aria-hidden className="shrink-0 text-[#e9b44c]" />
       <div className="min-w-0 flex-1">
-        <div className="text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{current} {current === 1 ? 'dag' : 'dagen'}</div>
-        <div className="mt-1 text-sm text-[#d5e6db]">{current ? 'op rij' : 'train vandaag om te beginnen'} · record {best}</div>
+        <div className="text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{tn(current, '{n} dag', '{n} dagen')}</div>
+        <div className="mt-1 text-sm text-[#d5e6db]">{current ? t('op rij') : t('train vandaag om te beginnen')} · {t('record {n}', { n: best })}</div>
       </div>
       <div className="shrink-0 text-right">
         <div className="text-xs font-bold uppercase tracking-[0.04em] text-[#e9b44c]">Level {level}</div>
         <div className="text-lg font-extrabold tabular-nums">{nf(xp)} XP</div>
-        <div className="ml-auto mt-1.5 h-1.5 w-20 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Nog ${nf(toNext)} XP tot level ${level + 1}`}>
+        <div className="ml-auto mt-1.5 h-1.5 w-20 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={t('Nog {n} XP tot level {l}', { n: nf(toNext), l: level + 1 })}>
           <div className="h-full rounded-full bg-[#e9b44c]" style={{ width: `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%` }} />
         </div>
       </div>
@@ -374,10 +375,11 @@ function Tile({ icon, tone, label, value, sr }: { icon: LucideIcon; tone: Tone; 
 /** "3 u 12" zoals in het ontwerp; voorgelezen als "3 uur 12 minuten" */
 function trainingTime(seconds: number): { value: string; sr: string } {
   const m = Math.round(seconds / 60)
-  if (m < 60) return { value: `${m} min`, sr: `${m} ${m === 1 ? 'minuut' : 'minuten'}` }
+  if (m < 60) return { value: `${m} min`, sr: tn(m, '{n} minuut', '{n} minuten') }
   const h = Math.floor(m / 60)
   const r = m % 60
-  return { value: `${h} u ${String(r).padStart(2, '0')}`, sr: `${h} uur ${r} ${r === 1 ? 'minuut' : 'minuten'}` }
+  const hours = tr(`${h} uur`, `${h} ${h === 1 ? 'hour' : 'hours'}`)
+  return { value: `${h} ${tr('u', 'h')} ${String(r).padStart(2, '0')}`, sr: `${hours} ${tn(r, '{n} minuut', '{n} minuten')}` }
 }
 
 /** Goede zetten per dag, laatste 14 dagen (eenvoudige staafjes zoals in het ontwerp) */
@@ -390,15 +392,15 @@ function CorrectBars({ byDay }: { byDay: Map<string, DailyActivity> }) {
   return (
     <section className={CARD} aria-labelledby="bars-title">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="bars-title" className="text-[15px] font-bold">Goede zetten per dag</h2>
-        <span className="text-[13px] text-muted">14 dagen</span>
+        <h2 id="bars-title" className="text-[15px] font-bold">{t('Goede zetten per dag')}</h2>
+        <span className="text-[13px] text-muted">{t('14 dagen')}</span>
       </div>
-      <div className="mt-3.5 flex items-end gap-[5px]" style={{ height: H }} role="img" aria-label={`${nf(total)} goede zetten in de laatste 14 dagen, vandaag ${nf(vals[vals.length - 1])}`}>
+      <div className="mt-3.5 flex items-end gap-[5px]" style={{ height: H }} role="img" aria-label={t('{n} goede zetten in de laatste 14 dagen, vandaag {m}', { n: nf(total), m: nf(vals[vals.length - 1]) })}>
         {vals.map((v, i) => (
-          <span key={days[i]} title={`${shortDate(days[i])}: ${v} goede zetten`} className="flex-1 rounded-[5px]" style={{ height: v ? Math.max(6, Math.round((v / max) * H)) : 4, background: v ? 'var(--chart-1)' : 'var(--surface-2)' }} />
+          <span key={days[i]} title={t('{date}: {n} goede zetten', { date: shortDate(days[i]), n: v })} className="flex-1 rounded-[5px]" style={{ height: v ? Math.max(6, Math.round((v / max) * H)) : 4, background: v ? 'var(--chart-1)' : 'var(--surface-2)' }} />
         ))}
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>vandaag</span></div>
+      <div className="mt-1.5 flex justify-between text-xs text-muted" aria-hidden><span>{shortDate(days[0])}</span><span>{t('vandaag')}</span></div>
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { db } from './db'
 import { epdsOf, formatMoves } from './chess'
 import type { FamilyFile, Manifest, PuzzleFile, StatsFile, Variation } from './types'
+import { t } from './i18n'
 
 // Laadt de dataset uit public/data. Elk bestand wordt na de eerste keer in IndexedDB bewaard
 // (gekoppeld aan de datasetversie), zodat de training ook zonder service worker offline werkt.
@@ -12,7 +13,7 @@ let manifestPromise: Promise<Manifest> | null = null
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(BASE + path)
-  if (!res.ok) throw new Error(`Kan ${path} niet laden (${res.status})`)
+  if (!res.ok) throw new Error(t('Kan {path} niet laden ({status})', { path, status: res.status }))
   return res.json() as Promise<T>
 }
 
@@ -114,9 +115,9 @@ export function variationById(file: FamilyFile, id: string): Variation | undefin
 
 export function displayName(v: Variation, familyName?: string): string {
   // basislijnen hebben geen eigen variantnaam: noem dan de laatste zetten, zodat ze te onderscheiden zijn
-  if (!v.path.length) return `${familyName ?? v.name}, basislijn ${formatMoves(v.san.slice(-2), v.san.length - 2)}`
+  if (!v.path.length) return `${familyName ?? v.name}, ${t('basislijn {moves}', { moves: formatMoves(v.san.slice(-2), v.san.length - 2) })}`
   const base = v.path.join(', ')
-  return v.lineNo ? `${base} (lijn ${v.lineNo})` : base
+  return v.lineNo ? `${base} ${t('(lijn {n})', { n: v.lineNo })}` : base
 }
 
 /** Varianten die dezelfde eerste naamniveaus delen (voor 'verwante variant') */

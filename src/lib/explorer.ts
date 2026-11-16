@@ -3,6 +3,8 @@
 // uitsluitend de offline statistieken uit de partijensteekproef. Resultaten worden per sessie gecachet
 // en verzoeken worden één voor één gedaan om de rate limits te respecteren.
 
+import { t } from './i18n'
+
 export interface ExplorerMove {
   uci: string
   san: string
@@ -33,7 +35,7 @@ export function ratingGroupsFor(elo: number): number[] {
 }
 
 export async function queryExplorer(fen: string, token: string, opts: { ratings?: number[]; speeds?: string[] } = {}): Promise<ExplorerResult> {
-  if (!token) throw new Error('Geen Lichess-token ingesteld')
+  if (!token) throw new Error(t('Geen Lichess-token ingesteld'))
   const params = new URLSearchParams({
     variant: 'standard',
     fen,
@@ -46,17 +48,17 @@ export async function queryExplorer(fen: string, token: string, opts: { ratings?
   const key = params.toString()
   const hit = cache.get(key)
   if (hit) return hit
-  if (Date.now() < blockedUntil) throw new Error('Lichess vraagt om even te wachten (rate limit). Probeer het over een minuut opnieuw.')
+  if (Date.now() < blockedUntil) throw new Error(t('Lichess vraagt om even te wachten (rate limit). Probeer het over een minuut opnieuw.'))
   const wait = Math.max(0, last + 1000 - Date.now())
   if (wait) await new Promise(r => setTimeout(r, wait))
   last = Date.now()
   const res = await fetch(`https://explorer.lichess.org/lichess?${key}`, { headers: { Authorization: `Bearer ${token}` } })
   if (res.status === 429) {
     blockedUntil = Date.now() + 60_000
-    throw new Error('Rate limit van Lichess bereikt; wacht een minuut.')
+    throw new Error(t('Rate limit van Lichess bereikt; wacht een minuut.'))
   }
-  if (res.status === 401) throw new Error('Lichess weigert het token (401). Controleer je persoonlijke token.')
-  if (!res.ok) throw new Error(`Lichess Explorer gaf foutcode ${res.status}`)
+  if (res.status === 401) throw new Error(t('Lichess weigert het token (401). Controleer je persoonlijke token.'))
+  if (!res.ok) throw new Error(t('Lichess Explorer gaf foutcode {status}', { status: res.status }))
   const data = (await res.json()) as ExplorerResult
   cache.set(key, data)
   return data

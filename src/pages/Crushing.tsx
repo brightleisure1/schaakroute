@@ -10,6 +10,7 @@ import { FilterKey, PillChoice, TrainingHeading, TrainingSheet, TrainingTopBar, 
 import { Confetti, Empty, ErrorBox, Spinner, nf, useSettings } from '../components/ui'
 import { BoardLoading } from '../components/PieceMotion'
 import { FamilyPicker } from './Variations'
+import { t, tr } from '../lib/i18n'
 
 const DEFAULT_RANGE = 300
 
@@ -64,9 +65,9 @@ export function Crushing() {
   const heading = (
     <TrainingHeading
       tone="danger"
-      label={`Afstraffen${family ? ` · ${family.name}` : ''}`}
-      title="Vind de sterkste zet"
-      action={<FilterKey onClick={() => setSheet(true)} expanded={sheet} active={filtered} label="Opening en filters" />}
+      label={`${t('Afstraffen')}${family ? ` · ${family.name}` : ''}`}
+      title={t('Vind de sterkste zet')}
+      action={<FilterKey onClick={() => setSheet(true)} expanded={sheet} active={filtered} label={t('Opening en filters')} />}
     />
   )
 
@@ -75,16 +76,16 @@ export function Crushing() {
       <TrainingTopBar
         value={pool.length ? solvedInPool / pool.length : 0}
         count={`${solvedInPool}/${pool.length}`}
-        countLabel={`${solvedInPool} van ${pool.length} puzzels opgelost`}
+        countLabel={t('{n} van {total} puzzels opgelost', { n: solvedInPool, total: pool.length })}
         onClose={close}
-        closeLabel="Stoppen met afstraffen"
+        closeLabel={t('Stoppen met afstraffen')}
       />
       <Confetti fire={fire} />
-      {puzzles.loading ? <><div>{heading}</div><BoardLoading label="Puzzels laden…" /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
+      {puzzles.loading ? <><div>{heading}</div><BoardLoading label={t('Puzzels laden…')} /></> : puzzles.error ? <><div>{heading}</div><ErrorBox error={puzzles.error} /></> : !puzzle ? (
         <>
           <div>{heading}</div>
-          <Empty title="Geen puzzels in dit bereik" action={<button type="button" className="btn btn-primary" onClick={() => setSheet(true)}>Filters aanpassen</button>}>
-            Kies een breder niveau of een andere variant.
+          <Empty title={t('Geen puzzels in dit bereik')} action={<button type="button" className="btn btn-primary" onClick={() => setSheet(true)}>{t('Filters aanpassen')}</button>}>
+            {t('Kies een breder niveau of een andere variant.')}
           </Empty>
         </>
       ) : (
@@ -101,38 +102,38 @@ export function Crushing() {
       <TrainingSheet
         open={sheet}
         onClose={() => setSheet(false)}
-        title="Opening en filters"
-        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>Klaar</button>}
+        title={t('Opening en filters')}
+        footer={<button type="button" className="btn btn-primary w-full" onClick={() => setSheet(false)}>{t('Klaar')}</button>}
       >
         <div>
-          <div className="mb-2 text-sm font-semibold" aria-hidden>Opening</div>
+          <div className="mb-2 text-sm font-semibold" aria-hidden>{t('Opening')}</div>
           <div className="[&_select]:max-w-none">
             <FamilyPicker value={id ?? ''} onChange={v => nav(`/crushing/${v}`, { replace: true })} families={manifest.families} mine={settings.openings} />
           </div>
         </div>
         <PillChoice
-          legend="Moeilijkheid"
+          legend={t('Moeilijkheid')}
           value={range}
           onChange={setRange}
           options={[
             { value: 150, label: '± 150' },
             { value: 300, label: '± 300' },
-            { value: 600, label: 'Breed (± 600)' },
-            { value: 5000, label: 'Alle niveaus' },
+            { value: 600, label: t('Breed (± 600)') },
+            { value: 5000, label: t('Alle niveaus') },
           ]}
-          hint={`Puzzels rond jouw rating (${elo}). Je rating pas je aan in Instellingen.`}
+          hint={t('Puzzels rond jouw rating ({elo}). Je rating pas je aan in Instellingen.', { elo })}
         />
         {variations.length > 1 && (
           <div>
-            <label className="mb-2 block text-sm font-semibold" htmlFor="crushing-variation">Variant</label>
+            <label className="mb-2 block text-sm font-semibold" htmlFor="crushing-variation">{t('Variant')}</label>
             <select id="crushing-variation" className="input min-h-11" value={variation} onChange={e => setVariation(e.target.value)}>
-              <option value="">Alle varianten</option>
+              <option value="">{t('Alle varianten')}</option>
               {variations.map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
         )}
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted" aria-live="polite">
-          <b className="text-ink">{nf(pool.length)}</b> puzzels in deze keuze · <b className="text-ink">{nf(solvedInPool)}</b> opgelost
+          {tr(<><b className="text-ink">{nf(pool.length)}</b> puzzels in deze keuze · <b className="text-ink">{nf(solvedInPool)}</b> opgelost</>, <><b className="text-ink">{nf(pool.length)}</b> puzzles in this selection · <b className="text-ink">{nf(solvedInPool)}</b> solved</>)}
         </p>
       </TrainingSheet>
     </div>

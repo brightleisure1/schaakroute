@@ -1,4 +1,5 @@
 import { Chess, type Move, type Square } from 'chess.js'
+import { getLang } from './i18n'
 
 export const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -81,18 +82,21 @@ export const sideToMoveAt = (ply: number, startFen = START_FEN) => {
 }
 
 const PIECE_NL: Record<string, string> = { K: 'koning', Q: 'dame', R: 'toren', B: 'loper', N: 'paard' }
-/** Korte Nederlandse omschrijving van een SAN-zet */
+const PIECE_EN: Record<string, string> = { K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' }
+/** Korte omschrijving van een SAN-zet (Nederlands of Engels) */
 export function describeSan(san: string): string {
   if (san.startsWith('O-O-O')) return 'queenside castling'
   if (san.startsWith('O-O')) return 'kingside castling'
-  const piece = PIECE_NL[san[0]] ?? 'pion'
+  const en = getLang() === 'en'
+  const names = en ? PIECE_EN : PIECE_NL
+  const piece = names[san[0]] ?? (en ? 'pawn' : 'pion')
   const capture = san.includes('x')
   const target = (san.match(/[a-h][1-8]/g) ?? []).pop() ?? ''
   const promo = san.match(/=([QRBN])/)
-  let s = `${piece} ${capture ? 'slaat op' : 'naar'} ${target}`
-  if (promo) s += `, promoveert tot ${PIECE_NL[promo[1]]}`
-  if (san.includes('#')) s += ', schaakmat'
-  else if (san.includes('+')) s += ' met schaak'
+  let s = en ? `${piece} ${capture ? 'takes on' : 'to'} ${target}` : `${piece} ${capture ? 'slaat op' : 'naar'} ${target}`
+  if (promo) s += en ? `, promotes to ${names[promo[1]]}` : `, promoveert tot ${names[promo[1]]}`
+  if (san.includes('#')) s += en ? ', checkmate' : ', schaakmat'
+  else if (san.includes('+')) s += en ? ' with check' : ' met schaak'
   return s
 }
 

@@ -1,6 +1,8 @@
 // Nederlandse uitleg bij de tactische thema's van de Lichess-puzzeldatabase.
 // De thema's zijn door Lichess aan iedere puzzel toegekend; wij vertalen en verklaren ze alleen.
 
+import { getLang } from '../lib/i18n'
+
 export const THEME_NL: Record<string, { name: string; why?: string }> = {
   advantage: { name: 'Beslissend voordeel', why: 'De oplossing levert een duidelijk materieel of positioneel voordeel op (Lichess: circa +2 tot +6).' },
   crushing: { name: 'Verpletterend voordeel', why: 'Na de oplossing sta je volgens Stockfish groot gewonnen.' },
@@ -59,6 +61,66 @@ export const THEME_NL: Record<string, { name: string; why?: string }> = {
   endgame: { name: 'Eindspel' },
 }
 
+// Engelse namen volgen zoveel mogelijk de Engelse Lichess-namen
+export const THEME_EN: Record<keyof typeof THEME_NL, { name: string; why?: string }> = {
+  advantage: { name: 'Decisive advantage', why: 'The solution gains a clear material or positional advantage (Lichess: roughly +2 to +6).' },
+  crushing: { name: 'Crushing advantage', why: 'After the solution, Stockfish says you are completely winning.' },
+  equality: { name: 'Equality', why: 'The solution saves a difficult position and reaches equality.' },
+  mate: { name: 'Checkmate', why: 'The solution forces checkmate.' },
+  mateIn1: { name: 'Mate in 1', why: 'One move and it is checkmate.' },
+  mateIn2: { name: 'Mate in 2', why: 'A forced mating combination in two moves.' },
+  mateIn3: { name: 'Mate in 3', why: 'A forced mating combination in three moves.' },
+  mateIn4: { name: 'Mate in 4', why: 'A forced mating combination in four moves.' },
+  mateIn5: { name: 'Mate in 5+', why: 'A long forced mating combination.' },
+  fork: { name: 'Fork', why: 'One piece attacks two (or more) targets at once; the opponent cannot save everything.' },
+  pin: { name: 'Pin', why: 'A piece cannot move (or not without loss) because a more valuable piece stands behind it.' },
+  skewer: { name: 'Skewer', why: 'A valuable piece is attacked and has to move, after which the piece behind it falls.' },
+  discoveredAttack: { name: 'Discovered attack', why: 'Moving one piece out of the way opens up an attack by another piece.' },
+  doubleCheck: { name: 'Double check', why: 'Two pieces give check at once; only a king move can help.' },
+  hangingPiece: { name: 'Hanging piece', why: 'The opponent left a piece undefended that you can win.' },
+  trappedPiece: { name: 'Trapped piece', why: "One of the opponent's pieces has no safe squares left and will be lost." },
+  sacrifice: { name: 'Sacrifice', why: 'You temporarily give up material to achieve something bigger.' },
+  deflection: { name: 'Deflection', why: 'A defending piece is lured away from its duty.' },
+  attraction: { name: 'Attraction', why: 'A piece (often the king) is lured onto a bad square.' },
+  clearance: { name: 'Clearance', why: 'A line or square is cleared with tempo so another piece can strike.' },
+  interference: { name: 'Interference', why: 'A piece is placed between two enemy pieces and breaks their connection.' },
+  intermezzo: { name: 'Intermezzo', why: 'Instead of recapturing right away, you first play a stronger forcing move.' },
+  xRayAttack: { name: 'X-ray', why: 'A piece acts through another piece on a square or piece behind it.' },
+  zugzwang: { name: 'Zugzwang', why: "Every move the opponent makes worsens their position." },
+  kingsideAttack: { name: 'Kingside attack', why: 'The attack targets the king after it has castled.' },
+  queensideAttack: { name: 'Queenside attack' },
+  attackingF2F7: { name: 'Attacking f2/f7', why: 'The weak f2/f7 square (defended only by the king) comes under attack, a classic opening theme.' },
+  exposedKing: { name: 'Exposed king', why: "The opponent's king is unsafe and comes under attack." },
+  backRankMate: { name: 'Back rank mate', why: 'The king is trapped behind its own pawns.' },
+  smotheredMate: { name: 'Smothered mate', why: 'A knight mates a king that is hemmed in by its own pieces.' },
+  anastasiaMate: { name: "Anastasia's mate" },
+  arabianMate: { name: 'Arabian mate' },
+  bodenMate: { name: "Boden's mate", why: 'Two bishops on criss-crossing diagonals deliver mate.' },
+  doubleBishopMate: { name: 'Double bishop mate' },
+  dovetailMate: { name: 'Dovetail mate' },
+  hookMate: { name: 'Hook mate' },
+  killBoxMate: { name: 'Kill box mate' },
+  vukovicMate: { name: 'Vuković mate' },
+  castling: { name: 'Castling' },
+  enPassant: { name: 'En passant' },
+  promotion: { name: 'Promotion' },
+  underPromotion: { name: 'Underpromotion' },
+  advancedPawn: { name: 'Advanced pawn', why: 'A far-advanced pawn plays a decisive role.' },
+  defensiveMove: { name: 'Defensive move' },
+  quietMove: { name: 'Quiet move', why: 'The strongest move is not a check or a capture, but a quiet preparatory move.' },
+  capturingDefender: { name: 'Capture the defender', why: 'You capture the piece that defends an important square or piece.' },
+  short: { name: 'Short combination' },
+  long: { name: 'Long combination' },
+  veryLong: { name: 'Very long combination' },
+  oneMove: { name: 'One move' },
+  master: { name: 'From a master game' },
+  masterVsMaster: { name: 'Master vs. master' },
+  superGM: { name: 'Super-GM game' },
+  middlegame: { name: 'Middlegame' },
+  endgame: { name: 'Endgame' },
+}
+
 export function explainThemes(themes: string[]) {
-  return themes.map(t => ({ id: t, ...(THEME_NL[t] ?? { name: t }) }))
+  const dict: Record<string, { name: string; why?: string }> = getLang() === 'en' ? THEME_EN : THEME_NL
+  return themes.map(t => ({ id: t, ...(dict[t] ?? { name: t }) }))
 }

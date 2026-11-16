@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type UserSettings } from '../lib/db'
 import type { BadgeDef } from '../lib/gamification'
 import { EmptyKnight, HoppingPawns } from './PieceMotion'
+import { getLang, locale, t } from '../lib/i18n'
 
 export function useSettings(): UserSettings | undefined {
   return useLiveQuery(async () => (await db.settings.get('me')) ?? { ...DEFAULT_SETTINGS }, [])
@@ -24,7 +25,7 @@ const STAR_PX: Record<string, number> = { 'text-sm': 14, 'text-base': 16, 'text-
 export function Stars({ count, max = 3, size = 'text-base' }: { count: number; max?: number; size?: string }) {
   const px = STAR_PX[size] ?? 16
   return (
-    <span className="inline-flex gap-0.5 align-middle" role="img" aria-label={`${count} van ${max} sterren`}>
+    <span className="inline-flex gap-0.5 align-middle" role="img" aria-label={t('{n} van {m} sterren', { n: count, m: max })}>
       {Array.from({ length: max }, (_, i) => (
         <Star key={i} size={px} strokeWidth={2} aria-hidden className={i < count ? 'fill-star text-star' : 'text-star-empty'} />
       ))}
@@ -37,7 +38,7 @@ export function PageHeader({ title, subtitle, back, actions }: { title: ReactNod
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         {back && (
-          <Link to={back} className="mb-1 inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">← Terug</Link>
+          <Link to={back} className="mb-1 inline-flex min-h-11 items-center text-sm text-muted hover:text-ink">{t('← Terug')}</Link>
         )}
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-muted">{subtitle}</p>}
@@ -69,7 +70,7 @@ export function Empty({ title, children, action }: { title: string; children?: R
 }
 
 /** Kort wachten midden op een scherm (ontwerp 13c): drie pionnen wippen na elkaar op */
-export function Spinner({ label = 'Laden…' }: { label?: string }) {
+export function Spinner({ label = t('Laden…') }: { label?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 p-8 text-sm text-muted" role="status">
       <HoppingPawns size={40} />
@@ -119,25 +120,29 @@ export function Tabs<T extends string>({ value, onChange, options, stretch, labe
   )
 }
 
+/** Decimaalteken van de gekozen taal: komma in het Nederlands, punt in het Engels */
+const dec = (s: string) => (getLang() === 'en' ? s : s.replace('.', ','))
+
 export function pct(v: number, digits = 0) {
   const min = 10 ** -digits / 100
-  if (v > 0 && v < min) return `<${(min * 100).toFixed(digits).replace('.', ',')}%` // nooit "0,0%" voor iets dat wel voorkomt
-  return `${(v * 100).toFixed(digits).replace('.', ',')}%`
+  if (v > 0 && v < min) return `<${dec((min * 100).toFixed(digits))}%` // nooit "0,0%" voor iets dat wel voorkomt
+  return `${dec((v * 100).toFixed(digits))}%`
 }
 
 /** Nederlands meervoud: plural(1, 'fout', 'fouten') → "1 fout" */
 export function plural(n: number, one: string, many: string) {
-  return `${n.toLocaleString('nl-NL')} ${n === 1 ? one : many}`
+  return `${n.toLocaleString(locale())} ${n === 1 ? one : many}`
 }
 
 export function nf(v: number) {
-  return v.toLocaleString('nl-NL')
+  return v.toLocaleString(locale())
 }
 
-export const sideLabel = (s: 'white' | 'black') => (s === 'white' ? 'Wit' : 'Zwart')
+export const sideLabel = (s: 'white' | 'black') => (s === 'white' ? t('Wit') : t('Zwart'))
 
-/** Op kleine schermen blijft de hoofdactie onderin beeld staan, ook als het bord de kaart naar beneden duwt */
-export const STICKY_ACTIONS = 'max-lg:sticky max-lg:bottom-(--bottom-nav,0px) max-lg:z-10 max-lg:pt-3 max-lg:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-lg:bg-surface/95 max-lg:backdrop-blur'
+// Vroeger onderin vastgeplakt (sticky). In Safari op iOS viel zo'n balk half onder de werkbalk van de browser en
+// over de tekst erboven, dus de knoppen staan nu gewoon in de pagina; de knop krijgt focus en schuift zo in beeld.
+export const STICKY_ACTIONS = ''
 
 /** Felicitatie voor nieuw verdiende badges: compact, met het badge-icoon als medaille */
 export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; className?: string }) {
@@ -150,7 +155,7 @@ export function BadgesEarned({ badges, className = '' }: { badges: BadgeDef[]; c
             <b.icon size={18} strokeWidth={2.25} />
           </span>
           <span className="min-w-0">
-            <span className="block text-xs font-semibold text-accent-ink">Nieuwe badge</span>
+            <span className="block text-xs font-semibold text-accent-ink">{t('Nieuwe badge')}</span>
             <span className="block text-sm font-semibold leading-tight">{b.title}</span>
             <span className="block text-xs text-muted">{b.description}</span>
           </span>
@@ -191,7 +196,7 @@ export function FocusBar({ value, count, onClose, closeLabel, sub }: { value: nu
     <div className="sticky top-0 z-20 -mx-4 mb-3 flex items-center gap-3 bg-bg/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
       <button className="btn btn-quiet -ml-2 h-11 w-11 shrink-0 p-0" onClick={onClose} aria-label={closeLabel} title={closeLabel}><X size={22} aria-hidden /></button>
       <div className="min-w-0 flex-1">
-        <ProgressBar value={value} label="Voortgang" />
+        <ProgressBar value={value} label={t('Voortgang')} />
         {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
       </div>
       <span className="shrink-0 text-sm font-semibold tabular-nums text-muted">{count}</span>

@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js'
 import { START_FEN, epdOf, uciOf, parseUci } from './chess'
+import { t } from './i18n'
 
 // PGN-import met varianten (haakjes) en PGN-export van een zettenboom.
 
@@ -86,7 +87,7 @@ export function parsePgn(text: string): PgnGame {
       st.fens.push(c.fen())
       st.ucis.push(uci)
     } catch {
-      errors.push(`Ongeldige zet "${san}" na ${st.ucis.length} ply`)
+      errors.push(t('Ongeldige zet "{move}" na {n} ply', { move: san, n: st.ucis.length }))
       skipDepth = stack.length ? 1 : 0
       if (!stack.length) break
     }

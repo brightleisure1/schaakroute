@@ -1,5 +1,8 @@
+import { getLang } from '../lib/i18n'
+
 export interface OpeningInfo {
-  nameNl: string
+  /** Nederlandse naam onder de Engelse naam; in het Engels leeg (zou de Engelse naam herhalen) */
+  nameNl?: string
   summary: string
   idea: string
   plans: string[]
@@ -9,7 +12,10 @@ export interface OpeningInfo {
   tip: string
 }
 
-export const OPENING_INFO: Record<string, OpeningInfo> = {
+/** De vertaalbare tekst van een opening (naam en zetten blijven gelijk) */
+type OpeningText = Pick<OpeningInfo, 'summary' | 'idea' | 'plans' | 'strengths' | 'weaknesses' | 'tip'>
+
+const INFO_NL = {
   // ===================== WIT =====================
 
   "alien-gambit": {
@@ -624,4 +630,597 @@ export const OPENING_INFO: Record<string, OpeningInfo> = {
     tip:
       "Ken tegen 4.Bc4 de vorktruc 4...Nxe4 5.Nxe4 d5: zwart wint het stuk terug en krijgt een prettig centrum.",
   },
+} satisfies Record<string, OpeningInfo & { nameNl: string }>
+
+// Engelse vertaling van de teksten hierboven; per opening dezelfde sleutel
+const INFO_EN: Record<keyof typeof INFO_NL, OpeningText> = {
+  // ===================== WIT =====================
+
+  "alien-gambit": {
+    summary:
+      "The Alien Gambit is a wild piece sacrifice against the Caro-Kann: after 5.Ng5 h6, White takes on f7 with 6.Nxf7. White gives up a knight for a pawn, drags the black king forward and takes away Black's right to castle. Objectively the sacrifice is unsound (Stockfish gives Black roughly a two-pawn edge), but in fast games on Lichess White scores well with it.",
+    idea:
+      "White trades material for time and an unsafe black king. With Nf3-e5+ and Bc4+ the pieces join the game with tempo, while Black still has to work out where the king will be safe.",
+    plans: [
+      "Develop with check: Nf3 followed by Ne5+ and Bc4+ costs Black time.",
+      "Play Ng6 if the king goes to g8: the knight attacks the rook on h8 and keeps the king boxed in.",
+      "Watch for ...Bg4: Ne5+ attacks king and bishop at once and wins the piece back.",
+      "Against ...Bf5, gain space on the kingside with g4 and g5, and the c1 bishop opens up the attack.",
+      "Castle quickly and bring the queen and rooks to the open lines around the black king.",
+    ],
+    strengths: [
+      "Big surprise value: few Black players know the right replies.",
+      "Black has to find the way alone, while White's attack plays itself.",
+      "A well-known trap after 7...Bg4 gives White an immediate advantage.",
+      "In our sample White won 46 of the 89 games, against 38 losses.",
+    ],
+    weaknesses: [
+      "Objectively it loses material: with good play Black stays a piece up and White's compensation falls short.",
+      "Only works if Black goes along until 5...h6: after other fifth moves there is no sacrifice on f7.",
+      "Against prepared opponents there is little left of it, especially at longer time controls.",
+    ],
+    tip:
+      "Use it mainly in blitz and rapid. The same sacrifice also works via 3.Nd2. If Black parries the attack well, don't force things: keep playing calmly with your active pieces.",
+  },
+
+  "nakhmanson-gambit": {
+    summary:
+      "The Nakhmanson Gambit is a sharp sacrifice in the Scotch Gambit: after 5.O-O Nxe4, White plays 6.Nc3 and simply lets the knight on c3 be taken. After 6...dxc3 comes 7.Bxf7+ Kxf7 8.Qd5+, and White wins back the knight on e4 with an open line to the black king. Stockfish rates it as roughly equal, but Black has to know exactly what to do.",
+    idea:
+      "White gives up material for rapid development. Bxf7+ and Qd5+ drag the black king out of its shelter, and via Re1 and the e-file White attacks the knight on e4 and the king.",
+    plans: [
+      "After 6...dxc3, play 7.Bxf7+ and 8.Qd5+: the queen gives check and attacks the knight on e4 at the same time.",
+      "Bring the rook to the e-file with Re1 and win back the knight on e4.",
+      "Use Bg5 to trade off Black's defending bishop or to pin pieces on the e-file.",
+      "If Black plays 8...Kg6, then 9.Qxe4+ Kf7 10.Ng5+ wins the queen.",
+      "If Black takes 6...Nxc3, recapture with bxc3 and play actively with Bb5 and Ne5.",
+    ],
+    strengths: [
+      "Few Black players know the sacrifice; the natural moves quickly walk into a trap.",
+      "White develops with tempo and the black king can no longer castle.",
+      "Objectively sound: Stockfish sees it as roughly equal.",
+    ],
+    weaknesses: [
+      "After 10.Rxe4 White is still a piece down and must handle the attack precisely to win it back.",
+      "Only works if Black plays 5...Nxe4; after other fifth moves there is no sacrifice.",
+      "Few games: our sample has only 11, so the continuations mostly come from Stockfish.",
+    ],
+    tip:
+      "You can also get there via 3.d4 exd4 4.Bc4 Nf6 5.O-O Nxe4 6.Nc3. Above all, know the line up to 10.Rxe4: you are a piece down, but with Bg5 and Rae1 all your pieces bear down on the pinned bishop on e7 and the black king.",
+  },
+
+  "italian-game": {
+    summary:
+      "The Italian Game is one of the oldest openings in chess. White develops the knight to f3 and the bishop to c4, where it eyes the vulnerable f7 square. Depending on White's choice, the game becomes sharp and open, or calm and positional.",
+    idea:
+      "White wants to develop quickly, castle kingside and build a strong pawn center with c3 and d4, while the bishop on c4 keeps up the pressure on f7.",
+    plans: [
+      "Take the center with c3 followed by d4 and push Black back.",
+      "A quiet setup with d3, c3 and castling, then maneuver the queen's knight via d2 and f1 to g3.",
+      "When the bishop is attacked, retreat it to b3 or a2 so the diagonal to f7 stays open.",
+      "Gain space on the queenside with a4 and b4.",
+      "In open positions, use the open lines to attack the black king.",
+    ],
+    strengths: [
+      "Natural, logical development that is easy to learn.",
+      "Direct pressure on f7, the weakest point in Black's position.",
+      "Flexible: White can choose between sharp play and a quiet setup.",
+      "Castling early keeps the king safe.",
+    ],
+    weaknesses: [
+      "With ...Bc5 or ...Nf6 Black quickly gets full counterplay.",
+      "In the quiet lines White's advantage is often small.",
+      "Early attacks on f7 without enough development usually fizzle out.",
+    ],
+    tip:
+      "Don't rush the knight to g5 to attack f7: developing and castling first usually pays off more in club games.",
+  },
+
+  "london-system": {
+    summary:
+      "The London System is a solid opening system in which White almost always chooses the same setup: d4, Bf4, e3, Nf3, c3, Bd3 and Nbd2. It is known for being reliable, easy to understand and light on theory.",
+    idea:
+      "White builds a sturdy pawn pyramid on c3, d4 and e3 and develops the queen's bishop before playing e3, so it doesn't get locked in behind its own pawns.",
+    plans: [
+      "Bring the knight to e5, possibly supported by f4, as a base for a kingside attack.",
+      "Create a retreat square for the f4 bishop with h3, so it can't be traded off or chased away.",
+      "Aim the bishop on d3 and the queen on c2 or f3 at Black's kingside.",
+      "Play e4 at the right moment to open up the center.",
+    ],
+    strengths: [
+      "Playable against almost any Black setup.",
+      "Little theory: the plans matter more than exact move orders.",
+      "Very solid pawn structure with few weaknesses.",
+      "Clear, recognizable plans for the middlegame.",
+    ],
+    weaknesses: [
+      "White puts little direct pressure on Black; Black can often equalize easily.",
+      "With an early ...c5 and ...Qb6, Black can put pressure on the b2 pawn.",
+      "The system is predictable, so opponents can prepare for it well.",
+    ],
+    tip:
+      "Watch out for the combination of ...c5 and ...Qb6: the b2 pawn is then often the target. Qb3 or Qc1 usually solves that easily.",
+  },
+
+  "queens-gambit": {
+    summary:
+      "In the Queen's Gambit, White offers a pawn with 2.c4 to lure Black's d5 pawn away from the center. It is not a real gambit: after 2...dxc4 (Queen's Gambit Accepted) White usually wins the pawn back, and after 2...e6 (Queen's Gambit Declined) a strategic battle for the center begins.",
+    idea:
+      "White wants to control the center with pawns on d4 and ideally e4 too, and use the half-open c-file to pressure Black's queenside.",
+    plans: [
+      "Against the Queen's Gambit Accepted, build the center with e3 or e4 and take the pawn back later with Bxc4.",
+      "Against the Queen's Gambit Declined, pin the knight on f6 with Bg5 to increase the pressure on d5.",
+      "In the Exchange Variation (cxd5 exd5), launch a minority attack with b4 and b5 against Black's queenside.",
+      "Bring the rooks to the c-file and put pressure on c6 or c7.",
+      "With an isolated d-pawn, play actively and aim your pieces at the black king.",
+    ],
+    strengths: [
+      "Principled and healthy: White fights for the center right away.",
+      "A lasting initiative without really risking material.",
+      "The typical pawn structures are well known and instructive.",
+      "Playable at every level, from club to world elite.",
+    ],
+    weaknesses: [
+      "Against the Queen's Gambit Declined, Black can be very solid.",
+      "Being too greedy to win the pawn back after 2...dxc4 costs development time.",
+      "Requires strategic understanding of structures such as the isolated pawn and hanging pawns.",
+    ],
+    tip:
+      "After 2...dxc4 there is no need to hurry: just develop and take the pawn back later with the bishop. If Black tries to hold on to the pawn with ...b5, a4 is often the right answer.",
+  },
+
+  "english-opening": {
+    summary:
+      "The English Opening starts with 1.c4 and is a flexible flank opening. White controls the d5 square from the side and can later transpose to structures from other openings, such as a reversed Sicilian or a Queen's Gambit.",
+    idea:
+      "White fights for the center from the flank, usually with a fianchetto on g2, and waits to occupy the center with pawns until the position calls for it.",
+    plans: [
+      "Fianchetto with g3 and Bg2 for pressure along the long diagonal towards b7.",
+      "Gain space on the queenside with Rb1, a3, b4 and possibly b5.",
+      "Control d5 with Nc3 and d3 and use it as an outpost.",
+      "Play d4 at a suitable moment and switch to a position with a strong center.",
+    ],
+    strengths: [
+      "Very flexible: White decides the character of the position.",
+      "Less forcing theory than after 1.e4 or 1.d4.",
+      "Well suited to positional play and a slow build-up of pressure.",
+      "Sidesteps much of the opponent's preparation.",
+    ],
+    weaknesses: [
+      "Black gets plenty of freedom to occupy the center with pawns.",
+      "Fewer direct attacking chances than in sharp e4 openings.",
+      "Requires knowledge of structures from other openings because of the many transpositions.",
+    ],
+    tip:
+      "Against 1...e5 you are essentially playing a Sicilian with an extra tempo: choose a quiet setup with Nc3, g3 and Bg2 and trust that extra tempo.",
+  },
+
+  "scotch-game": {
+    summary:
+      "The Scotch Game opens up the center right away with 3.d4. After 3...exd4 4.Nxd4 White has more space and free play for the pieces. It is a direct opening with clear plans and less theory than the Ruy Lopez.",
+    idea:
+      "White releases the central tension immediately and, with the pawn on e4 and a centralized knight, aims for space and quick development.",
+    plans: [
+      "Keep the knight centralized on d4, supported by Be3 and c3.",
+      "Develop with Nc3, Be3 and Qd2, possibly followed by queenside castling and an attack.",
+      "Chase the knight from f6 with e5 and gain space.",
+      "After a trade on c6, put pressure on Black's weakened pawn structure.",
+    ],
+    strengths: [
+      "Clear plans and an easy-to-understand central structure.",
+      "More space and free play for the white pieces.",
+      "Avoids the huge body of Ruy Lopez theory.",
+    ],
+    weaknesses: [
+      "Because the center opens early, the black pieces get free play too.",
+      "The knight on d4 can become a target for ...Bc5 or ...Qf6.",
+      "Less long-term tension than in the Ruy Lopez, so the advantage can be smaller.",
+    ],
+    tip:
+      "After 4.Nxd4, watch out for Black's pressure on d4 and f2 with ...Bc5 and ...Qf6. With Be3 and c3 the knight on d4 stands firm.",
+  },
+
+  "bishops-opening": {
+    summary:
+      "In the Bishop's Opening White plays 2.Bc4 right away, aiming the bishop at f7. It is a flexible opening that often transposes to the Italian or the Vienna, while White keeps the option of f4.",
+    idea:
+      "White develops the bishop early and leaves the knight on g1 for now, so that f4 stays possible or Nf3 can still follow later.",
+    plans: [
+      "A quiet setup with d3, Nf3, c3 and castling, followed by d4.",
+      "Play f4 at a suitable moment for an attack along the f-file.",
+      "Transpose to Vienna structures with Nc3.",
+      "Keep the bishop on the diagonal to f7 and step up the pressure on Black's kingside.",
+    ],
+    strengths: [
+      "Flexible: White can choose between several setups.",
+      "Avoids the Petrov Defense, since Nf3 hasn't been played yet.",
+      "Direct pressure on f7.",
+      "Little required theory.",
+    ],
+    weaknesses: [
+      "With ...Nf6 and ...d5 Black can easily free the center.",
+      "After d3, White's setup can become passive without a clear plan.",
+      "The bishop on c4 can become a target for ...d5 or ...Na5.",
+    ],
+    tip:
+      "After 2...Nf6, 3.d3 is a calm and solid choice: you protect e4 and keep all options open.",
+  },
+
+  "ruy-lopez": {
+    summary:
+      "The Ruy Lopez (Spanish Game) is one of the most important openings in chess history. With 3.Bb5 White attacks the knight that defends e5 and slowly builds up pressure. The play is usually strategic and rich in plans.",
+    idea:
+      "White wants to exert long-term pressure on Black's center and build a strong pawn center with c3 and d4.",
+    plans: [
+      "Reinforce the center with c3 and d4.",
+      "Set up with Re1 and h3, followed by the queen's knight via d2 and f1 to g3.",
+      "After ...a6 and ...b5, retreat the bishop to b3 and later c2, aimed at the kingside.",
+      "Open lines on the queenside with a4.",
+      "Bring a knight to f5 as part of a kingside attack.",
+    ],
+    strengths: [
+      "Long-lasting, sustained pressure without sacrificing material.",
+      "Rich in strategic plans and instructive for the middlegame.",
+      "Proven at the highest level.",
+      "Flexible against almost any Black setup.",
+    ],
+    weaknesses: [
+      "A lot of theory, especially against the Berlin and the Marshall Gambit.",
+      "Black has many reliable defenses.",
+      "Strategically demanding; quick wins are rare.",
+    ],
+    tip:
+      "Early on, the e5 pawn usually isn't hanging yet: after Bxc6 followed by Nxe5, Black often wins the pawn back with ...Qd4 or ...Qg5. So build up calmly.",
+  },
+
+  "kings-gambit": {
+    summary:
+      "The King's Gambit is a romantic opening in which White sacrifices a pawn with 2.f4. After 2...exf4 (Accepted) White gets chances for a strong center and an open f-file; Black can also decline the gambit, for example with 2...Bc5 or 2...d5.",
+    idea:
+      "White sacrifices a pawn to lure away Black's e-pawn, take over the center with d4 and attack f7 along the f-file.",
+    plans: [
+      "After 2...exf4, play Nf3 quickly to prevent ...Qh4+.",
+      "Take the center with d4 and win back the f4 pawn later, for example with Bxf4.",
+      "With Bc4 and kingside castling, put the f-file and the f7 square under fire.",
+      "Against the declined gambit, develop quickly with Nf3, Nc3 and Bc4 and open the f-file later.",
+    ],
+    strengths: [
+      "Immediate initiative and open play from the very first moves.",
+      "Big surprise value, especially in fast games.",
+      "The open f-file gives attacking chances against the black king.",
+      "Lots of practical chances against unprepared opponents.",
+    ],
+    weaknesses: [
+      "The white king is weakened, especially on the e1-h4 diagonal.",
+      "With good defense Black keeps the material or gets strong counterplay.",
+      "There is a lot of sharp theory in which a single mistake can be decisive.",
+    ],
+    tip:
+      "After 2...exf4 you usually play 3.Nf3 to prevent ...Qh4+. After 2...Bc5, never play fxe5 right away, because ...Qh4+ follows with big problems.",
+  },
+
+  "vienna-game": {
+    summary:
+      "The Vienna Game starts with 2.Nc3 and is a flexible opening. White protects e4 and often prepares f4, as in the Vienna Gambit, which leads to a kind of King's Gambit with an extra piece developed.",
+    idea:
+      "White develops the queen's knight first so that f4 is better prepared, or chooses a quiet setup with g3 and Bg2.",
+    plans: [
+      "Attack the e5 pawn and open the f-file with f4 (Vienna Gambit).",
+      "After fxe5, use the pawn on e5 to gain space and chase away the knight on f6.",
+      "A quiet setup with g3 and Bg2 for pressure along the long diagonal.",
+      "Aim the bishop at f7 with Bc4 and play f4 later.",
+    ],
+    strengths: [
+      "Flexible: both sharp and quiet plans are possible.",
+      "The Vienna Gambit has great surprise value.",
+      "Avoids the Petrov Defense and a lot of well-known theory.",
+    ],
+    weaknesses: [
+      "Against the Vienna Gambit, Black can strike back hard in the center with ...d5.",
+      "In the quiet lines White's advantage is limited.",
+      "The early f4 weakens White's king position.",
+    ],
+    tip:
+      "Prepare well for Black's ...d5 reply to the Vienna Gambit: it is the main defense and often decides the course of the game.",
+  },
+
+  "hungarian-opening": {
+    summary:
+      "The Hungarian Opening starts with 1.g3 and prepares a fianchetto of the king's bishop. It is a flexible, positional system in which White often transposes to an English or a King's Indian setup with the white pieces.",
+    idea:
+      "White puts the bishop on g2 for pressure along the long diagonal and on the center, and only later decides which pawn structure fits best.",
+    plans: [
+      "Set up with Bg2, Nf3, kingside castling, d3 and e4 for a King's Indian setup.",
+      "Transpose to English structures with c4.",
+      "Use the g2 bishop to pressure b7 and the center.",
+      "Gain space on the queenside with c4, b4 and Rb1.",
+    ],
+    strengths: [
+      "Very flexible and hard to prepare for.",
+      "A safe king after quick kingside castling.",
+      "Little theory to memorize.",
+    ],
+    weaknesses: [
+      "Black gets plenty of freedom to occupy the center with pawns.",
+      "Little direct pressure; the position often balances out quickly.",
+      "The many transpositions require knowledge of other openings.",
+    ],
+    tip:
+      "Pick a fixed setup, for example Bg2, Nf3, kingside castling, d3 and e4, so you don't have to reinvent it every game.",
+  },
+
+  // ===================== ZWART =====================
+
+  "sicilian-defense": {
+    summary:
+      "The Sicilian Defense is the most popular reply to 1.e4. With 1...c5 Black fights asymmetrically for the d4 square, leading to unbalanced, sharp positions in which both sides have winning chances.",
+    idea:
+      "In the Open Sicilian, Black trades the c-pawn for White's d-pawn, gaining an extra central pawn and the half-open c-file for counterplay.",
+    plans: [
+      "Use the half-open c-file with a rook on c8 and pressure on c3.",
+      "Gain space on the queenside with ...a6 and ...b5.",
+      "Play ...d5 at the right moment to free the center.",
+      "In some systems, fianchetto the bishop on g7 for pressure along the long diagonal.",
+      "Seek counterplay on the queenside while White attacks on the kingside.",
+    ],
+    strengths: [
+      "Good winning chances for Black thanks to the unbalanced positions.",
+      "Active counterplay instead of passive defense.",
+      "An extra central pawn after the trade on d4.",
+      "Many different systems to choose from.",
+    ],
+    weaknesses: [
+      "A lot of sharp theory in the main lines.",
+      "White's kingside attacks can be very dangerous.",
+      "Anti-Sicilian systems such as 2.c3 need extra preparation.",
+      "Some structures create weak squares such as d5, or a backward pawn on d6.",
+    ],
+    tip:
+      "Choose a system that suits your playing style and make sure you also have a plan against 2.c3 (Alapin), because you'll meet it often in club games.",
+  },
+
+  "french-defense": {
+    summary:
+      "The French Defense starts with 1...e6, followed by ...d5. Black gets a solid but somewhat cramped position and fights White's center with pawn breaks.",
+    idea:
+      "Black attacks White's pawn chain at its base, with ...c5 against d4 and often ...f6 against e5 as well.",
+    plans: [
+      "Attack White's d4 pawn with ...c5.",
+      "Step up the pressure on d4 with ...Nc6 and ...Qb6.",
+      "Attack White's e5 pawn with ...f6 and open the f-file.",
+      "Activate the bad light-squared bishop, for example via ...b6 and ...Ba6, or via d7 to b5.",
+    ],
+    strengths: [
+      "A solid position with clear pawn breaks.",
+      "Clear strategic plans.",
+      "Awkward for White players who count on a quick attack.",
+    ],
+    weaknesses: [
+      "The c8 bishop is often locked in behind its own pawns.",
+      "Black has less space, especially after White plays e5.",
+      "After e5, White can build dangerous kingside attacks.",
+    ],
+    tip:
+      "If White plays e5, strike quickly with ...c5 and pressure d4 with ...Nc6 and ...Qb6. Wait too long and White gets a free hand on the kingside.",
+  },
+
+  "caro-kann-defense": {
+    summary:
+      "The Caro-Kann starts with 1...c6 and prepares ...d5. It is one of the most solid defenses against 1.e4: Black gets a healthy pawn structure and can often develop the light-squared bishop outside the pawn chain.",
+    idea:
+      "Black fights for the center with ...d5, supported by the pawn on c6, and develops the light-squared bishop to f5 or g4 before playing ...e6.",
+    plans: [
+      "Develop the light-squared bishop to f5 or g4 and only then play ...e6.",
+      "In the Advance Variation, attack White's center with ...c5.",
+      "A solid setup with ...Nd7, ...Ngf6 and ...e6.",
+      "Aim for a favorable endgame thanks to the healthy pawn structure.",
+    ],
+    strengths: [
+      "Very solid with few structural weaknesses.",
+      "The light-squared bishop gets active outside the pawn chain.",
+      "Good endgames thanks to the healthy pawn structure.",
+    ],
+    weaknesses: [
+      "Can become passive if Black doesn't choose an active plan.",
+      "White can play aggressively with the Advance Variation or the Panov Attack.",
+      "Black's development is sometimes slower than in other defenses.",
+    ],
+    tip:
+      "In the Advance Variation (3.e5), develop the bishop to f5 first and only then play ...e6, followed by ...c5.",
+  },
+
+  "scandinavian-defense": {
+    summary:
+      "The Scandinavian Defense attacks the e4 pawn right away with 1...d5. After 2.exd5 Black recaptures with the queen or plays ...Nf6 first. It is easy to learn and leads to clear-cut positions.",
+    idea:
+      "Black forces an immediate decision in the center and gets free play for the pieces with a solid pawn structure on c6 and e6.",
+    plans: [
+      "After Nc3, retreat the queen to a safe square such as a5 or d6.",
+      "Develop the light-squared bishop actively to f5 or g4.",
+      "Build a sturdy pawn structure with ...c6 and ...e6.",
+      "Develop quickly with ...Nf6, ...Nbd7 and castling.",
+    ],
+    strengths: [
+      "Little theory and quick to learn.",
+      "Black sets the structure from the very first move.",
+      "Simple, natural development of the pieces.",
+      "Surprising for opponents expecting 1...e5 or 1...c5.",
+    ],
+    weaknesses: [
+      "The queen loses time when it gets attacked.",
+      "White often gets a small lead in development.",
+      "White usually has a bit more space in the center.",
+    ],
+    tip:
+      "After Nc3, put the queen on a safe square such as a5 or d6 and then develop quickly: don't waste extra tempi with the queen.",
+  },
+
+  "philidor-defense": {
+    summary:
+      "The Philidor Defense protects the e5 pawn with 2...d6. Black chooses a solid, somewhat waiting setup and waits for the right moment to create counterplay.",
+    idea:
+      "Black holds the e5 strongpoint, often with the setup ...Nf6, ...Nbd7, ...Be7 and ...c6, and develops compactly behind the pawns.",
+    plans: [
+      "Hold the e5 pawn with ...Nbd7 and a compact setup.",
+      "After a trade on d4, play actively with the pieces and put pressure on e4.",
+      "Gain space on the queenside with ...c6, ...a6 and ...b5.",
+      "Regroup with ...Re8 and ...Bf8 to strengthen the position.",
+    ],
+    strengths: [
+      "Solid and hard to break down.",
+      "Avoids a lot of Ruy Lopez and Italian theory.",
+      "A simple setup with clear plans.",
+    ],
+    weaknesses: [
+      "Passive: White often gets more space.",
+      "The bishop on e7 is often somewhat cramped.",
+      "A wrong move order can lead to problems around f7.",
+    ],
+    tip:
+      "Against 3.d4, play ...Nf6 first and only then ...Nbd7. An early ...Nd7 can get awkward after Bc4 with pressure on f7.",
+  },
+
+  "pirc-defense": {
+    summary:
+      "The Pirc Defense is a hypermodern opening in which Black lets White build a big pawn center. With ...d6, ...Nf6 and ...g6 Black fianchettoes the king's bishop and attacks the center later.",
+    idea:
+      "Black lets White occupy the center and then undermines it with ...e5 or ...c5, supported by the bishop on g7.",
+    plans: [
+      "Attack White's center with ...e5.",
+      "Seek counterplay on the queenside and against d4 with ...c5.",
+      "Gain space on the queenside with ...a6 and ...b5.",
+      "Let the g7 bishop work along the long diagonal.",
+    ],
+    strengths: [
+      "Flexible and unbalanced, with winning chances for Black.",
+      "Avoids the main lines of the well-known 1.e4 openings.",
+      "Active counterplay as soon as White's center comes under attack.",
+    ],
+    weaknesses: [
+      "White can choose aggressive systems, such as the setup with f4 or with Be3 and Qd2.",
+      "Black has less space in the opening.",
+      "The pawn breaks require precise timing.",
+    ],
+    tip:
+      "Don't wait too long for counterplay: without a timely ...e5 or ...c5, White's center becomes too strong.",
+  },
+
+  "modern-defense": {
+    summary:
+      "The Modern Defense resembles the Pirc, but Black plays ...g6 and ...Bg7 first and keeps the g8 knight flexible for now. The opening can be used against both 1.e4 and 1.d4.",
+    idea:
+      "Black opts for maximum flexibility and fights White's center from a distance with the bishop on g7, followed by pawn breaks.",
+    plans: [
+      "Attack the center with ...d6 followed by ...c5 or ...e5.",
+      "Gain space on the queenside with ...c6, ...a6 and ...b5.",
+      "Bring the knight to d7 first and adapt the setup to White's build-up.",
+      "Keep the long diagonal open for the bishop on g7.",
+    ],
+    strengths: [
+      "Universal: playable against 1.e4 and 1.d4.",
+      "Very flexible and hard to prepare for.",
+      "Little concrete theory.",
+    ],
+    weaknesses: [
+      "White gets lots of space and free play in the center.",
+      "Black is somewhat cramped in the early phase.",
+      "Without timely counterplay, Black can get overrun.",
+    ],
+    tip:
+      "Keep the long diagonal open for your bishop on g7: don't needlessly put your own pawns or pieces in its way.",
+  },
+
+  "englund-gambit": {
+    summary:
+      "The Englund Gambit (1.d4 e5) is a gambit in which Black sacrifices a pawn right away. Objectively it is dubious: with accurate play White keeps a clear advantage. In fast games, though, it is full of traps.",
+    idea:
+      "Black sacrifices the e-pawn to develop quickly and attack White's pawn on e5, hoping White goes wrong in the complications.",
+    plans: [
+      "Develop quickly with ...Nc6 and ...Qe7 to pressure the e5 pawn.",
+      "Open lines with ...d6 or ...f6 for active pieces.",
+      "Set traps against careless White moves, for example around the b2 pawn.",
+      "After winning the pawn back, castle quickly and play on normally.",
+    ],
+    strengths: [
+      "Big surprise value.",
+      "Lots of practical traps, especially in blitz and bullet.",
+      "Avoids the usual theory against 1.d4.",
+    ],
+    weaknesses: [
+      "Objectively dubious: with correct play White keeps the advantage.",
+      "Hardly works against experienced or prepared opponents.",
+      "A pawn down, Black risks ending up in a worse position.",
+    ],
+    tip:
+      "Use it mainly as a surprise weapon in fast games and know the well-known traps. For serious games with longer time controls, a more solid opening is the wiser choice.",
+  },
+
+  "petrovs-defense": {
+    summary:
+      "The Petrov Defense, also called the Russian Game, answers 2.Nf3 with a counterattack on e4: 2...Nf6. It is one of the most solid defenses against 1.e4 and is known for its symmetrical, reliable positions.",
+    idea:
+      "Black doesn't defend e5 but attacks e4 instead, aiming for a solid, balanced position without weaknesses.",
+    plans: [
+      "After 3.Nxe5, play ...d6 first and only then take back the pawn on e4.",
+      "Centralize the knight on e4 when it is safe to do so.",
+      "Build a sturdy center with ...d5 and castle quickly.",
+      "Develop the pieces symmetrically and harmoniously with ...Bd6 or ...Be7.",
+    ],
+    strengths: [
+      "Very solid and hard to break down.",
+      "Avoids the Ruy Lopez, the Italian and the Scotch.",
+      "Clear, simple plans.",
+    ],
+    weaknesses: [
+      "Hard to play for a win because of the symmetrical positions.",
+      "A wrong move order can cause problems right away.",
+      "White can opt for quiet lines in which little happens.",
+    ],
+    tip:
+      "After 3.Nxe5, play 3...d6 first to chase the knight away. Taking 3...Nxe4 right away is risky because of 4.Qe2.",
+  },
+
+  "four-knights-game": {
+    summary:
+      "The Four Knights Game arises when both players develop their knights to c3, f3, c6 and f6. It is a classical, solid opening with natural development and little risk for Black.",
+    idea:
+      "Black develops naturally and symmetrically, defends e5 with the knight and later looks for counterplay in the center with ...d5 or through active piece play.",
+    plans: [
+      "Against 4.Bb5, develop the bishop actively with ...Bb4 or look for counterplay with ...Nd4.",
+      "Against 4.d4, trade on d4 and place the pieces actively, for example with ...Bb4.",
+      "Play ...d5 at the right moment to open the center.",
+      "Castle quickly and put the bishops on active diagonals.",
+    ],
+    strengths: [
+      "Solid and natural: every move develops a piece.",
+      "Few pitfalls for Black.",
+      "Usually leads to balanced positions.",
+    ],
+    weaknesses: [
+      "The symmetry makes it hard to play for a win.",
+      "White picks the variation, so Black needs to know several systems.",
+      "Without a clear plan, Black can become passive.",
+    ],
+    tip:
+      "Against 4.Bc4, know the fork trick 4...Nxe4 5.Nxe4 d5: Black wins the piece back and gets a pleasant center.",
+  },
 }
+
+type OpeningId = keyof typeof INFO_NL
+const IDS = Object.keys(INFO_NL) as OpeningId[]
+const isId = (id: PropertyKey): id is OpeningId => typeof id === 'string' && Object.prototype.hasOwnProperty.call(INFO_NL, id)
+
+// In het Engels geen nameNl: die zou de Engelse naam alleen herhalen
+const BY_LANG: Record<'nl' | 'en', Record<OpeningId, OpeningInfo>> = {
+  nl: INFO_NL,
+  en: Object.fromEntries(IDS.map(id => [id, { ...INFO_EN[id], keyMoves: INFO_NL[id].keyMoves }])) as Record<OpeningId, OpeningInfo>,
+}
+
+/** Uitleg bij een opening in de huidige taal */
+export const getOpeningInfo = (id: string): OpeningInfo | undefined => (isId(id) ? BY_LANG[getLang()][id] : undefined)
+
+/** Uitleg per opening in de huidige taal; wordt bij elke toegang opgezocht, zodat aanroepers niets hoeven te veranderen */
+export const OPENING_INFO: Record<string, OpeningInfo> = new Proxy(INFO_NL as Record<string, OpeningInfo>, {
+  get: (_target, id) => (isId(id) ? BY_LANG[getLang()][id] : undefined),
+  has: (_target, id) => isId(id),
+})

@@ -2,6 +2,7 @@ import { db, today, type SchaakDB, type TrainingAttempt, type TrainingCard, type
 import { newSrsState, review, stageOf, type Quality } from './srs'
 import { BADGES, XP, computeStreak, type BadgeStats } from './gamification'
 import type { Side, TrainMode } from './types'
+import { t } from './i18n'
 
 // Schrijft trainingsresultaten weg: kaarten (spaced repetition), pogingen, dagactiviteit, XP en badges.
 
@@ -197,7 +198,7 @@ export async function exportBackup(database: SchaakDB = db): Promise<Backup> {
 /** Controleert een back-up en vat hem samen, zodat de gebruiker weet wat er teruggezet wordt */
 export function summarizeBackup(backup: unknown): { exportedAt: Date | null; positions: number; variations: number } {
   const b = backup as Partial<Backup> | null
-  if (!b || b.app !== 'SchaakRoute' || typeof b.data !== 'object' || !b.data) throw new Error('Dit bestand is geen SchaakRoute-back-up.')
+  if (!b || b.app !== 'SchaakRoute' || typeof b.data !== 'object' || !b.data) throw new Error(t('Dit bestand is geen SchaakRoute-back-up.'))
   const cards = Array.isArray(b.data.cards) ? (b.data.cards as { correct?: number }[]) : []
   const progress = Array.isArray(b.data.progress) ? (b.data.progress as { completions?: number }[]) : []
   const at = b.exportedAt ? new Date(b.exportedAt) : null

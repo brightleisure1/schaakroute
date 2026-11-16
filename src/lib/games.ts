@@ -3,6 +3,7 @@ import { db, type ImportedGame, type RepertoireMove } from './db'
 import { START_FEN, epdOf, uciOf, parseUci } from './chess'
 import { positionIndex } from './data'
 import { splitGames } from './pgn'
+import { t } from './i18n'
 import type { FamilyFile, Side, StatsFile } from './types'
 
 // Import van eigen partijen via de officiële gratis API's van Lichess en Chess.com (geen sleutel nodig),
@@ -18,8 +19,8 @@ export async function fetchLichessGames(username: string, max = 200, onProgress?
     await sleep(60_000)
     res = await fetch(url, { headers: { Accept: 'application/x-ndjson' } })
   }
-  if (res.status === 404) throw new Error(`Lichess-gebruiker "${username}" niet gevonden`)
-  if (!res.ok || !res.body) throw new Error(`Lichess gaf foutcode ${res.status}`)
+  if (res.status === 404) throw new Error(t('Lichess-gebruiker "{name}" niet gevonden', { name: username }))
+  if (!res.ok || !res.body) throw new Error(t('Lichess gaf foutcode {code}', { code: res.status }))
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let buf = ''
@@ -51,8 +52,8 @@ export async function fetchLichessGames(username: string, max = 200, onProgress?
 export async function fetchChesscomGames(username: string, months = 3, onProgress?: (n: number) => void): Promise<ImportedGame[]> {
   const u = encodeURIComponent(username.toLowerCase())
   const res = await fetch(`https://api.chess.com/pub/player/${u}/games/archives`)
-  if (res.status === 404) throw new Error(`Chess.com-gebruiker "${username}" niet gevonden`)
-  if (!res.ok) throw new Error(`Chess.com gaf foutcode ${res.status}`)
+  if (res.status === 404) throw new Error(t('Chess.com-gebruiker "{name}" niet gevonden', { name: username }))
+  if (!res.ok) throw new Error(t('Chess.com gaf foutcode {code}', { code: res.status }))
   const { archives } = (await res.json()) as { archives: string[] }
   const out: ImportedGame[] = []
   for (const url of archives.slice(-months).reverse()) {

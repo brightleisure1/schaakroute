@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
-import { deviceLang, setLang, type Lang } from './lib/i18n'
+import { deviceLang, setLang, t, tn, type Lang } from './lib/i18n'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './lib/db'
@@ -35,7 +35,7 @@ const GameReviewView = lazy(() => import('./pages/GameReview').then(m => ({ defa
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 const Sources = lazy(() => import('./pages/Sources').then(m => ({ default: m.Sources })))
 
-// Navigatie in drie groepen.
+// Navigatie in drie groepen. De teksten zijn Nederlandse sleutels: vertalen gebeurt bij het tekenen (t(n.label)).
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Trainen',
@@ -97,8 +97,15 @@ const FOCUS_ROUTES = /^\/(train|les|crushing|advantage|repertoire\/\d+\/train|an
 function BottomNavSpace({ active }: { active: boolean }) {
   useEffect(() => {
     const root = document.documentElement
-    if (active) root.style.setProperty('--bottom-nav', 'calc(3.75rem + 1px + env(safe-area-inset-bottom))')
-    else root.style.removeProperty('--bottom-nav')
+    if (!active) { root.style.removeProperty('--bottom-nav'); return }
+    // De echte hoogte van het menu meten (ontwerp 14k is hoger dan het oude menu, en het label onder de actieve tab telt mee)
+    const nav = document.getElementById('bottom-nav')
+    const apply = () => root.style.setProperty('--bottom-nav', nav && nav.offsetHeight ? `${nav.offsetHeight}px` : 'calc(5.5rem + env(safe-area-inset-bottom))')
+    apply()
+    if (!nav) return
+    const ro = new ResizeObserver(apply)
+    ro.observe(nav)
+    return () => ro.disconnect()
   }, [active])
   return null
 }
@@ -139,10 +146,10 @@ class ErrorBoundary extends Component<{ children: ReactNode; resetKey: string },
     return (
       <div className="card mx-auto max-w-lg p-6 text-center">
         <EmptyKnight className="mx-auto bg-brand-soft" />
-        <h2 className="mt-3 font-bold">Er ging iets mis op deze pagina</h2>
+        <h2 className="mt-3 font-bold">{t('Er ging iets mis op deze pagina')}</h2>
         <p className="mt-1 text-sm text-muted">{this.state.error.message}</p>
-        <p className="mt-1 text-xs text-muted">Je voortgang is veilig opgeslagen.</p>
-        <button className="btn btn-primary mt-4" onClick={() => this.setState({ error: null })}>Opnieuw proberen</button>
+        <p className="mt-1 text-xs text-muted">{t('Je voortgang is veilig opgeslagen.')}</p>
+        <button className="btn btn-primary mt-4" onClick={() => this.setState({ error: null })}>{t('Opnieuw proberen')}</button>
       </div>
     )
   }
@@ -175,8 +182,8 @@ function StreakPill() {
   const st = useLiveQuery(() => streak(), [], { current: 0, best: 0 })
   if (!st.current) return null
   return (
-    <NavLink to="/statistieken" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-sm font-bold text-accent-ink" aria-label={`${st.current} ${st.current === 1 ? 'dag' : 'dagen'} op rij getraind`}>
-      <Flame size={16} className="text-accent" aria-hidden />{st.current} {st.current === 1 ? 'dag' : 'dagen'}
+    <NavLink to="/statistieken" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-sm font-bold text-accent-ink" aria-label={tn(st.current, '{n} dag op rij getraind', '{n} dagen op rij getraind')}>
+      <Flame size={16} className="text-accent" aria-hidden />{tn(st.current, '{n} dag', '{n} dagen')}
     </NavLink>
   )
 }
@@ -214,24 +221,24 @@ function Shell() {
     <FocusContext.Provider value={setSessionFocus}>
     <div className="min-h-dvh lg:flex">
       <BottomNavSpace active={!focus && !onboarding} />
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">Naar de inhoud</a>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-lg">{t('Naar de inhoud')}</a>
       {!onboarding && !fullTraining && (
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r-2 border-line bg-surface px-3 py-5 lg:flex">
           <NavLink to="/" className="mb-[18px] flex items-center gap-2 px-2 text-xl font-extrabold tracking-[-0.025em]">
             <img src="./icon.svg" alt="" className="h-9 w-9 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span>
           </NavLink>
-          <nav aria-label="Hoofdmenu" className="flex flex-col gap-[18px]">
+          <nav aria-label={t('Hoofdmenu')} className="flex flex-col gap-[18px]">
             {NAV_GROUPS.map(g => (
               <div key={g.title}>
-                <h2 className="px-3 pb-1.5 text-xs font-bold uppercase tracking-[0.04em] text-muted">{g.title}</h2>
+                <h2 className="px-3 pb-1.5 text-xs font-bold uppercase tracking-[0.04em] text-muted">{t(g.title)}</h2>
                 <ul className="flex flex-col gap-0.5">
                   {g.items.map(n => (
                     <li key={n.to}>
                       <NavLink to={n.to} end={n.to === '/'} className={navClass}>
                         {({ isActive }) => (
                           <>
-                            <n.icon size={20} strokeWidth={isActive ? 2.25 : 2} aria-hidden className="shrink-0" style={{ color: isActive ? 'var(--brand)' : n.color ?? 'var(--muted)' }} />{n.label}
-                            {n.badge && due > 0 && <span className="ml-auto rounded-full bg-danger px-[7px] text-xs leading-5 font-extrabold text-white" aria-label={`${due} herhalingen`}>{due}</span>}
+                            <n.icon size={20} strokeWidth={isActive ? 2.25 : 2} aria-hidden className="shrink-0" style={{ color: isActive ? 'var(--brand)' : n.color ?? 'var(--muted)' }} />{t(n.label)}
+                            {n.badge && due > 0 && <span className="ml-auto rounded-full bg-danger px-[7px] text-xs leading-5 font-extrabold text-white" aria-label={t('{n} herhalingen', { n: due })}>{due}</span>}
                           </>
                         )}
                       </NavLink>
@@ -241,7 +248,7 @@ function Shell() {
               </div>
             ))}
           </nav>
-          <div className="mt-auto px-2.5 pt-4 text-xs text-muted">Gratis en open source · <NavLink to="/bronnen" className="underline">bronnen</NavLink></div>
+          <div className="mt-auto px-2.5 pt-4 text-xs text-muted">{t('Gratis en open source')} · <NavLink to="/bronnen" className="underline">{t('bronnen')}</NavLink></div>
         </aside>
       )}
 
@@ -251,7 +258,7 @@ function Shell() {
           <NavLink to="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold"><img src="./icon.svg" alt="" className="h-8 w-8 rounded-[22%] ring-1 ring-line" /><span>Schaak<span className="text-brand-strong">Route</span></span></NavLink>
           <StreakPill />
         </header>
-        <main id="main" className={`mx-auto w-full px-4 sm:px-6 ${fullTraining ? 'lg:max-w-none lg:p-0' : 'max-w-6xl lg:pb-10 lg:pt-8'} ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-24'}`}>
+        <main id="main" className={`mx-auto w-full px-4 sm:px-6 ${fullTraining ? 'lg:max-w-none lg:p-0' : 'max-w-6xl lg:pb-10 lg:pt-8'} ${sessionFocus ? 'pt-1' : 'pt-5'} ${focus || onboarding ? 'pb-8' : 'pb-[calc(var(--bottom-nav,6rem)+1.5rem)] lg:pb-10'}`}>
           <ErrorBoundary resetKey={loc.pathname}>
           <Suspense fallback={<AppLoading />}>
             <Routes>
@@ -291,9 +298,9 @@ function Shell() {
           // Zwevende balk: alleen het actieve onderdeel krijgt een zichtbaar label
           // Vaste tabbalk: de pagina eindigt erboven, dus hij dekt nooit iets af en verspringt niet
           // Bodemmenu (ontwerp 14k): grote iconen in een eigen kleur; alleen de actieve tab toont zijn naam, in een vakje met rand
-          <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 items-start border-t-2 border-line bg-surface px-1.5 pt-2.5 lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }} aria-label="Hoofdmenu">
+          <nav id="bottom-nav" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 items-start border-t-2 border-line bg-surface px-1.5 pt-2.5 lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }} aria-label={t('Hoofdmenu')}>
             {NAV.filter(n => n.mobile).map(n => (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} aria-label={n.short ?? n.label} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong">
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} aria-label={t(n.short ?? n.label)} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong">
                 {({ isActive: exact }) => {
                   // Een losse opening (/opening/…) hoort bij de tab Openingen
                   const isActive = exact || (n.to === '/openingen' && loc.pathname.startsWith('/opening/'))
@@ -301,9 +308,9 @@ function Shell() {
                   <>
                     <TabIcon active={isActive} color={n.color}>
                       <n.icon size={27} strokeWidth={isActive ? 2.25 : 2} aria-hidden />
-                      {n.badge && due > 0 && <span className="absolute -top-1 right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-danger px-1 text-[11px] leading-none font-extrabold text-white" aria-label={`${due} herhalingen`}>{due}</span>}
+                      {n.badge && due > 0 && <span className="absolute -top-1 right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-danger px-1 text-[11px] leading-none font-extrabold text-white" aria-label={t('{n} herhalingen', { n: due })}>{due}</span>}
                     </TabIcon>
-                    {isActive && <span className="animate-fade-in whitespace-nowrap">{n.short ?? n.label}</span>}
+                    {isActive && <span className="animate-fade-in whitespace-nowrap">{t(n.short ?? n.label)}</span>}
                   </>
                   )
                 }}
@@ -350,9 +357,9 @@ function MoreTab() {
   }, [open])
   return (
     <>
-      <button ref={btn} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong" aria-label="Meer" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+      <button ref={btn} className="flex flex-col items-center gap-1 text-[11px] font-extrabold text-brand-strong" aria-label={t('Meer')} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <TabIcon active={active || open} color="var(--muted)"><Ellipsis size={27} strokeWidth={active || open ? 2.25 : 2} aria-hidden /></TabIcon>
-        {(active || open) && <span className="animate-fade-in">Meer</span>}
+        {(active || open) && <span className="animate-fade-in">{t('Meer')}</span>}
       </button>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="more-title">
@@ -360,15 +367,15 @@ function MoreTab() {
           <div className="absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col gap-3.5 overflow-y-auto rounded-t-[26px] bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2.5 shadow-2xl animate-fade-up">
             <div className="mx-auto h-[5px] w-11 shrink-0 rounded-full bg-line" aria-hidden />
             <div className="flex items-center justify-between">
-              <h2 id="more-title" className="text-[22px] font-extrabold tracking-[-0.02em]">Meer</h2>
-              <button className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => setOpen(false)} aria-label="Sluiten"><X size={18} strokeWidth={2.5} aria-hidden /></button>
+              <h2 id="more-title" className="text-[22px] font-extrabold tracking-[-0.02em]">{t('Meer')}</h2>
+              <button className="-mr-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-ink hover:bg-line" onClick={() => setOpen(false)} aria-label={t('Sluiten')}><X size={18} strokeWidth={2.5} aria-hidden /></button>
             </div>
             <ul className="grid grid-cols-2 gap-2.5">
               {tiles.map((n, i) => (
                 <li key={n.to} className="flex">
                   <NavLink ref={i === 0 ? first : undefined} to={n.to} className={({ isActive }) => `tap flex w-full flex-col gap-2.5 p-3.5 ${isActive ? 'tap-on' : ''}`}>
                     <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] ${TILE_TONE[n.tone ?? 'neutral']}`} aria-hidden><n.icon size={22} strokeWidth={2} /></span>
-                    <span className="min-w-0"><span className="block font-bold leading-tight">{n.label}</span>{n.desc && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{n.desc}</span>}</span>
+                    <span className="min-w-0"><span className="block font-bold leading-tight">{t(n.label)}</span>{n.desc && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{t(n.desc)}</span>}</span>
                   </NavLink>
                 </li>
               ))}
@@ -376,7 +383,7 @@ function MoreTab() {
             {rows.map(n => (
               <NavLink key={n.to} to={n.to} className={({ isActive }) => `tap flex items-center gap-3 px-3.5 py-3 ${isActive ? 'tap-on' : ''}`}>
                 <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${TILE_TONE[n.tone ?? 'neutral']}`} aria-hidden><n.icon size={18} strokeWidth={2} /></span>
-                <span className="min-w-0 flex-1 font-bold">{n.label}</span>
+                <span className="min-w-0 flex-1 font-bold">{t(n.label)}</span>
                 <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />
               </NavLink>
             ))}

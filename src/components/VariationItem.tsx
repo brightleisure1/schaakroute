@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { moveNumberLabel } from '../lib/chess'
 import { displayName } from '../lib/data'
 import { pct } from './ui'
+import { t } from '../lib/i18n'
 import { CropBoard } from './CropBoard'
 import type { FamilyFile, Variation } from '../lib/types'
 
@@ -19,7 +20,7 @@ export function shortName(v: Variation, familyName: string) {
   if (!v.path.length) return displayName(v, familyName)
   const last = v.path[v.path.length - 1]
   const name = v.path.length > 1 && /^(main line|normal( variation)?|main variation)$/i.test(last) ? `${v.path[v.path.length - 2]}: ${last}` : last
-  return v.lineNo ? `${name} (lijn ${v.lineNo})` : name
+  return v.lineNo ? t('{name} (lijn {n})', { name, n: v.lineNo }) : name
 }
 
 export type VariationStatus = 'new' | 'learned' | 'hard' | 'mastered'
@@ -47,12 +48,12 @@ export function VariationItem({ v, file, status, label }: { v: Variation; file: 
           <span className="line-clamp-2 block font-bold leading-snug lg:truncate lg:text-base">{label ?? shortName(v, f.name)}</span>
           <span className="block text-sm text-muted">{moves}{share && <span className="lg:hidden">{moves ? ' · ' : ''}{share}</span>}</span>
         </span>
-        <span className="hidden items-center gap-2.5 lg:flex" aria-label={share ? `${share} van de partijen` : 'te zeldzaam voor een percentage'}>
+        <span className="hidden items-center gap-2.5 lg:flex" aria-label={share ? t('{share} van de partijen', { share }) : t('te zeldzaam voor een percentage')}>
           <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-(--board-dark)" style={{ width: `${Math.min(100, v.freq * 100)}%` }} /></span>
           <span className="w-10 text-right text-sm font-bold tabular-nums">{share ?? '–'}</span>
         </span>
-        <span className={`justify-self-start rounded-full px-2.5 py-0.5 text-xs font-bold ${STATUS[status].cls}`}>{STATUS[status].label}</span>
-        <span className="hidden min-h-10 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-semibold lg:flex">{status === 'new' ? 'Leren' : 'Oefenen'}</span>
+        <span className={`justify-self-start rounded-full px-2.5 py-0.5 text-xs font-bold ${STATUS[status].cls}`}>{t(STATUS[status].label)}</span>
+        <span className="hidden min-h-10 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-semibold lg:flex">{status === 'new' ? t('Leren') : t('Oefenen')}</span>
       </Link>
     </li>
   )

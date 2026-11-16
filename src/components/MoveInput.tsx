@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Chess, type Move } from 'chess.js'
 import { Keyboard } from 'lucide-react'
+import { t, tr } from '../lib/i18n'
 
 const OPEN_KEY = 'schaakroute.zetTypen'
 
@@ -24,8 +25,8 @@ export function TypeToggle({ open, onToggle, className = '' }: { open: boolean; 
       className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition hover:bg-surface-2 hover:text-ink ${open ? 'bg-brand-soft text-brand-strong' : 'text-muted'} ${className}`}
       onClick={onToggle}
       aria-expanded={open}
-      aria-label={open ? 'Zet typen verbergen' : 'Zet typen'}
-      title={open ? 'Zet typen verbergen (T)' : 'Zet typen (T)'}
+      aria-label={open ? t('Zet typen verbergen') : t('Zet typen')}
+      title={open ? t('Zet typen verbergen (T)') : t('Zet typen (T)')}
       aria-keyshortcuts="T"
     >
       <Keyboard size={18} aria-hidden />
@@ -54,8 +55,8 @@ export function MoveInput({ fen, enabled, onMove, className = '', autoFocus = fa
       }
     }
     if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(text)) {
-      const t = text.toLowerCase()
-      return tryMove({ from: t.slice(0, 2), to: t.slice(2, 4), promotion: t[4] })
+      const s = text.toLowerCase()
+      return tryMove({ from: s.slice(0, 2), to: s.slice(2, 4), promotion: s[4] })
     }
     const normalized = text.replace(/0/g, 'O').replace(/^o-o/i, m => m.toUpperCase())
     return tryMove(normalized) ?? tryMove(normalized[0].toUpperCase() + normalized.slice(1))
@@ -67,7 +68,7 @@ export function MoveInput({ fen, enabled, onMove, className = '', autoFocus = fa
     if (!text || !enabled) return
     const mv = parse(text)
     if (!mv) {
-      setError(`"${text}" is geen legale zet in deze stelling.`)
+      setError(t('"{text}" is geen legale zet in deze stelling.', { text }))
       return
     }
     setError(null)
@@ -78,12 +79,12 @@ export function MoveInput({ fen, enabled, onMove, className = '', autoFocus = fa
   return (
     <form onSubmit={submit} className={`mt-2 ${className}`}>
       <div className="flex items-center gap-2">
-        <label htmlFor={id} className="sr-only">Typ je zet in Lichess-notatie</label>
+        <label htmlFor={id} className="sr-only">{t('Typ je zet in Lichess-notatie')}</label>
         <input
           ref={inputRef}
           id={id}
           className="input min-h-11 py-2 text-sm"
-          placeholder={enabled ? 'Typ je zet, bijv. Nf3' : 'Wacht op je beurt…'}
+          placeholder={enabled ? t('Typ je zet, bijv. Nf3') : t('Wacht op je beurt…')}
           value={value}
           onChange={e => { setValue(e.target.value); setError(null) }}
           readOnly={!enabled}
@@ -96,7 +97,7 @@ export function MoveInput({ fen, enabled, onMove, className = '', autoFocus = fa
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-err` : undefined}
         />
-        <button type="submit" className="btn btn-ghost min-h-11" disabled={!enabled || !value.trim()}>Zet</button>
+        <button type="submit" className="btn btn-ghost min-h-11" disabled={!enabled || !value.trim()}>{tr('Zet', 'Play')}</button>
       </div>
       {error && <p id={`${id}-err`} role="alert" className="mt-1 text-sm text-danger-ink">{error}</p>}
     </form>

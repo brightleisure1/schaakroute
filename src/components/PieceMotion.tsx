@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { defaultPieces } from 'react-chessboard'
 import { Check } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 // Ontwerp ronde 13: kleine animaties met schaakstukken voor wachten en voor iets dat gelukt is.
 // De beweging zit in index.css (klassen pm-*); met 'Beweging verminderen' staat alles stil.
@@ -50,7 +51,7 @@ export function AppLoading({ fullscreen = false }: { fullscreen?: boolean }) {
       <div className="flex flex-col items-center gap-1">
         <div className="text-lg font-extrabold tracking-[-0.02em]">Schaak<span className="text-brand-strong">Route</span></div>
         <div className="flex items-center gap-1.5 text-[13px] text-muted">
-          Je route wordt klaargezet
+          {t('Je route wordt klaargezet')}
           <span aria-hidden className="inline-flex gap-[3px]">
             {[0, 0.2, 0.4].map(d => <span key={d} className="pm-dot" style={{ animationDelay: `${d}s` }} />)}
           </span>
@@ -91,7 +92,7 @@ export function HoppingPawns({ size = 46 }: { size?: number }) {
 }
 
 /** Klein, in een regel tekst: pionnetjes + "Laden…" */
-export function InlineWait({ label = 'Laden…', className = '' }: { label?: string; className?: string }) {
+export function InlineWait({ label = t('Laden…'), className = '' }: { label?: string; className?: string }) {
   return (
     <div className={`flex items-center gap-2 text-muted ${className}`} role="status">
       <span className="-mt-1.5"><HoppingPawns size={16} /></span>{label}
@@ -106,7 +107,7 @@ const DROPS: { piece: string; c: number; r: number }[] = [
 ]
 
 /** Bordje dat zich opbouwt: velden in een golf, daarna vallen de stukken op hun plek. Speelt één keer. */
-export function BoardLoading({ label = 'Bord laden…' }: { label?: string }) {
+export function BoardLoading({ label = t('Bord laden…') }: { label?: string }) {
   return (
     <div className="pm-bl flex justify-center py-10" role="status">
       <span className="sr-only">{label}</span>

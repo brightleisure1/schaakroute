@@ -12,8 +12,9 @@ import { Trainer } from '../components/Trainer'
 import { AUTO_NEXT_MS } from '../lib/lessonPlan'
 import { CropBoard } from '../components/CropBoard'
 import { EmptyKnight } from '../components/PieceMotion'
-import { Empty, FocusBar, ProgressBar, Spinner, Tabs, plural, useSettings, useTrainingFocus } from '../components/ui'
+import { Empty, FocusBar, ProgressBar, Spinner, Tabs, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
+import { locale, t, tn, tr } from '../lib/i18n'
 
 export function Mastery() {
   const [search, setSearch] = useSearchParams()
@@ -28,8 +29,8 @@ export function Mastery() {
     return (
       <div className="lg:max-w-xl">
         <div className="mb-4">
-          <h1 className="text-[28px] font-extrabold leading-[1.12] tracking-[-0.03em] sm:text-3xl">Herhalen</h1>
-          <p className="mt-1 text-[15px] text-muted">Herhaal wat je bijna vergeet.</p>
+          <h1 className="text-[28px] font-extrabold leading-[1.12] tracking-[-0.03em] sm:text-3xl">{t('Herhalen')}</h1>
+          <p className="mt-1 text-[15px] text-muted">{t('Herhaal wat je bijna vergeet.')}</p>
         </div>
         <ReviewEmpty />
       </div>
@@ -40,14 +41,14 @@ export function Mastery() {
       {!session && (
         <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Herhalen</h1>
-            <p className="mt-1 text-muted">Herhaal wat je bijna vergeet.</p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('Herhalen')}</h1>
+            <p className="mt-1 text-muted">{t('Herhaal wat je bijna vergeet.')}</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-            <div className="shrink-0 [&_button]:whitespace-nowrap"><Tabs value={type} onChange={t => setSearch({ type: t, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: 'Losse posities' }, { value: 'lines', label: 'Complete varianten' }]} /></div>
+            <div className="shrink-0 [&_button]:whitespace-nowrap"><Tabs value={type} onChange={v => setSearch({ type: v, ...(family ? { family } : {}) })} options={[{ value: 'positions', label: t('Losse posities') }, { value: 'lines', label: t('Complete varianten') }]} /></div>
             {manifest && (
-              <select className="input sm:w-56" value={family} onChange={e => setSearch({ type, ...(e.target.value ? { family: e.target.value } : {}) })} aria-label="Filter op opening">
-                <option value="">Alle openingen</option>
+              <select className="input sm:w-56" value={family} onChange={e => setSearch({ type, ...(e.target.value ? { family: e.target.value } : {}) })} aria-label={t('Filter op opening')}>
+                <option value="">{t('Alle openingen')}</option>
                 {manifest.families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
             )}
@@ -113,7 +114,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
     day0.setHours(0, 0, 0, 0)
     const t0 = day0.getTime()
     const forecast = Array.from({ length: 7 }, (_, d) => ({
-      label: d === 0 ? 'Vandaag' : new Date(t0 + d * DAY).toLocaleDateString('nl-NL', { weekday: 'short' }).replace('.', ''),
+      label: d === 0 ? t('Vandaag') : new Date(t0 + d * DAY).toLocaleDateString(locale(), { weekday: 'short' }).replace('.', ''),
       n: mine.filter(c => (d === 0 ? c.dueAt < t0 + DAY : c.dueAt >= t0 + d * DAY && c.dueAt < t0 + (d + 1) * DAY)).length,
     }))
     const weakest = [...mine].sort((a, b) => masteryScore(a) - masteryScore(b))
@@ -129,9 +130,9 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
     if (!mine.length) return <ReviewEmpty filtered={!!family} />
     const max = Math.max(1, ...forecast.map(f => f.n))
     const stageRows = [
-      { key: 'learning', label: 'Lerend', hint: 'komt binnen een dag terug', n: stages.learning, c: 'bg-accent' },
-      { key: 'young', label: 'Jong', hint: 'interval 1 tot 7 dagen', n: stages.young, c: 'bg-(--board-dark)' },
-      { key: 'mature', label: 'Vast', hint: 'al 7+ dagen vast', n: stages.mature, c: 'bg-brand' },
+      { key: 'learning', label: t('Lerend'), hint: t('komt binnen een dag terug'), n: stages.learning, c: 'bg-accent' },
+      { key: 'young', label: t('Jong'), hint: t('interval 1 tot 7 dagen'), n: stages.young, c: 'bg-(--board-dark)' },
+      { key: 'mature', label: t('Vast'), hint: t('al 7+ dagen vast'), n: stages.mature, c: 'bg-brand' },
     ]
     const fileMap = new Map((weakFiles.data ?? []).map(f => [f.family.id, f]))
     return (
@@ -140,17 +141,17 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
           <div className="flex flex-col p-5 lg:p-8">
             <div className="flex items-baseline gap-3">
               <span className="text-6xl font-extrabold leading-[0.9] tracking-tight tabular-nums lg:text-7xl">{left}</span>
-              <span className="text-lg font-bold leading-tight lg:text-xl">{left === 1 ? 'positie' : 'posities'}<br />{extra && left ? 'om te oefenen' : 'om te herhalen'}</span>
+              <span className="text-lg font-bold leading-tight lg:text-xl">{left === 1 ? t('positie') : t('posities')}<br />{extra && left ? t('om te oefenen') : t('om te herhalen')}</span>
             </div>
-            <p className="mt-3 text-muted">{left ? (index > 0 ? 'Je gaat verder waar je was.' : 'Vind telkens de zet die je eerder leerde. Eerdere fouten komen eerst.') : 'Niets openstaand. Oefen je zwakste posities, of kom later terug.'}</p>
+            <p className="mt-3 text-muted">{left ? (index > 0 ? t('Je gaat verder waar je was.') : t('Vind telkens de zet die je eerder leerde. Eerdere fouten komen eerst.')) : t('Niets openstaand. Oefen je zwakste posities, of kom later terug.')}</p>
             <div className="mt-auto flex flex-col gap-2 pt-5 sm:flex-row sm:flex-wrap">
-              {left > 0 && <button className="btn btn-primary min-h-13 px-6 text-base" onClick={() => setStarted(true)} autoFocus><Repeat size={20} aria-hidden />{index > 0 ? 'Ga verder' : 'Start herhalen'}</button>}
-              <button className={`btn ${left ? 'btn-ghost' : 'btn-primary'} min-h-12`} onClick={() => startWith(weakest.slice(0, 20), true)}>Oefen je {Math.min(20, weakest.length)} zwakste posities</button>
+              {left > 0 && <button className="btn btn-primary min-h-13 px-6 text-base" onClick={() => setStarted(true)} autoFocus><Repeat size={20} aria-hidden />{index > 0 ? t('Ga verder') : t('Start herhalen')}</button>}
+              <button className={`btn ${left ? 'btn-ghost' : 'btn-primary'} min-h-12`} onClick={() => startWith(weakest.slice(0, 20), true)}>{t('Oefen je {n} zwakste posities', { n: Math.min(20, weakest.length) })}</button>
             </div>
           </div>
           <div className="space-y-6 border-line bg-bg p-5 max-lg:border-t lg:border-l lg:p-8">
             <div>
-              <div className="flex items-baseline justify-between gap-3"><h2 className="font-bold">Je geheugen</h2><span className="text-sm text-muted">{plural(mine.length, 'positie', 'posities')}</span></div>
+              <div className="flex items-baseline justify-between gap-3"><h2 className="font-bold">{t('Je geheugen')}</h2><span className="text-sm text-muted">{tn(mine.length, '{n} positie', '{n} posities')}</span></div>
               <div className="mt-3 flex h-2.5 gap-[3px] lg:h-3" aria-hidden>
                 {stageRows.filter(r => r.n).map(r => <span key={r.key} className={`rounded-full ${r.c}`} style={{ width: `${(r.n / mine.length) * 100}%` }} />)}
               </div>
@@ -165,11 +166,11 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
               </dl>
             </div>
             <div>
-              <h2 className="font-bold">Komende 7 dagen</h2>
+              <h2 className="font-bold">{t('Komende 7 dagen')}</h2>
               <ol className="mt-3 grid grid-cols-7 items-end gap-1.5 lg:gap-2">
                 {forecast.map((f, i) => (
                   <li key={i} className="flex flex-col items-center gap-1">
-                    <span className="text-xs font-bold tabular-nums">{f.n}<span className="sr-only"> herhalingen {f.label === 'Vandaag' ? 'vandaag' : `op ${f.label}`}</span></span>
+                    <span className="text-xs font-bold tabular-nums">{f.n}<span className="sr-only"> {i === 0 ? t('herhalingen vandaag') : t('herhalingen op {day}', { day: f.label })}</span></span>
                     <span className="flex h-14 w-full items-end" aria-hidden><span className={`w-full rounded-t-md rounded-b-sm ${i === 0 ? 'bg-accent' : 'bg-(--chart-soft)'}`} style={{ height: `${Math.max(6, (f.n / max) * 100)}%` }} /></span>
                     <span className="text-xs text-muted first-letter:uppercase" aria-hidden>{f.label}</span>
                   </li>
@@ -179,18 +180,18 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
           </div>
         </section>
         <section aria-labelledby="weak-title">
-          <div className="mb-3 flex items-baseline justify-between"><h2 id="weak-title" className="text-lg font-bold lg:text-xl">Zwakste posities</h2><span className="text-sm text-muted">laagste beheersing eerst</span></div>
+          <div className="mb-3 flex items-baseline justify-between"><h2 id="weak-title" className="text-lg font-bold lg:text-xl">{t('Zwakste posities')}</h2><span className="text-sm text-muted">{t('laagste beheersing eerst')}</span></div>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             {weakest.slice(0, 4).map(c => {
               const f = fileMap.get(c.familyIds[0])
               const v = f?.variations.find(x => x.id === c.variationIds[0])
               const score = masteryScore(c)
-              const title = v?.path[v.path.length - 1] ?? f?.family.name ?? 'Positie'
+              const title = v?.path[v.path.length - 1] ?? f?.family.name ?? t('Positie')
               return (
-                <button key={c.id} className="tap flex flex-col gap-3 p-2.5 text-left sm:p-3" onClick={() => startWith([c], true)} aria-label={`Oefen ${title}, beheersing ${score}%`}>
+                <button key={c.id} className="tap flex flex-col gap-3 p-2.5 text-left sm:p-3" onClick={() => startWith([c], true)} aria-label={t('Oefen {title}, beheersing {score}%', { title, score })}>
                   <CropBoard epd={c.epd} uci={c.lineUci} orientation={c.side} inset={4} />
                   <span className="block w-full px-0.5">
-                    <span className="flex items-center justify-between gap-2"><span className="truncate font-bold">{title}</span>{c.lapses > 0 && <span className="shrink-0 rounded-full bg-danger-soft px-2 text-xs font-bold text-danger-ink">{c.lapses}× fout</span>}</span>
+                    <span className="flex items-center justify-between gap-2"><span className="truncate font-bold">{title}</span>{c.lapses > 0 && <span className="shrink-0 rounded-full bg-danger-soft px-2 text-xs font-bold text-danger-ink">{t('{n}× fout', { n: c.lapses })}</span>}</span>
                     <span className="block truncate text-xs text-muted">{f ? `${f.family.name}${v ? ` · ${v.eco}` : ''}` : '…'}</span>
                     <span className="mt-2.5 flex items-center gap-2"><ProgressBar value={score / 100} tone="accent" className="flex-1" /><span className="text-xs font-bold tabular-nums">{score}%</span></span>
                   </span>
@@ -205,29 +206,29 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   if (index >= queue.length) {
     return queue.length ? (
       <div className="card mx-auto max-w-md p-6 text-center animate-pop">
-        <h2 className="mt-2 text-xl font-bold">{extra ? 'Extra oefening klaar' : 'Alle herhalingen gedaan!'}</h2>
-        <p className="mt-1 text-muted">{stats.good} direct goed · {stats.bad} met fouten</p>
+        <h2 className="mt-2 text-xl font-bold">{extra ? t('Extra oefening klaar') : t('Alle herhalingen gedaan!')}</h2>
+        <p className="mt-1 text-muted">{t('{good} direct goed · {bad} met fouten', { good: stats.good, bad: stats.bad })}</p>
         <div className="mt-4 grid gap-2">
-          {dueCount > 0 && <button className="btn btn-primary" onClick={() => { void build(false); setStarted(true) }}>Nog {dueCount} openstaand</button>}
-          <button className="btn btn-ghost" onClick={() => { void build(true); setStarted(true) }}>Oefen je 20 zwakste posities</button>
-          <Link to="/" className="btn btn-ghost">Naar het dashboard</Link>
+          {dueCount > 0 && <button className="btn btn-primary" onClick={() => { void build(false); setStarted(true) }}>{t('Nog {n} openstaand', { n: dueCount })}</button>}
+          <button className="btn btn-ghost" onClick={() => { void build(true); setStarted(true) }}>{t('Oefen je {n} zwakste posities', { n: 20 })}</button>
+          <Link to="/" className="btn btn-ghost">{t('Naar het dashboard')}</Link>
         </div>
       </div>
     ) : (
-      <Empty title="Geen openstaande herhalingen" action={<button className="btn btn-primary" onClick={() => { void build(true); setStarted(true) }}>Oefen toch je zwakste posities</button>}>
-        Posities komen hier terug zodra hun herhaaldatum is bereikt. Leer eerst varianten in de cursus of bij Varianten.
+      <Empty title={t('Geen openstaande herhalingen')} action={<button className="btn btn-primary" onClick={() => { void build(true); setStarted(true) }}>{t('Oefen toch je zwakste posities')}</button>}>
+        {t('Posities komen hier terug zodra hun herhaaldatum is bereikt. Leer eerst varianten in de cursus of bij Varianten.')}
       </Empty>
     )
   }
   const card = queue[index]
   const file = files.get(card.familyIds[0])
   const v = file?.variations.find(x => x.id === card.variationIds[0])
-  const base = cardLine(card, v ? `Vind de zet: ${v.path.join(', ') || file!.family.name}` : 'Vind de zet')
+  const base = cardLine(card, v ? t('Vind de zet: {name}', { name: v.path.join(', ') || file!.family.name }) : t('Vind de zet'))
   // De laatste zetten voor de stelling worden voorgespeeld, zodat je niet zomaar in een losse stelling springt
   const line = { ...base, subtitle: file?.family.name, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
   return (
     <div>
-    <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? 'Zwakste posities' : 'Herhalen'} onClose={() => setStarted(false)} closeLabel="Stoppen, je gaat later verder" />
+    <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? t('Zwakste posities') : t('Herhalen')} onClose={() => setStarted(false)} closeLabel={t('Stoppen, je gaat later verder')} />
     <ReviewPiles todo={queue.length - index - (answered === index ? 1 : 0)} wrong={stats.bad} correct={stats.good} />
     <Trainer
       key={card.id + index}
@@ -246,7 +247,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
         else if (!failed) setTimeout(() => advance(index), AUTO_NEXT_MS)
       }}
       renderEnd={() => (
-        <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(index)}>{index + 1 < queue.length ? 'Volgende positie' : 'Afronden'}</button>
+        <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(index)}>{index + 1 < queue.length ? t('Volgende positie') : t('Afronden')}</button>
       )}
     />
     </div>
@@ -256,20 +257,20 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
 /** Herhalen zonder posities (ontwerp 12g): wat er komt, één knop en in drie stappen hoe het werkt */
 function ReviewEmpty({ filtered }: { filtered?: boolean }) {
   const steps = [
-    { title: 'Leer een variant', text: 'in de dagtraining of de cursus' },
-    { title: 'Na een dag komt hij terug', text: 'precies voor je hem vergeet' },
-    { title: 'Daarna na 3 en 7 dagen', text: 'tot hij vast zit' },
+    { title: t('Leer een variant'), text: t('in de dagtraining of de cursus') },
+    { title: t('Na een dag komt hij terug'), text: t('precies voor je hem vergeet') },
+    { title: t('Daarna na 3 en 7 dagen'), text: t('tot hij vast zit') },
   ]
   return (
     <div className="space-y-4 lg:max-w-xl">
       <section className="card flex flex-col items-center gap-1.5 px-5 py-7 text-center" aria-labelledby="review-empty-title">
         <EmptyKnight size={64} />
-        <h2 id="review-empty-title" className="mt-2 text-lg font-extrabold tracking-[-0.01em]">{filtered ? 'Nog niets van deze opening' : 'Nog niets om te herhalen'}</h2>
-        <p className="max-w-[280px] text-sm leading-snug text-muted">Zodra je een variant hebt geleerd, komt hij hier vanzelf terug.</p>
-        <Link to="/dagelijks" className="btn btn-primary mt-3 w-full"><Sun size={20} aria-hidden />Start de dagtraining</Link>
+        <h2 id="review-empty-title" className="mt-2 text-lg font-extrabold tracking-[-0.01em]">{filtered ? t('Nog niets van deze opening') : t('Nog niets om te herhalen')}</h2>
+        <p className="max-w-[280px] text-sm leading-snug text-muted">{t('Zodra je een variant hebt geleerd, komt hij hier vanzelf terug.')}</p>
+        <Link to="/dagelijks" className="btn btn-primary mt-3 w-full"><Sun size={20} aria-hidden />{t('Start de dagtraining')}</Link>
       </section>
       <section className="card p-4" aria-labelledby="review-how-title">
-        <h2 id="review-how-title" className="text-[15px] font-bold">Zo werkt het</h2>
+        <h2 id="review-how-title" className="text-[15px] font-bold">{t('Zo werkt het')}</h2>
         <ol className="mt-3 divide-y-2 divide-surface-2">
           {steps.map((st, i) => (
             <li key={st.title} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
@@ -292,9 +293,9 @@ const MAX_RETRIES = 2
 /** Drie stapels, zoals bij Lotus: wat nog komt, wat fout ging en wat goed ging */
 function ReviewPiles({ todo, wrong, correct }: { todo: number; wrong: number; correct: number }) {
   const piles = [
-    { label: 'Nog doen', n: todo, tone: 'bg-info-soft text-info-ink' },
-    { label: 'Fout', n: wrong, tone: 'bg-danger-soft text-danger-ink' },
-    { label: 'Correct', n: correct, tone: 'bg-brand-soft text-brand-strong' },
+    { label: t('Nog doen'), n: todo, tone: 'bg-info-soft text-info-ink' },
+    { label: t('Fout'), n: wrong, tone: 'bg-danger-soft text-danger-ink' },
+    { label: t('Correct'), n: correct, tone: 'bg-brand-soft text-brand-strong' },
   ]
   return (
     <dl className="mb-3 grid grid-cols-3 gap-2" aria-live="polite">
@@ -348,7 +349,7 @@ function LineReview({ family, onSession }: { family: string; onSession: (on: boo
     const next = learned[(idx + 1) % Math.max(1, learned.length)]
     return (
       <div>
-        <FocusBar value={Math.max(0, idx) / Math.max(1, learned.length)} count={`${Math.max(0, idx) + 1} / ${learned.length}`} sub="Complete varianten" onClose={() => setCurrent(null)} closeLabel="Terug naar het overzicht" />
+        <FocusBar value={Math.max(0, idx) / Math.max(1, learned.length)} count={`${Math.max(0, idx) + 1} / ${learned.length}`} sub={t('Complete varianten')} onClose={() => setCurrent(null)} closeLabel={t('Terug naar het overzicht')} />
         <Trainer
           key={current.v.id + sessionId}
           line={variationLine(current.file, current.v)}
@@ -358,29 +359,29 @@ function LineReview({ family, onSession }: { family: string; onSession: (on: boo
           autoIntro={false}
           renderEnd={(_r, restart) => (
             <>
-              {next && next.v.id !== current.v.id && <button className="btn btn-primary min-h-12" autoFocus onClick={() => setCurrent({ file: next.file, v: next.v })}>Volgende variant: {next.v.path.join(', ') || next.file.family.name}</button>}
-              <button className="btn btn-ghost min-h-11" onClick={restart}>Nog een keer</button>
-              <button className="btn btn-ghost min-h-11" onClick={() => setCurrent(null)}>Overzicht</button>
+              {next && next.v.id !== current.v.id && <button className="btn btn-primary min-h-12" autoFocus onClick={() => setCurrent({ file: next.file, v: next.v })}>{t('Volgende variant: {name}', { name: next.v.path.join(', ') || next.file.family.name })}</button>}
+              <button className="btn btn-ghost min-h-11" onClick={restart}>{t('Nog een keer')}</button>
+              <button className="btn btn-ghost min-h-11" onClick={() => setCurrent(null)}>{t('Overzicht')}</button>
             </>
           )}
         />
       </div>
     )
   }
-  if (!learned.length) return <Empty title="Nog geen geleerde varianten" action={<Link to="/openingen" className="btn btn-primary">Begin met leren</Link>}>Speel een variant eerst één keer helemaal uit in de cursus of bij Varianten. Daarna kun je hem hier uit je hoofd spelen.</Empty>
+  if (!learned.length) return <Empty title={t('Nog geen geleerde varianten')} action={<Link to="/openingen" className="btn btn-primary">{t('Begin met leren')}</Link>}>{t('Speel een variant eerst één keer helemaal uit in de cursus of bij Varianten. Daarna kun je hem hier uit je hoofd spelen.')}</Empty>
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{learned.length} geleerde varianten · {learned.filter(x => x.due).length} te herhalen</p>
-        <button className="btn btn-primary" onClick={() => setCurrent({ file: learned[0].file, v: learned[0].v })}>Start</button>
+        <p className="text-sm text-muted">{t('{n} geleerde varianten · {m} te herhalen', { n: learned.length, m: learned.filter(x => x.due).length })}</p>
+        <button className="btn btn-primary" onClick={() => setCurrent({ file: learned[0].file, v: learned[0].v })}>{tr('Start', 'Start')}</button>
       </div>
       <ul className="card divide-y divide-line">
         {learned.slice(0, 200).map(x => (
           <li key={x.v.id}>
             <button className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2" onClick={() => setCurrent({ file: x.file, v: x.v })}>
               <span className="min-w-0 flex-1"><span className="block truncate font-medium">{x.v.path.join(', ') || x.file.family.name}</span><span className="text-xs text-muted">{x.file.family.name} · {x.v.eco}</span></span>
-              {x.due && <span className="chip !text-xs !text-accent-ink">herhalen</span>}
-              <span className="w-20"><ProgressBar value={x.score / 100} /><span className="text-xs text-muted">{x.score}% beheersing</span></span>
+              {x.due && <span className="chip !text-xs !text-accent-ink">{t('herhalen')}</span>}
+              <span className="w-20"><ProgressBar value={x.score / 100} /><span className="text-xs text-muted">{t('{n}% beheersing', { n: x.score })}</span></span>
             </button>
           </li>
         ))}

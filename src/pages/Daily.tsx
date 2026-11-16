@@ -3,16 +3,20 @@ import { Link, useNavigate } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChartColumn, Check, Flame, Sun } from 'lucide-react'
 import { buildDailyPlan, estimateMinutes, planBreakdown, type DailyItem } from '../lib/daily'
-import { loadFamily } from '../lib/data'
+import { displayName, loadFamily } from '../lib/data'
 import { db, saveSettings, today } from '../lib/db'
 import { endSession, markDailyComplete, startSession, checkBadges, streak } from '../lib/progress'
 import { Trainer, type LineResult } from '../components/Trainer'
 import { PuzzleTrainer } from '../components/PuzzleTrainer'
 import { CropBoard } from '../components/CropBoard'
 import { epdOf } from '../lib/chess'
-import { BadgesEarned, Confetti, Empty, FocusBar, Spinner, plural, useSettings, useTrainingFocus } from '../components/ui'
+import { BadgesEarned, Confetti, Empty, FocusBar, Spinner, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile } from '../lib/types'
 import { BADGES, type BadgeDef } from '../lib/gamification'
+import { locale, t, tn, tr } from '../lib/i18n'
+
+/** Titel van een variant in de huidige taal (een bewaarde dagroute kan nog in de andere taal zijn opgeslagen) */
+const lineTitle = (i: Extract<DailyItem, { kind: 'new' | 'hard' }>) => displayName(i.variation, i.line.subtitle?.split(' · ')[0])
 
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
 
@@ -27,7 +31,7 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
   const resuming = resume
   if (completed) done = plan.length
   const minutes = estimateMinutes(plan.slice(done))
-  const date = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
+  const date = new Date().toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
   // Per halte: afgerond, bezig of nog te doen (het plan staat op volgorde van soort)
   const stateOf = (kind: DailyItem['kind']) => {
     const first = plan.findIndex(i => i.kind === kind)
@@ -35,12 +39,12 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
     return last < done ? 'done' : resuming && first <= done ? 'current' : 'todo'
   }
   // Het dagdoel stel je in bij Instellingen; hier alleen een verwijzing, zodat starten één tik is
-  const goalNote = minutesGoal && !resuming && <span className="text-sm text-muted">Dagdoel: {minutesGoal} min · <Link to="/instellingen" className="inline-flex min-h-11 items-center underline">Aanpassen</Link></span>
-  const label = resuming ? 'Ga verder' : 'Start de route'
+  const goalNote = minutesGoal && !resuming && <span className="text-sm text-muted">{t('Dagdoel: {n} min', { n: minutesGoal })} · <Link to="/instellingen" className="inline-flex min-h-11 items-center underline">{t('Aanpassen')}</Link></span>
+  const label = resuming ? t('Ga verder') : t('Start de route')
   const buttons = (cls: string) => completed ? (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
-      <Link to="/statistieken" className="btn btn-primary min-h-13 px-7 text-base"><ChartColumn size={20} aria-hidden />Bekijk je voortgang</Link>
-      <button className="btn btn-ghost min-h-12" onClick={completed.onAgain}>Nog een ronde</button>
+      <Link to="/statistieken" className="btn btn-primary min-h-13 px-7 text-base"><ChartColumn size={20} aria-hidden />{t('Bekijk je voortgang')}</Link>
+      <button className="btn btn-ghost min-h-12" onClick={completed.onAgain}>{t('Nog een ronde')}</button>
     </div>
   ) : (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
@@ -48,28 +52,32 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
     </div>
   )
   // Resultaat in één regel: alleen wat je echt gedaan hebt
-  const t = completed?.totals
-  const result = t ? [
-    t.correct && plural(t.correct, 'goede zet', 'goede zetten'),
-    t.mistakes && plural(t.mistakes, 'fout', 'fouten'),
-    t.newPositions && plural(t.newPositions, 'nieuwe positie', 'nieuwe posities'),
-    t.reviews && plural(t.reviews, 'herhaling', 'herhalingen'),
-    t.xp > 0 && `+${t.xp} XP`,
+  const tot = completed?.totals
+  const result = tot ? [
+    tot.correct && tn(tot.correct, '{n} goede zet', '{n} goede zetten'),
+    tot.mistakes && tn(tot.mistakes, '{n} fout', '{n} fouten'),
+    tot.newPositions && tn(tot.newPositions, '{n} nieuwe positie', '{n} nieuwe posities'),
+    // Eigen Engelse tekst: '{n} herhalingen' betekent elders "te herhalen" (reviews due)
+    tot.reviews && tr(tn(tot.reviews, '{n} herhaling', '{n} herhalingen'), tot.reviews === 1 ? '1 review' : `${tot.reviews} reviews`),
+    tot.xp > 0 && `+${tot.xp} XP`,
   ].filter(Boolean).join(' · ') : ''
   return (
     <div className="space-y-5 lg:space-y-7">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-sm font-semibold text-accent-ink">Dagtraining · {resuming ? `${done} van ${plural(plan.length, 'onderdeel', 'onderdelen')} gedaan` : date}</div>
-          <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{completed ? 'Klaar voor vandaag' : resuming ? `Nog ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}` : `${minutes} minuten, ${plural(steps.length, 'stap', 'stappen')}`}</h1>
+          <div className="text-sm font-semibold text-accent-ink">{t('Dagtraining')} · {resuming ? tn(plan.length, '{done} van {n} onderdeel gedaan', '{done} van {n} onderdelen gedaan', { done }) : date}</div>
+          <h1 className="mt-1 text-3xl font-extrabold leading-none tracking-tight lg:text-[2.75rem]">{completed ? t('Klaar voor vandaag') : resuming ? tn(minutes, 'Nog {n} minuut', 'Nog {n} minuten') : tn(steps.length, '{m} minuten, {n} stap', '{m} minuten, {n} stappen', { m: minutes })}</h1>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? `${plural(streakDays, 'dag', 'dagen')} op rij` : 'Begin vandaag een reeks'}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold"><Flame size={15} aria-hidden className="text-star" />{streakDays ? tn(streakDays, '{n} dag op rij', '{n} dagen op rij') : t('Begin vandaag een reeks')}</span>
       </header>
 
       {completed && (
-        <section className="card flex flex-col gap-3 p-4 lg:p-5" aria-label="Resultaat van vandaag">
-          <p className="flex items-start gap-2.5 font-semibold"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand" aria-hidden><Check size={16} strokeWidth={3} /></span><span className="pt-0.5">{result || 'Route afgerond'}</span></p>
-          <p className="text-sm text-muted">{completed.dueTomorrow ? <>Morgen staan er <b className="text-ink">{plural(completed.dueTomorrow, 'positie', 'posities')}</b> klaar om te herhalen.</> : 'Morgen leer je weer nieuwe varianten.'}</p>
+        <section className="card flex flex-col gap-3 p-4 lg:p-5" aria-label={t('Resultaat van vandaag')}>
+          <p className="flex items-start gap-2.5 font-semibold"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand" aria-hidden><Check size={16} strokeWidth={3} /></span><span className="pt-0.5">{result || t('Route afgerond')}</span></p>
+          <p className="text-sm text-muted">{completed.dueTomorrow ? tr(
+            <>Morgen staan er <b className="text-ink">{tn(completed.dueTomorrow, '{n} positie', '{n} posities')}</b> klaar om te herhalen.</>,
+            <>Tomorrow <b className="text-ink">{tn(completed.dueTomorrow, '{n} positie', '{n} posities')}</b> {completed.dueTomorrow === 1 ? 'is' : 'are'} ready to review.</>,
+          ) : t('Morgen leer je weer nieuwe varianten.')}</p>
           <BadgesEarned badges={completed.badges} />
         </section>
       )}
@@ -84,14 +92,14 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
               {!last && <span className="absolute bottom-0 left-4 top-10 -translate-x-1/2 border-l-[3px] border-dotted border-accent lg:hidden" aria-hidden />}
               <div className="flex flex-col items-center lg:flex-row">
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold lg:h-9 lg:w-9 ${s.soft} ${state === 'current' ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg' : ''}`}>
-                  {state === 'done' ? <><Check size={16} strokeWidth={3} aria-hidden /><span className="sr-only">Afgerond</span></> : <span aria-hidden>{i + 1}</span>}
+                  {state === 'done' ? <><Check size={16} strokeWidth={3} aria-hidden /><span className="sr-only">{t('Afgerond')}</span></> : <span aria-hidden>{i + 1}</span>}
                 </span>
                 {!last && <span className="hidden flex-1 border-t-[3px] border-dotted border-accent lg:-mr-5 lg:ml-2.5 lg:block" aria-hidden />}
               </div>
               <div className={`card mb-3 flex items-center gap-3 p-2.5 lg:mb-0 lg:flex-col lg:items-stretch lg:p-3 ${state === 'current' ? 'border-accent' : ''}`}>
                 <div className="w-21 shrink-0 lg:w-full">{s.board}</div>
                 <div className="min-w-0 lg:px-0.5">
-                  <div className="flex items-baseline gap-2 lg:justify-between"><span className={`text-xs font-bold uppercase tracking-wide ${s.color}`}>{s.label}</span><span className="text-xs text-muted">{state === 'done' ? 'klaar' : state === 'current' ? 'hier ben je' : `≈ ${s.min} min`}</span></div>
+                  <div className="flex items-baseline gap-2 lg:justify-between"><span className={`text-xs font-bold uppercase tracking-wide ${s.color}`}>{t(s.label)}</span><span className="text-xs text-muted">{state === 'done' ? t('klaar') : state === 'current' ? t('hier ben je') : `≈ ${s.min} min`}</span></div>
                   <div className="mt-0.5 line-clamp-2 font-bold leading-snug lg:mt-1 lg:text-base">{s.title}</div>
                   <div className="text-sm text-muted">{s.detail}</div>
                 </div>
@@ -104,7 +112,7 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
       {/* Desktop: keuze en start in één balk */}
       <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
         <div className="flex flex-wrap items-center gap-4">
-          <span className="font-bold">{completed ? (streakDays ? `Je streak staat op ${plural(streakDays, 'dag', 'dagen')}. Tot morgen!` : 'Tot morgen!') : resuming ? 'Je gaat verder waar je was.' : 'Stoppen kan altijd, je gaat later verder.'}</span>
+          <span className="font-bold">{completed ? (streakDays ? tn(streakDays, 'Je streak staat op {n} dag. Tot morgen!', 'Je streak staat op {n} dagen. Tot morgen!') : t('Tot morgen!')) : resuming ? t('Je gaat verder waar je was.') : t('Stoppen kan altijd, je gaat later verder.')}</span>
           {goalNote}
         </div>
         {buttons('')}
@@ -137,16 +145,16 @@ function routeSteps(plan: DailyItem[], parts: ReturnType<typeof planBreakdown>) 
     let detail = ''
     let board: React.ReactNode = null
     if (first.kind === 'review') {
-      title = plural(n, 'positie', 'posities')
-      detail = 'eerdere fouten eerst'
+      title = tn(n, '{n} positie', '{n} posities')
+      detail = t('eerdere fouten eerst')
       board = <CropBoard epd={first.card.epd} uci={first.card.lineUci} orientation={first.card.side} inset={4} coordsFrom="lg" />
     } else if (first.kind === 'puzzle') {
-      title = first.puzzle.variation ?? 'Openingspuzzel'
-      detail = n > 1 ? `${n} tactische kansen op jouw niveau` : 'tactische kans op jouw niveau'
+      title = first.puzzle.variation ?? t('Openingspuzzel')
+      detail = n > 1 ? t('{n} tactische kansen op jouw niveau', { n }) : t('tactische kans op jouw niveau')
       board = <CropBoard epd={epdOf(first.puzzle.fen)} uci={first.puzzle.uci.slice(0, 1)} orientation={first.puzzle.fen.split(' ')[1] === 'w' ? 'black' : 'white'} inset={4} coordsFrom="lg" />
     } else {
-      title = n > 1 ? `${first.line.title} + ${n - 1} meer` : first.line.title
-      detail = kind === 'new' ? 'leren en direct zelf spelen' : 'opnieuw, je ging eerder fout'
+      title = n > 1 ? t('{title} + {n} meer', { title: lineTitle(first), n: n - 1 }) : lineTitle(first)
+      detail = kind === 'new' ? t('leren en direct zelf spelen') : t('opnieuw, je ging eerder fout')
       board = <CropBoard epd={first.variation.epd} uci={first.variation.uci} orientation={first.line.side} inset={4} coordsFrom="lg" />
     }
     return { kind, ...STEP_STYLE[kind], title, detail, min, board }
@@ -276,7 +284,7 @@ export function Daily() {
     return <DailyRoute plan={saved.plan} done={saved.index} resume streakDays={st.current} onStart={resume} />
   }
 
-  if (!settings || !plan) return <Spinner label="Dagtraining samenstellen…" />
+  if (!settings || !plan) return <Spinner label={t('Dagtraining samenstellen…')} />
 
   if (summary) {
     return (
@@ -288,7 +296,7 @@ export function Daily() {
   }
 
   if (!plan.length) {
-    return <Empty title="Niets te doen vandaag" action={<Link to="/openingen" className="btn btn-primary">Kies openingen</Link>}>Alle varianten van je gekozen openingen zijn geleerd en er zijn geen herhalingen. Kies extra openingen of herhaal wat je al kent bij Herhalen.</Empty>
+    return <Empty title={t('Niets te doen vandaag')} action={<Link to="/openingen" className="btn btn-primary">{t('Kies openingen')}</Link>}>{t('Alle varianten van je gekozen openingen zijn geleerd en er zijn geen herhalingen. Kies extra openingen of herhaal wat je al kent bij Herhalen.')}</Empty>
   }
 
   if (!started) {
@@ -300,23 +308,23 @@ export function Daily() {
     <FocusBar
       value={index / plan.length}
       count={`${index + 1} / ${plan.length}`}
-      sub={`${KIND_LABEL[item.kind]}${item.kind === 'new' ? (item.mode === 'learn' ? ' · leren' : ' · zelf spelen') : ''}`}
+      sub={`${t(KIND_LABEL[item.kind])}${item.kind === 'new' ? ` · ${item.mode === 'learn' ? t('leren') : t('zelf spelen')}` : ''}`}
       onClose={pause}
-      closeLabel="Pauzeren, je gaat later verder waar je was"
+      closeLabel={t('Pauzeren, je gaat later verder waar je was')}
     />
   )
-  if (index >= plan.length) return <Spinner label="Afronden…" />
+  if (index >= plan.length) return <Spinner label={t('Afronden…')} />
 
   if (item.kind === 'puzzle') {
     return (
       <div>
         {header}
-        <PuzzleTrainer key={item.puzzle.id + index} puzzle={item.puzzle} familyId={item.familyId} nextLabel="Verder" onDone={r => { totals.current.puzzles++; if (r.solved) totals.current.correct++; else totals.current.mistakes += r.mistakes }} onNext={() => advance()} />
+        <PuzzleTrainer key={item.puzzle.id + index} puzzle={item.puzzle} familyId={item.familyId} nextLabel={t('Verder')} onDone={r => { totals.current.puzzles++; if (r.solved) totals.current.correct++; else totals.current.mistakes += r.mistakes }} onNext={() => advance()} />
       </div>
     )
   }
   const file = item.kind === 'review' ? files.get(item.card.familyIds[0]) : files.get(item.familyId)
-  const line = item.kind === 'review' ? { ...item.line, title: 'Vind de zet', subtitle: file?.family.name } : item.line
+  const line = item.kind === 'review' ? { ...item.line, title: t('Vind de zet'), subtitle: file?.family.name } : { ...item.line, title: lineTitle(item) }
   const mode = item.kind === 'review' ? 'review' : item.mode
   return (
     <div>
@@ -329,7 +337,7 @@ export function Daily() {
       sessionId={sessionId}
       autoIntro={mode === 'learn'}
       renderEnd={r => (
-        <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(r, item)}>{mode === 'learn' ? 'Nu zelf spelen' : index + 1 < plan.length ? 'Verder' : 'Training afronden'}</button>
+        <button className="btn btn-primary min-h-12" autoFocus onClick={() => advance(r, item)}>{mode === 'learn' ? t('Nu zelf spelen') : index + 1 < plan.length ? t('Verder') : t('Training afronden')}</button>
       )}
     />
     </div>

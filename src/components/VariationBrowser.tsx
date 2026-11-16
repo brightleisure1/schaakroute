@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ChevronRight, Search } from 'lucide-react'
 import type { FamilyFile, Variation } from '../lib/types'
 import type { TrainingCard, VariationProgress } from '../lib/db'
+import { t, tr } from '../lib/i18n'
 import { ThickBar, PILL_HIT, ROW_DIVIDE, ROW_LIST, VariationRow, rowMetaMap, type RowMeta } from './OpeningScreens'
 
 export type VariationFilter = 'all' | 'popular' | 'main' | 'side' | 'gambit' | 'tactical' | 'rare' | 'sub' | 'new' | 'hard' | 'mastered'
@@ -38,6 +39,9 @@ const CHOICE_LABEL: Record<Choice, string> = { ...FILTER_LABEL, tree: 'Boom', ne
 const ALWAYS = new Set<Choice>(['popular', 'tree', 'new', 'hard'])
 
 const PAGE = 20
+
+/** "12 varianten"; in het Nederlands altijd meervoud (zoals het was), in het Engels "1 variation" */
+const nVariations = (n: number) => tr(`${n} varianten`, n === 1 ? '1 variation' : `${n} variations`)
 
 export function VariationBrowser({ file, progress, cards, initialFilter = 'all' }: Props) {
   const [choice, setChoice] = useState<Choice>(initialFilter === 'popular' ? 'popular' : initialFilter === 'all' ? 'tree' : initialFilter)
@@ -76,24 +80,24 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all' 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <label className="flex min-h-[3.125rem] items-center gap-2.5 rounded-[14px] border-2 border-line bg-surface px-3.5 focus-within:border-brand lg:w-md lg:shrink-0">
           <Search size={18} aria-hidden className="shrink-0 text-muted" />
-          <span className="sr-only">Zoek in {file.variations.length} varianten</span>
+          <span className="sr-only">{t('Zoek in {n} varianten', { n: file.variations.length })}</span>
           <input
             className="min-h-11 min-w-0 flex-1 bg-transparent text-base outline-none!"
             type="search"
-            placeholder="Zoek op naam, ECO of zetten"
+            placeholder={t('Zoek op naam, ECO of zetten')}
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
         </label>
         {/* Telefoon: één rij die horizontaal scrolt; desktop: chips lopen door op de volgende regel */}
-        <div role="group" aria-label="Weergave en filter" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 scrollbar-thin sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
+        <div role="group" aria-label={t('Weergave en filter')} className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 scrollbar-thin sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
           {shown.map(c => {
             const on = c === choice
             const n = counts.get(c) ?? 0
             return (
               <button key={c} type="button" aria-pressed={on} onClick={() => setChoice(c)} className={`pill ${on ? 'pill-on' : ''} ${PILL_HIT}`}>
-                {CHOICE_LABEL[c]}
-                {c !== 'popular' && c !== 'tree' && <span className={`text-xs font-semibold tabular-nums ${on ? '' : 'text-muted'}`}><span className="sr-only">(</span>{n}<span className="sr-only"> varianten)</span></span>}
+                {t(CHOICE_LABEL[c])}
+                {c !== 'popular' && c !== 'tree' && <span className={`text-xs font-semibold tabular-nums ${on ? '' : 'text-muted'}`}><span className="sr-only">(</span>{n}<span className="sr-only"> {t('varianten')})</span></span>}
               </button>
             )
           })}
@@ -101,20 +105,20 @@ export function VariationBrowser({ file, progress, cards, initialFilter = 'all' 
       </div>
 
       <div className="flex min-h-11 items-center justify-between gap-3">
-        <p className="text-sm text-muted" aria-live="polite">{sorted.length === file.variations.length ? `${sorted.length} varianten` : `${sorted.length} van ${file.variations.length} varianten`}{choice === 'tree' && q ? ' · zoekresultaten als lijst' : ''}</p>
-        {(filtered || q) && <button type="button" className="btn btn-quiet min-h-11 shrink-0 text-sm" onClick={() => { setChoice('popular'); setQuery('') }}>Wis filter</button>}
+        <p className="text-sm text-muted" aria-live="polite">{sorted.length === file.variations.length ? nVariations(sorted.length) : t('{n} van {total} varianten', { n: sorted.length, total: file.variations.length })}{choice === 'tree' && q ? ` · ${t('zoekresultaten als lijst')}` : ''}</p>
+        {(filtered || q) && <button type="button" className="btn btn-quiet min-h-11 shrink-0 text-sm" onClick={() => { setChoice('popular'); setQuery('') }}>{t('Wis filter')}</button>}
       </div>
 
       {sorted.length === 0 ? (
-        <div className="rounded-[18px] border-2 border-line bg-surface p-6 text-center text-sm text-muted">Geen varianten gevonden voor dit filter.</div>
+        <div className="rounded-[18px] border-2 border-line bg-surface p-6 text-center text-sm text-muted">{t('Geen varianten gevonden voor dit filter.')}</div>
       ) : flat ? (
         <ul className={`${ROW_LIST} ${ROW_DIVIDE}`}>
           {sorted.slice(0, limit).map((v, i) => <VariationRow key={v.id} v={v} file={file} status={meta.get(v.id)!.status} shareSuffix={i === 0} />)}
           {sorted.length > limit && (
             <li className="flex flex-wrap items-center gap-2 p-3">
-              <button type="button" className="btn btn-ghost min-h-11" onClick={() => setLimit(l => l + PAGE)}>Toon {Math.min(PAGE, sorted.length - limit)} meer</button>
-              {sorted.length - limit > PAGE && <button type="button" className="btn btn-quiet min-h-11" onClick={() => setLimit(sorted.length)}>Toon alle {sorted.length}</button>}
-              <span className="ml-auto text-sm text-muted">{limit} van {sorted.length}</span>
+              <button type="button" className="btn btn-ghost min-h-11" onClick={() => setLimit(l => l + PAGE)}>{t('Toon {n} meer', { n: Math.min(PAGE, sorted.length - limit) })}</button>
+              {sorted.length - limit > PAGE && <button type="button" className="btn btn-quiet min-h-11" onClick={() => setLimit(sorted.length)}>{t('Toon alle {n}', { n: sorted.length })}</button>}
+              <span className="ml-auto text-sm text-muted">{t('{n} van {m}', { n: limit, m: sorted.length })}</span>
             </li>
           )}
         </ul>
@@ -195,14 +199,14 @@ function Group({ node, file, meta, depth }: { node: TreeNode; file: FamilyFile; 
     <li>
       <button type="button" className="flex min-h-14 w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2 focus-visible:-outline-offset-2! lg:px-4.5" onClick={() => setOpen(o => !o)} aria-expanded={open}>
         <ChevronRight size={18} aria-hidden className={`shrink-0 text-muted transition ${open ? 'rotate-90' : ''}`} />
-        <span className="min-w-0 flex-1"><span className="line-clamp-2 block font-bold leading-snug lg:truncate">{node.name}</span><span className="block text-sm text-muted">{node.total} varianten</span></span>
-        <span className="flex w-20 shrink-0 items-center gap-2 sm:w-28 lg:w-40"><ThickBar value={learned / node.total} label={`${node.name}: ${learned} van ${node.total} geleerd`} className="flex-1" /><span className="w-10 text-right text-xs font-semibold tabular-nums text-muted">{learned}/{node.total}</span></span>
+        <span className="min-w-0 flex-1"><span className="line-clamp-2 block font-bold leading-snug lg:truncate">{node.name}</span><span className="block text-sm text-muted">{nVariations(node.total)}</span></span>
+        <span className="flex w-20 shrink-0 items-center gap-2 sm:w-28 lg:w-40"><ThickBar value={learned / node.total} label={t('{name}: {learned} van {total} geleerd', { name: node.name, learned, total: node.total })} className="flex-1" /><span className="w-10 text-right text-xs font-semibold tabular-nums text-muted">{learned}/{node.total}</span></span>
       </button>
       {open && (
         <div className="pb-1">
           {node.variations.length > 0 && (
             <ul style={{ marginLeft: 14 }} className="border-l-2 border-surface-2">
-              {node.variations.map(v => <VariationRow key={v.id} v={v} file={file} status={meta.get(v.id)!.status} label={v.lineNo ? `${node.name} (lijn ${v.lineNo})` : 'Hoofdlijn'} />)}
+              {node.variations.map(v => <VariationRow key={v.id} v={v} file={file} status={meta.get(v.id)!.status} label={v.lineNo ? t('{name} (lijn {n})', { name: node.name, n: v.lineNo }) : t('Hoofdlijn')} />)}
             </ul>
           )}
           <Branch node={node} file={file} meta={meta} depth={depth + 1} />

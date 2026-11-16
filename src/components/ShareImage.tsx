@@ -6,6 +6,7 @@ import { defaultPieces } from 'react-chessboard'
 import { MoveClassIcon } from './MoveClassIcon'
 import { CLASS_INFO, type MoveClass } from '../lib/review'
 import type { Side } from '../lib/types'
+import { t } from '../lib/i18n'
 
 // Deelplaatje van één zet (1200×630, het formaat dat chat-apps en sociale media goed tonen):
 // links het bord na de zet met het oordeel op het veld, rechts een kaart met speler, zet en oordeel.
@@ -15,9 +16,12 @@ const W = 1200
 const H = 630
 const BOARD = 630
 
-export const SHARE_TITLE: Record<MoveClass, string> = {
-  brilliant: 'Briljante zet!!', great: 'Geweldige zet!', best: 'Beste zet', excellent: 'Uitstekende zet', good: 'Goede zet',
-  book: 'Theoriezet', inaccuracy: 'Onnauwkeurig', mistake: 'Fout', miss: 'Gemiste kans', blunder: 'Blunder',
+// Getters, zodat de titel in de gekozen taal komt (t() bij gebruik, niet bij het laden)
+export const SHARE_TITLE: Readonly<Record<MoveClass, string>> = {
+  get brilliant() { return t('Briljante zet!!') }, get great() { return t('Geweldige zet!') }, get best() { return t('Beste zet') },
+  get excellent() { return t('Uitstekende zet') }, get good() { return t('Goede zet') }, get book() { return t('Theoriezet') },
+  get inaccuracy() { return CLASS_INFO.inaccuracy.label }, get mistake() { return CLASS_INFO.mistake.label }, get miss() { return t('Gemiste kans') },
+  get blunder() { return CLASS_INFO.blunder.label },
 }
 
 /** Rendert React-SVG's (stukken, icoontjes) naar losse SVG-teksten die een canvas kan tekenen */
@@ -149,10 +153,10 @@ export async function renderShareImage(o: ShareImageInput): Promise<Blob> {
     }
   }
   // Oordeel op het doelveld, rechtsboven, binnen het bord gehouden
-  const t = pos(o.to)
+  const tp = pos(o.to)
   const badge = 52
-  const bx = Math.min(BOARD - badge - 2, Math.max(2, t.x + sq - badge * 0.7))
-  const by = Math.min(BOARD - badge - 2, Math.max(2, t.y - badge * 0.3))
+  const bx = Math.min(BOARD - badge - 2, Math.max(2, tp.x + sq - badge * 0.7))
+  const by = Math.min(BOARD - badge - 2, Math.max(2, tp.y - badge * 0.3))
   ctx.save()
   ctx.shadowColor = 'rgba(0,0,0,0.35)'
   ctx.shadowBlur = 8
@@ -241,5 +245,5 @@ export async function renderShareImage(o: ShareImageInput): Promise<Blob> {
   ctx.font = '500 18px "Inter Variable", Inter, system-ui, sans-serif'
   ctx.fillText(location.host, px + pw / 2, brandY + 46)
 
-  return new Promise((resolve, reject) => canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Plaatje maken lukte niet'))), 'image/png'))
+  return new Promise((resolve, reject) => canvas.toBlob(b => (b ? resolve(b) : reject(new Error(t('Plaatje maken lukte niet')))), 'image/png'))
 }

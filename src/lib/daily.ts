@@ -2,6 +2,7 @@ import { db, type TrainingCard, type UserSettings, type VariationProgress } from
 import { displayName, loadFamily, loadManifest, loadPuzzles } from './data'
 import { learnLessons } from './course'
 import type { FamilyFile, Puzzle, TrainingLine, TrainMode, Variation } from './types'
+import { t } from './i18n'
 
 // Stelt één doorlopende dagelijkse training samen binnen het gekozen aantal minuten:
 // herhalingen (eerdere fouten eerst), nieuwe varianten (leren + direct oefenen), moeilijke varianten
@@ -27,7 +28,7 @@ export function variationLine(file: FamilyFile, v: Variation): TrainingLine {
   }
 }
 
-export function cardLine(card: TrainingCard, title = 'Herhaling'): TrainingLine {
+export function cardLine(card: TrainingCard, title = t('Herhaling')): TrainingLine {
   return {
     key: `card:${card.id}`,
     familyId: card.familyIds[0],

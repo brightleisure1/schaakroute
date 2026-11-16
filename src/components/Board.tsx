@@ -3,6 +3,7 @@ import { Chessboard, defaultPieces, type Arrow } from 'react-chessboard'
 import { Chess, type Square } from 'chess.js'
 import { needsPromotion } from '../lib/chess'
 import type { Side } from '../lib/types'
+import { t } from '../lib/i18n'
 
 export interface BoardProps {
   fen: string
@@ -44,9 +45,9 @@ export function describePosition(fen: string): string {
     const pieces = c.board().flat().filter(p => p && p.color === color) as { type: string; square: string }[]
     const order = ['k', 'q', 'r', 'b', 'n', 'p']
     pieces.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))
-    return pieces.map(p => `${PIECE_NAME[p.type]} ${p.square}`).join(', ')
+    return pieces.map(p => `${t(PIECE_NAME[p.type])} ${p.square}`).join(', ')
   }
-  return `Wit: ${side('w')}. Zwart: ${side('b')}. ${c.turn() === 'w' ? 'Wit' : 'Zwart'} aan zet.`
+  return t('Wit: {white}. Zwart: {black}. {side} aan zet.', { white: side('w'), black: side('b'), side: c.turn() === 'w' ? t('Wit') : t('Zwart') })
 }
 
 export function Board({ fen, orientation, movable, onMove, lastMove, arrows = [], hintSquare, flash, wrongSquare, ringSquare, id = 'board', animationMs = 220, showNotation = true, label }: BoardProps) {
@@ -150,8 +151,8 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
   }
 
   return (
-    <div className="relative w-full select-none" style={{ touchAction: 'none' }} role="group" aria-label={label ?? 'Schaakbord'}>
-      <p className="sr-only" aria-live="off">{describePosition(fen)}{lastMove ? ` Laatste zet van ${lastMove[0]} naar ${lastMove[1]}.` : ''}</p>
+    <div className="relative w-full select-none" style={{ touchAction: 'none' }} role="group" aria-label={label ?? t('Schaakbord')}>
+      <p className="sr-only" aria-live="off">{describePosition(fen)}{lastMove ? ' ' + t('Laatste zet van {from} naar {to}.', { from: lastMove[0], to: lastMove[1] }) : ''}</p>
       <div ref={wrapRef} aria-hidden="true">
       <Chessboard
         options={{
@@ -180,14 +181,14 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
       </div>
       {promo && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/35" onClick={() => setPromo(null)}>
-          <div className="card flex gap-2 p-3 shadow-xl animate-pop" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setPromo(null) }} role="dialog" aria-modal="true" aria-label="Kies promotiestuk">
+          <div className="card flex gap-2 p-3 shadow-xl animate-pop" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setPromo(null) }} role="dialog" aria-modal="true" aria-label={t('Kies promotiestuk')}>
             {PROMO.map(p => (
               <button
                 key={p}
                 className="btn btn-ghost h-16 w-16 text-4xl"
                 autoFocus={p === 'q'}
-                title={PROMO_NAME[p]}
-                aria-label={`Promoveer tot ${PROMO_NAME[p]}`}
+                title={t(PROMO_NAME[p])}
+                aria-label={t('Promoveer tot {piece}', { piece: t(PROMO_NAME[p]) })}
                 onClick={() => {
                   const { from, to } = promo
                   setPromo(null)

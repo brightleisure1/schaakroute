@@ -3,10 +3,11 @@ import { Chess } from 'chess.js'
 import { analyse, formatEval, whiteCp, type Analysis } from '../lib/engine'
 import { parseUci } from '../lib/chess'
 import { Cpu } from 'lucide-react'
+import { t } from '../lib/i18n'
 import { useSettings } from './ui'
 
 /** Optionele lokale Stockfish-evaluatie. Verschijnt alleen als de engine in de instellingen aan staat. */
-export function EvalButton({ fen, label = 'Stockfish-evaluatie', multipv = 1 }: { fen: string; label?: string; multipv?: number }) {
+export function EvalButton({ fen, label = t('Stockfish-evaluatie'), multipv = 1 }: { fen: string; label?: string; multipv?: number }) {
   const settings = useSettings()
   const [state, setState] = useState<{ loading: boolean; a?: Analysis | null }>({ loading: false })
   useEffect(() => { setState({ loading: false }) }, [fen])
@@ -17,11 +18,11 @@ export function EvalButton({ fen, label = 'Stockfish-evaluatie', multipv = 1 }: 
     setState({ loading: false, a })
   }
   if (!state.a && !state.loading) return <button className="btn btn-ghost min-h-11 w-full text-sm" onClick={run}><Cpu size={16} aria-hidden />{label}</button>
-  if (state.loading) return <div className="text-sm text-muted">Stockfish rekent (lokaal)…</div>
-  if (!state.a) return <div className="text-sm text-muted">Stockfish kon niet laden. De training werkt gewoon verder zonder engine.</div>
+  if (state.loading) return <div className="text-sm text-muted">{t('Stockfish rekent (lokaal)…')}</div>
+  if (!state.a) return <div className="text-sm text-muted">{t('Stockfish kon niet laden. De training werkt gewoon verder zonder engine.')}</div>
   return (
     <div className="rounded-xl bg-surface-2 p-3 text-sm">
-      <div className="text-xs text-muted">Stockfish · diepte {state.a.lines[0]?.depth} · vanuit wit</div>
+      <div className="text-xs text-muted">{t('Stockfish · diepte {d} · vanuit wit', { d: state.a.lines[0]?.depth ?? '' })}</div>
       {state.a.lines.map(l => (
         <div key={l.multipv} className="mt-1 flex gap-2 font-mono">
           <b className="w-12 shrink-0">{formatEval(whiteCp(l, fen))}</b>
