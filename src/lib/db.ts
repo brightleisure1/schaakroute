@@ -174,6 +174,8 @@ export interface GameReviewRecord {
   rating?: { white: number | null; black: number | null }
   /** Aantal blunders van wit en zwart (voor de partijlijst) */
   blunders?: { white: number; black: number }
+  /** Aantal briljante zetten van wit en zwart (voor de teller op de partijlijst, zonder alles opnieuw te beoordelen) */
+  brilliants?: { white: number; black: number }
   /** Zoveel eigen fouten uit deze partij zijn automatisch in Herhalen gezet (gezet = niet nog eens doen) */
   mistakesAdded?: number
 }

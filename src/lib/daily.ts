@@ -60,6 +60,8 @@ export async function chosenFamilies(settings: UserSettings): Promise<FamilyFile
 
 /** Hoe lang de dagtraining ongeveer duurt */
 export const DAILY_SECONDS = 10 * 60
+/** Zoveel herhalingen passen hooguit in één dagtraining (45% van de tijd) */
+export const DAILY_REVIEWS = Math.floor((DAILY_SECONDS * 0.45) / COST.review)
 
 export async function buildDailyPlan(settings: UserSettings): Promise<DailyItem[]> {
   // Vaste lengte van de dagtraining (ongeveer 10 minuten); het instelbare dagdoel is weg

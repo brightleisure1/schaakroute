@@ -73,8 +73,13 @@ export function GameReviewList() {
   const [editing, setEditing] = useState(false)
   const reasonId = useId()
   const names = useAsync(() => loadNames(), [])
-  const brilliants = useHighlights()?.filter(h => h.kind === 'brilliant').length ?? 0
   const saved = useLiveQuery(() => db.reviews.orderBy('savedAt').reverse().toArray(), [], [] as GameReviewRecord[])
+  // Teller van je briljante zetten uit de opgeslagen aantallen: niet elke partij opnieuw beoordelen (dat maakte de pagina traag)
+  const brilliants = useMemo(() => {
+    const mine = [settings?.lichessUser, settings?.chesscomUser].filter((n): n is string => !!n)
+    return saved.reduce((n, r) => n + (isAnalysed(r) && isOwnGame(r.game, mine, r.shared) ? r.brilliants?.[r.game.myColor] ?? 0 : 0), 0)
+  }, [saved, settings?.lichessUser, settings?.chesscomUser])
+  useBackfillCounts(saved, names.data)
   const savedById = useMemo(() => new Map(saved.map(r => [r.id, r])), [saved])
 
   const stored = source === 'lichess' ? settings?.lichessUser : settings?.chesscomUser
@@ -593,10 +598,11 @@ function useReview(record: GameReviewRecord) {
     const accuracy = { white: w.accuracy, black: b.accuracy }
     const rating = { white: w.rating, black: b.rating }
     const blunders = { white: w.counts.blunder, black: b.counts.blunder }
+    const brilliants = { white: w.counts.brilliant, black: b.counts.brilliant }
     const r = record
     if (r.accuracy?.white !== accuracy.white || r.accuracy?.black !== accuracy.black || r.rating?.white !== rating.white || r.rating?.black !== rating.black
-      || r.blunders?.white !== blunders.white || r.blunders?.black !== blunders.black) {
-      db.reviews.update(record.id, { accuracy, rating, blunders })
+      || r.blunders?.white !== blunders.white || r.blunders?.black !== blunders.black || r.brilliants?.white !== brilliants.white || r.brilliants?.black !== brilliants.black) {
+      db.reviews.update(record.id, { accuracy, rating, blunders, brilliants })
     }
   }, [ready, names.data, moves]) // eslint-disable-line react-hooks/exhaustive-deps
   // Je eigen fouten uit deze partij vanzelf in Herhalen (eenmalig per partij; uit te zetten in Instellingen)
@@ -1188,6 +1194,32 @@ function MistakeStep({ item, game, fens, evals, onDone, onNext, last }: {
 interface FoundHighlight extends Highlight { record: GameReviewRecord; fenBefore: string; fenAfter: string }
 
 /** Alle hoogtepunten uit je geanalyseerde partijen, nieuwste partij eerst */
+/**
+ * Partijen die al geanalyseerd waren voordat de aantallen werden bewaard: op de achtergrond, één voor één,
+ * de aantallen aanvullen. Zo blijft de lijst meteen bruikbaar en hoeft dit maar één keer per partij.
+ */
+function useBackfillCounts(saved: GameReviewRecord[], names: Awaited<ReturnType<typeof loadNames>> | undefined) {
+  useEffect(() => {
+    if (!names) return
+    const todo = saved.filter(r => isAnalysed(r) && !r.brilliants)
+    if (!todo.length) return
+    let stop = false
+    void (async () => {
+      for (const r of todo) {
+        await new Promise(res => setTimeout(res, 30))
+        if (stop) return
+        const g = r.game
+        const book = Math.max(bookInfo(g.san, names).ply, g.bookPly ?? 0)
+        const moves = classifyGame(g.san, r.evals, book, { ratings: reviewRatings(g) })
+        const w = summarize(moves, 'white', g.source)
+        const b = summarize(moves, 'black', g.source)
+        await db.reviews.update(r.id, { brilliants: { white: w.counts.brilliant, black: b.counts.brilliant }, blunders: { white: w.counts.blunder, black: b.counts.blunder } })
+      }
+    })()
+    return () => { stop = true }
+  }, [names, saved.filter(r => isAnalysed(r) && !r.brilliants).length]) // eslint-disable-line react-hooks/exhaustive-deps
+}
+
 function useHighlights(): FoundHighlight[] | null {
   const settings = useSettings()
   const names = useAsync(() => loadNames(), [])

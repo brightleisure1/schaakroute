@@ -398,4 +398,5 @@ export const app: Record<string, string> = {
   'Overslaan en beginnen': 'Skip and start',
   'Dagtraining gedaan. Mooi werk.': 'Daily training done. Nice work.',
   'Een paar minuten, daarna ken je je eerste variant.': 'A few minutes, and then you know your first line.',
+  'Vandaag herhaal je {n} posities en leer je iets nieuws.': 'Today you review {n} positions and learn something new.',
 }

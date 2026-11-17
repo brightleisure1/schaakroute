@@ -7,7 +7,7 @@ import { streak, totalXp } from '../lib/progress'
 import { levelFromXp } from '../lib/gamification'
 import { stageOf } from '../lib/srs'
 import { fenFromEpd, moveNumberLabel } from '../lib/chess'
-import { courseOrder } from '../lib/daily'
+import { courseOrder, DAILY_REVIEWS } from '../lib/daily'
 import { displayName } from '../lib/data'
 import { MiniBoard } from '../components/Board'
 import { CropBoard } from '../components/CropBoard'
@@ -86,7 +86,7 @@ export function Dashboard() {
         <div>
           <h1 className="text-4xl font-extrabold leading-none tracking-tight lg:hidden">{greeting()}</h1>
           <p className="mt-2 text-base text-muted lg:mt-5 lg:text-[22px] lg:font-extrabold lg:leading-tight lg:tracking-[-0.02em] lg:text-ink">
-            {todayAct?.dailyCompleted ? t('Dagtraining gedaan. Mooi werk.') : xp === 0 ? t('De dagtraining kiest je eerste variant.') : due > 0 ? tn(due, '{n} positie om te herhalen.', '{n} posities om te herhalen.', { n: nf(due) }) : t('Tijd voor nieuwe zetten.')}
+            {todayAct?.dailyCompleted ? t('Dagtraining gedaan. Mooi werk.') : xp === 0 ? t('De dagtraining kiest je eerste variant.') : due > DAILY_REVIEWS ? t('Vandaag herhaal je {n} posities en leer je iets nieuws.', { n: DAILY_REVIEWS }) : due > 0 ? tn(due, '{n} positie om te herhalen.', '{n} posities om te herhalen.', { n: nf(due) }) : t('Tijd voor nieuwe zetten.')}
           </p>
         </div>
         <div className={`order-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 lg:order-none ${settings.lastRoute ? '' : 'lg:hidden'}`}>
