@@ -261,3 +261,15 @@ export async function saveSettings(patch: Partial<UserSettings>, database: Schaa
   const cur = await getSettings(database)
   await database.settings.put({ ...cur, ...patch, id: 'me' })
 }
+
+/** Herstelt kaarten waarvan de kant niet klopt met wie er aan zet is (oude fout bij 'Train mijn fouten'); eenmalig, goedkoop */
+export async function repairCardSides(database: SchaakDB = db): Promise<number> {
+  let fixed = 0
+  await database.transaction('rw', database.cards, async () => {
+    await database.cards.toCollection().modify(c => {
+      const side = c.lineUci.length % 2 === 0 ? 'white' : 'black'
+      if (c.side !== side) { c.side = side; fixed++ }
+    })
+  })
+  return fixed
+}

@@ -279,7 +279,7 @@ export function analyseGames(
 }
 
 /** Zet boekafwijkingen om in herhaalkaarten (de theoriezet wordt de verwachte zet). */
-export async function exitsToCards(exits: BookExit[], side: (e: BookExit) => Side) {
+export async function exitsToCards(exits: BookExit[], _side?: (e: BookExit) => Side) {
   const now = Date.now()
   let n = 0
   for (const e of exits) {
@@ -291,9 +291,11 @@ export async function exitsToCards(exits: BookExit[], side: (e: BookExit) => Sid
       continue
     }
     const c = new Chess(e.fen)
+    // Jij bent aan zet in deze stelling: dat is jouw kant, niet de kant van de opening (je kunt hem ook tégen spelen)
+    const mover: Side = c.turn() === 'w' ? 'white' : 'black'
     c.move(parseUci(target.uci))
     await db.cards.put({
-      id, epd: e.epd, uci: target.uci, san: target.san, side: side(e), familyIds: [e.familyId], variationIds: [], lineUci: e.lineUci, createdAt: now,
+      id, epd: e.epd, uci: target.uci, san: target.san, side: mover, familyIds: [e.familyId], variationIds: [], lineUci: e.lineUci, createdAt: now,
       ease: 2.5, interval: 0, reps: 0, lapses: 1, correct: 0, wrong: 1, dueAt: now, lastReviewed: null,
     })
     n++

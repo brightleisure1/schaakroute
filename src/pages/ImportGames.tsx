@@ -125,7 +125,6 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
   }, [games, families.data, names.data, settings, reps, progress])
 
   if (!analysis) return <Spinner label={t('Partijen analyseren…')} />
-  const famSide = new Map((families.data ?? []).map(f => [f.family.id, f.family.side]))
 
   return (
     <div className="space-y-4">
@@ -160,7 +159,7 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
       <div className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-semibold">{t('Openingszetten die je vaak anders speelt dan de theorie')}</h3>
-          {analysis.userBookExits.length > 0 && <button className="btn btn-primary" onClick={async () => { const n = await exitsToCards(analysis.userBookExits.slice(0, 30), e => famSide.get(e.familyId) ?? 'white'); setDone(t('{n} nieuwe posities toegevoegd aan je herhalingen (Herhalen en dagtraining).', { n })) }}>{t('Train mijn fouten')}</button>}
+          {analysis.userBookExits.length > 0 && <button className="btn btn-primary" onClick={async () => { const n = await exitsToCards(analysis.userBookExits.slice(0, 30)); setDone(t('{n} nieuwe posities toegevoegd aan je herhalingen (Herhalen en dagtraining).', { n })) }}>{t('Train mijn fouten')}</button>}
         </div>
         {done && <div className="mt-2 rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-strong">{done}</div>}
         {analysis.userBookExits.length === 0 ? <p className="mt-2 text-sm text-muted">{t('Geen afwijkingen gevonden in de openingen.')}</p> : (

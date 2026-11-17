@@ -6,7 +6,7 @@ import { useDueCount } from './lib/hooks'
 import './lib/install' // vangt het installatieverzoek van de browser zo vroeg mogelijk op
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from './lib/db'
+import { db, repairCardSides } from './lib/db'
 import { streak } from './lib/progress'
 import { FocusContext, useSettings } from './components/ui'
 import { AppLoading, EmptyKnight } from './components/PieceMotion'
@@ -199,6 +199,8 @@ function StreakPill() {
  */
 function PersistStorage() {
   const active = !!useSettings()?.onboarded
+  // Kaarten met de verkeerde kant herstellen (anders zette de trainer soms jouw zet zelf)
+  useEffect(() => { void repairCardSides().catch(() => {}) }, [])
   useEffect(() => {
     if (!active || !navigator.storage?.persist) return
     navigator.storage.persisted().then(p => (p ? true : navigator.storage.persist())).catch(() => {})

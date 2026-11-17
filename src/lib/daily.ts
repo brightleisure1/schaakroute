@@ -36,7 +36,8 @@ export function cardLine(card: TrainingCard, title = t('Herhaling')): TrainingLi
     title,
     uci: [...card.lineUci, card.uci],
     san: [],
-    side: card.side,
+    // Altijd de kant die in deze stelling aan zet is; anders speelt de trainer jouw zet zelf (oudere kaarten hadden soms de verkeerde kant)
+    side: card.lineUci.length % 2 === 0 ? 'white' : 'black',
     startPly: card.lineUci.length,
     endPly: card.lineUci.length + 1,
   }
