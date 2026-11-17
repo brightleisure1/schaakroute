@@ -57,8 +57,12 @@ export async function chosenFamilies(settings: UserSettings): Promise<FamilyFile
   return Promise.all(ids.map(id => loadFamily(id)))
 }
 
+/** Hoe lang de dagtraining ongeveer duurt */
+export const DAILY_SECONDS = 10 * 60
+
 export async function buildDailyPlan(settings: UserSettings): Promise<DailyItem[]> {
-  const budget = settings.dailyMinutes * 60
+  // Vaste lengte van de dagtraining (ongeveer 10 minuten); het instelbare dagdoel is weg
+  const budget = DAILY_SECONDS
   const families = await chosenFamilies(settings)
   const progress = new Map((await db.progress.toArray()).map(p => [p.id, p]))
   const now = Date.now()

@@ -17,13 +17,6 @@ const STRENGTHS: { value: UserSettings['strength']; label: string; elo: number; 
   { value: 'expert', label: 'Sterk', elo: 2100, text: 'Ik speel competitief en wil diepere theorie' },
 ]
 
-const MINUTES: { value: UserSettings['dailyMinutes']; label: string }[] = [
-  { value: 5, label: 'Rustig' },
-  { value: 10, label: 'Normaal' },
-  { value: 15, label: 'Serieus' },
-  { value: 20, label: 'Fanatiek' },
-]
-
 export function Onboarding() {
   const nav = useNavigate()
   const current = useSettings()
@@ -32,7 +25,6 @@ export function Onboarding() {
   const [elo, setElo] = useState(1400)
   const [strength, setStrength] = useState<UserSettings['strength']>('club')
   const [openings, setOpenings] = useState<string[]>([])
-  const [minutes, setMinutes] = useState<UserSettings['dailyMinutes']>(10)
   const [finished, setFinished] = useState(false)
   // Welkomscherm met de drie onderdelen: alleen voor wie nog niet begonnen is
   const [welcome, setWelcome] = useState(true)
@@ -59,7 +51,6 @@ export function Onboarding() {
       setElo(current.elo)
       setStrength(current.strength)
       setOpenings(current.openings)
-      setMinutes(current.dailyMinutes)
     }
     if (current?.lichessUser && !current.chesscomUser) setGameSource('lichess')
     setGameUser(current?.chesscomUser ?? current?.lichessUser ?? '')
@@ -75,7 +66,7 @@ export function Onboarding() {
     const chosenSides = new Set(openings.map(id => manifest!.families.find(f => f.id === id)?.side).filter(Boolean))
     const sides: UserSettings['sides'] = chosenSides.size === 1 ? (chosenSides.has('white') ? 'white' : 'black') : 'both'
     await saveSettings({
-      onboarded: true, elo, strength, sides, openings, dailyMinutes: minutes,
+      onboarded: true, elo, strength, sides, openings,
       ...(user ? (gameSource === 'lichess' ? { lichessUser: user } : { chesscomUser: user }) : {}),
     })
     setFinished(true)
@@ -100,22 +91,6 @@ export function Onboarding() {
     </div>,
     // Kleur is geen aparte vraag meer: de kiezer heeft zelf Wit en Zwart, en de kleur volgt uit je openingen
     <OpeningPicker key="2" families={manifest.families} sides="both" value={openings} onChange={setOpenings} />,
-    // Ontwerp 12b: vier tegels in twee kolommen, met een woord dat zegt hoe zwaar het is
-    <div key="3" className="space-y-3.5">
-      <StepTitle title={t('Hoeveel minuten per dag?')} text={t('Met 10 minuten leer je ongeveer één variant per dag.')} />
-      <div className="grid grid-cols-2 gap-3">
-        {MINUTES.map(m => {
-          const on = minutes === m.value
-          return (
-            <button key={m.value} aria-pressed={on} className={`tap flex flex-col items-center gap-0.5 px-2 py-4 text-center ${on ? 'tap-on' : ''}`} onClick={() => setMinutes(m.value)}>
-              <span className="text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{m.value}</span>
-              <span className="text-[13px] text-muted">{t('minuten')}</span>
-              <span className={`mt-2 rounded-full px-2.5 py-0.5 text-xs font-bold ${on ? 'bg-surface text-brand-strong' : 'bg-surface-2 text-muted'}`}>{t(m.label)}</span>
-            </button>
-          )
-        })}
-      </div>
-    </div>,
     // Optioneel: je partijen koppelen, zodat partij-analyse en foutentrainer meteen werken
     <div key="4" className="space-y-3.5">
       <StepTitle title={t('Waar speel je online?')} text={t('Dan kun je je partijen laten analyseren, en komen je fouten vanzelf in je training. Je kunt dit ook overslaan.')} />

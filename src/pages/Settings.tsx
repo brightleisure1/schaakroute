@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { BookMarked, Cpu, Languages, MessageSquare, Repeat, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
+import { BookMarked, Cpu, Languages, MessageSquare, Repeat, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Trash2 } from 'lucide-react'
 import { db, saveSettings, type UserSettings } from '../lib/db'
 import { analyse, engineStatus } from '../lib/engine'
 import { importBackup, summarizeBackup } from '../lib/progress'
@@ -21,9 +21,8 @@ const STRENGTHS: { value: UserSettings['strength']; label: string; elo: number }
   { value: 'expert', label: 'Sterk', elo: 2100 },
 ]
 const THEMES = [['system', 'Systeem'], ['light', 'Licht'], ['dark', 'Donker']] as const
-const MINUTES = [5, 10, 15, 20] as const
 
-type Panel = 'rating' | 'minutes' | 'theme' | 'language' | 'lichess' | 'wipe'
+type Panel = 'rating' | 'theme' | 'language' | 'lichess' | 'wipe'
 
 const dateNl = (d: Date | number) => new Date(d).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })
 const dateShort = (d: number) => new Date(d).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
@@ -114,11 +113,6 @@ export function Settings() {
               <span className="flex justify-between"><span>{t('Precies: Elo, Lichess of Chess.com')}</span><b className="tabular-nums">{s.elo}</b></span>
               <input type="range" min={400} max={2800} step={25} value={s.elo} onChange={e => set({ elo: Number(e.target.value) })} className="mt-1 w-full accent-[var(--brand)]" />
             </label>
-          </div>
-        </ExpandRow>
-        <ExpandRow id="dagdoel" open={open === 'minutes'} onToggle={() => toggle('minutes')} icon={Timer} tone="accent" label={t('Dagdoel')} value={`${s.dailyMinutes} min`}>
-          <div className="grid grid-cols-4 gap-2" role="group" aria-label={t('Minuten per dag')}>
-            {MINUTES.map(m => <KeyChoice key={m} on={s.dailyMinutes === m} onClick={() => set({ dailyMinutes: m })}>{m} min</KeyChoice>)}
           </div>
         </ExpandRow>
         <LinkRow to="/welkom" icon={BookMarked} tone="info" label={t('Openingen en kleur')} value={t('{n} gekozen', { n: s.openings.length })} />

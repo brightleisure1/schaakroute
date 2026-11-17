@@ -396,4 +396,6 @@ export const app: Record<string, string> = {
   'Dan kun je je partijen laten analyseren, en komen je fouten vanzelf in je training. Je kunt dit ook overslaan.': 'Then you can get your games analyzed, and your mistakes go into your training automatically. You can also skip this.',
   'Geen account en geen wachtwoord nodig: we halen alleen je openbare partijen op. Alles blijft op dit apparaat.': 'No account or password needed: we only fetch your public games. Everything stays on this device.',
   'Overslaan en beginnen': 'Skip and start',
+  'Dagtraining gedaan. Mooi werk.': 'Daily training done. Nice work.',
+  'Een paar minuten, daarna ken je je eerste variant.': 'A few minutes, and then you know your first line.',
 }

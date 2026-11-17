@@ -22,8 +22,8 @@ const lineTitle = (i: Extract<DailyItem, { kind: 'new' | 'hard' }>) => displayNa
 const KIND_LABEL: Record<DailyItem['kind'], string> = { review: 'Herhaling', new: 'Nieuwe zetten', hard: 'Moeilijke variant', puzzle: 'Tactische kans' }
 
 /** De dagroute (ontwerp 6e): startscherm, of met `done` het scherm om verder te gaan waar je was */
-function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, onStart, completed }: {
-  plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number; minutesGoal?: number
+function DailyRoute({ plan, done = 0, resume = false, streakDays, onStart, completed }: {
+  plan: DailyItem[]; done?: number; resume?: boolean; streakDays: number
   onStart: () => void
   /** Afgeronde route: resultaat van vandaag, met verder kijken of nog een ronde */
   completed?: { totals: Totals; dueTomorrow: number; badges: BadgeDef[]; onAgain: () => void }
@@ -39,8 +39,6 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
     const last = plan.length - 1 - [...plan].reverse().findIndex(i => i.kind === kind)
     return last < done ? 'done' : resuming && first <= done ? 'current' : 'todo'
   }
-  // Het dagdoel stel je in bij Instellingen; hier alleen een verwijzing, zodat starten één tik is
-  const goalNote = minutesGoal && !resuming && <span className="text-sm text-muted">{t('Dagdoel: {n} min', { n: minutesGoal })} · <Link to="/instellingen" className="inline-flex min-h-11 items-center underline">{t('Aanpassen')}</Link></span>
   const label = resuming ? t('Ga verder') : t('Start de route')
   const buttons = (cls: string) => completed ? (
     <div className={`flex flex-col gap-2 sm:flex-row ${cls}`}>
@@ -114,14 +112,12 @@ function DailyRoute({ plan, done = 0, resume = false, streakDays, minutesGoal, o
       <section className="card hidden flex-wrap items-center justify-between gap-5 py-4 pl-6 pr-5 lg:flex">
         <div className="flex flex-wrap items-center gap-4">
           <span className="font-bold">{completed ? (streakDays ? tn(streakDays, 'Je streak staat op {n} dag. Tot morgen!', 'Je streak staat op {n} dagen. Tot morgen!') : t('Tot morgen!')) : resuming ? t('Je gaat verder waar je was.') : t('Stoppen kan altijd, je gaat later verder.')}</span>
-          {goalNote}
         </div>
         {buttons('')}
       </section>
       {/* Telefoon: keuze en start blijven onderin, boven de tabbalk */}
       <div className="sticky bottom-(--bottom-nav,0px) z-10 -mx-4 space-y-1.5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
         {buttons('[&>button]:w-full')}
-        {goalNote && <div className="text-center">{goalNote}</div>}
       </div>
     </div>
   )
@@ -301,7 +297,7 @@ export function Daily() {
   }
 
   if (!started) {
-    return <DailyRoute plan={plan} streakDays={st.current} minutesGoal={settings.dailyMinutes} onStart={start} />
+    return <DailyRoute plan={plan} streakDays={st.current} onStart={start} />
   }
 
   const item = plan[Math.min(index, plan.length - 1)]

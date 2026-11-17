@@ -39,7 +39,6 @@ export function Dashboard() {
   const mature = cardList.filter(c => stageOf(c) === 'mature').length
   const fams = families.data ?? []
   const famStats = fams.map(f => ({ f, p: familyProgress(f, progress, cards) }))
-  const minutesToday = Math.min(settings.dailyMinutes, Math.round((todayAct?.seconds ?? 0) / 60))
 
   // Het bord in de hero toont de variant die je als volgende leert
   const heroFile = fams[0]
@@ -79,16 +78,15 @@ export function Dashboard() {
 
       <div className="space-y-6 lg:space-y-[22px]">
       {firstTime ? (
-        <FirstTraining minutes={settings.dailyMinutes} file={heroFile} variation={heroVar} />
+        <FirstTraining file={heroFile} variation={heroVar} />
       ) : (
       <section className="card grid grid-cols-[minmax(0,1fr)] gap-y-5 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center lg:gap-x-7 lg:gap-y-0 lg:rounded-3xl lg:p-6">
         {/* Telefoon: tekst, bord, knoppen onder elkaar. Desktop (15a): links de dag, rechts het bord met de knop eronder */}
         <div className="contents lg:flex lg:flex-col lg:gap-5">
         <div>
-          <DaySegments minutes={minutesToday} goal={settings.dailyMinutes} />
-          <h1 className="mt-3 text-4xl font-extrabold leading-none tracking-tight lg:hidden">{greeting()}</h1>
+          <h1 className="text-4xl font-extrabold leading-none tracking-tight lg:hidden">{greeting()}</h1>
           <p className="mt-2 text-base text-muted lg:mt-5 lg:text-[22px] lg:font-extrabold lg:leading-tight lg:tracking-[-0.02em] lg:text-ink">
-            {todayAct?.dailyCompleted ? t('Dagdoel gehaald. Mooi werk.') : xp === 0 ? t('De dagtraining kiest je eerste variant.') : due > 0 ? tn(due, '{n} positie om te herhalen.', '{n} posities om te herhalen.', { n: nf(due) }) : t('Tijd voor nieuwe zetten.')}
+            {todayAct?.dailyCompleted ? t('Dagtraining gedaan. Mooi werk.') : xp === 0 ? t('De dagtraining kiest je eerste variant.') : due > 0 ? tn(due, '{n} positie om te herhalen.', '{n} posities om te herhalen.', { n: nf(due) }) : t('Tijd voor nieuwe zetten.')}
           </p>
         </div>
         <div className={`order-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 lg:order-none ${settings.lastRoute ? '' : 'lg:hidden'}`}>
@@ -183,13 +181,13 @@ export function Dashboard() {
 }
 
 /** Eerste keer (ontwerp 16a): uitnodiging voor de eerste training, de variant die je gaat leren en hoe het werkt */
-function FirstTraining({ minutes, file, variation }: { minutes: number; file?: FamilyFile; variation?: Variation }) {
+function FirstTraining({ file, variation }: { file?: FamilyFile; variation?: Variation }) {
   return (
     <>
       <section className="card flex flex-col gap-4 p-5 sm:p-8 lg:p-10" aria-labelledby="eerste-training-title">
         <div>
           <h1 id="eerste-training-title" className="text-[1.75rem] font-extrabold leading-[1.12] tracking-[-0.02em] lg:text-4xl">{t('Klaar voor je eerste training?')}</h1>
-          <p className="mt-1.5 text-base text-muted lg:text-lg">{t('Die duurt {n} minuten. Daarna ken je je eerste variant.', { n: minutes })}</p>
+          <p className="mt-1.5 text-base text-muted lg:text-lg">{t('Een paar minuten, daarna ken je je eerste variant.')}</p>
         </div>
         {file && variation && (
           <div className="flex items-center gap-3.5 rounded-[14px] border-2 border-line bg-bg p-3 lg:max-w-xl">
@@ -230,18 +228,6 @@ function TopStat({ icon, tone, label, value, hint }: { icon: React.ReactNode; to
       <span>{label}</span>
       <span className="font-bold tabular-nums text-ink">{value}</span>
       <span className="hidden sm:inline">· {hint}</span>
-    </div>
-  )
-}
-
-/** Dagdoel als blokjes: één blokje per minuut */
-function DaySegments({ minutes, goal }: { minutes: number; goal: number }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex w-full max-w-60 gap-1" role="img" aria-label={t('Dagdoel: {n} van {m} minuten', { n: minutes, m: goal })}>
-        {Array.from({ length: goal }, (_, i) => <span key={i} className={`h-1.5 flex-1 rounded-full ${i < minutes ? 'bg-accent' : 'bg-track'}`} />)}
-      </div>
-      <span className="shrink-0 text-xs font-semibold text-muted sm:text-sm" aria-hidden>{t('{n} van {m} min vandaag', { n: minutes, m: goal })}</span>
     </div>
   )
 }
