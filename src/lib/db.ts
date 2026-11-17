@@ -55,6 +55,8 @@ export interface CardSource {
   playedAt: number
   /** De zet die je in de partij speelde (SAN) */
   played: string
+  /** Hoe die zet beoordeeld werd: 'mistake', 'miss' of 'blunder' */
+  cls?: string
 }
 
 /** UserProgress per variant */

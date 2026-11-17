@@ -148,6 +148,9 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
   const [menuOpen, setMenuOpen] = useState(false)
   const [flipped, setFlipped] = useState(false)
   const [wrongAt, setWrongAt] = useState<{ ply: number; square: string } | null>(null)
+  // Fout uit je partij (line.replayMistake): 'show' = je oude zet staat op het bord, 'done' = teruggenomen, nu jij
+  const [mistakeStep, setMistakeStep] = useState<'idle' | 'show' | 'done'>('idle')
+  const mistakeRun = useRef(-1)
   const wide = useWide()
   const full = !!fullScreen && wide
   // Laatste goede zet voor de groene balk onderin (desktop, ontwerp 15c); blijft staan tot je volgende actie
@@ -186,6 +189,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     setRevealedPly(null)
     setMenuOpen(false)
     setWrongAt(null)
+    setMistakeStep('idle')
     setGood(null)
     xpRef.current = 0
     newCardsRef.current = 0
@@ -223,6 +227,40 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
     }, ply < startPly ? 380 : ply === startPly ? 350 : 520)
     return () => clearTimeout(timer)
   }, [ply, done, userTurn, intro, showFull, result, startPly, opponent, sans])
+
+  // Fout uit je eigen partij: laat eerst zien wat je speelde, markeer het als fout, neem het terug, en dan ben jij
+  useEffect(() => {
+    const rm = line.replayMistake
+    if (!rm || !userTurn || ply !== startPly || mistakeStep !== 'idle' || intro || showFull || result) return
+    if (mistakeRun.current === runId.current) return
+    mistakeRun.current = runId.current
+    const id = runId.current
+    let wrong: { fen: string; from: string; to: string } | null = null
+    try {
+      const c = new Chess(fens[ply])
+      const m = c.move(rm.san)
+      wrong = { fen: c.fen(), from: m.from, to: m.to }
+    } catch { /* zet past niet (meer) in deze stelling: gewoon meteen zelf spelen */ }
+    if (!wrong) { setMistakeStep('done'); return }
+    const w = wrong
+    const show = setTimeout(() => {
+      if (id !== runId.current) return
+      setMistakeStep('show')
+      setOpponentLine(null)
+      setTempFen({ fen: w.fen, move: [w.from, w.to] })
+      setFlash({ square: w.to, kind: 'bad' })
+      setFeedback({ kind: 'wrong', title: t('In je partij speelde je {san}', { san: rm.san }), text: rm.label ? t('Dat was een {label}. Kijk goed, de zet wordt zo teruggenomen.', { label: rm.label }) : t('Dat was een fout. Kijk goed, de zet wordt zo teruggenomen.') })
+    }, 450)
+    const back = setTimeout(() => {
+      if (id !== runId.current) return
+      setTempFen(null)
+      setFlash(null)
+      setMistakeStep('done')
+      setFeedback({ kind: 'info', title: t('Teruggenomen'), text: t('Vind nu de betere zet.') })
+    }, 450 + 2600)
+    // Alleen opruimen bij een nieuwe lijn of opnieuw beginnen (runId verandert), niet bij elke stap van de fout zelf
+    return () => { if (id !== runId.current) { clearTimeout(show); clearTimeout(back) } }
+  }, [line.replayMistake, userTurn, ply, startPly, mistakeStep, intro, showFull, result, fens]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // De groene balk verdwijnt zodra er iets anders te melden is (fout, hint, terug …)
   useEffect(() => {
@@ -296,6 +334,8 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
 
   function onUserMove(from: string, to: string, promotion?: string): boolean {
     if (!userTurn || busy.current || viewPly !== null || showFull || intro) return false
+    // Eerst de fout uit je partij laten zien; tot hij is teruggenomen kun je nog niet zetten
+    if (line.replayMistake && ply === startPly && mistakeStep !== 'done') return false
     const p = ply
     const verdict = judgeMove({ fen: fens[p], expected: line.uci[p], from, to, promotion, familyIndex: famIndex, names: names ?? undefined, stats })
     if (verdict.kind === 'illegal') {

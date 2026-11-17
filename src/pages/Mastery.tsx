@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Repeat, Sun } from 'lucide-react'
+import { CircleCheck, Repeat, Sun } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type TrainingCard } from '../lib/db'
@@ -102,6 +102,16 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   }, [])
 
   const inSession = started && !!queue && index < queue.length
+  // Klaar met de reeks: terug naar het overzicht (met de stand van nu), met een korte melding bovenaan
+  const [finished, setFinished] = useState<{ good: number; bad: number; extra: boolean } | null>(null)
+  useEffect(() => {
+    if (!started || !queue?.length || index < queue.length) return
+    setFinished({ ...stats, extra })
+    setStats({ good: 0, bad: 0 })
+    setStarted(false)
+    void build(false)
+  }, [started, queue, index]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (started) setFinished(null) }, [started])
   // De training staat op dezelfde pagina: zonder dit begon hij halverwege gescrold en sprong hij daarna omhoog
   useEffect(() => { if (started) window.scrollTo({ top: 0 }) }, [started])
   useEffect(() => { onSession(inSession) }, [inSession, onSession])
@@ -141,6 +151,12 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
     const fileMap = new Map((weakFiles.data ?? []).map(f => [f.family.id, f]))
     return (
       <div className="space-y-5 lg:space-y-6">
+        {finished && (
+          <p className="card flex items-center gap-3 bg-brand-soft p-3.5 text-sm text-brand-strong animate-fade-in" role="status">
+            <CircleCheck size={20} aria-hidden className="shrink-0" />
+            <span><b>{finished.extra ? t('Extra oefening klaar') : t('Herhaling klaar')}</b> · {t('{good} direct goed · {bad} met fouten', { good: finished.good, bad: finished.bad })}</span>
+          </p>
+        )}
         <section className="card overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
           <div className="flex flex-col p-5 lg:p-8">
             <div className="flex items-baseline gap-3">
@@ -231,7 +247,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const fromGame = card.source ? gameCardText(card.source) : null
   const base = cardLine(card, fromGame ? fromGame.title : v ? t('Vind de zet: {name}', { name: v.path.join(', ') || file!.family.name }) : t('Vind de zet'))
   // De laatste zetten voor de stelling worden voorgespeeld, zodat je niet zomaar in een losse stelling springt
-  const line = { ...base, subtitle: file?.family.name, sub: fromGame?.sub, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
+  const line = { ...base, subtitle: file?.family.name, sub: fromGame?.sub, replayMistake: fromGame?.replay, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
   return (
     <div>
     <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? t('Zwakste posities') : t('Herhalen')} onClose={() => { setStarted(false); if (extra) void build(false) }} closeLabel={t('Stoppen, je gaat later verder')} />

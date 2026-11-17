@@ -47,7 +47,7 @@ export async function saveMistakeCards(items: MistakeItem[], solved: (ply: numbe
     await database.cards.put({
       ...newSrsState(now), dueAt: due,
       id, epd, uci: it.bestUci, san: it.bestSan, side, familyIds: [], variationIds: [], lineUci: it.lineUci, createdAt: now,
-      ...(source ? { source: { ...source, played: it.played.san } } : {}),
+      ...(source ? { source: { ...source, played: it.played.san, cls: it.played.cls } } : {}),
     })
     added++
   }

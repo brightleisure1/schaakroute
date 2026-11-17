@@ -326,7 +326,7 @@ export function Daily() {
   }
   const file = item.kind === 'review' ? files.get(item.card.familyIds[0]) : files.get(item.familyId)
   const fromGame = item.kind === 'review' && item.card.source ? gameCardText(item.card.source) : null
-  const line = item.kind === 'review' ? { ...item.line, title: fromGame?.title ?? t('Vind de zet'), sub: fromGame?.sub, subtitle: file?.family.name } : { ...item.line, title: lineTitle(item) }
+  const line = item.kind === 'review' ? { ...item.line, title: fromGame?.title ?? t('Vind de zet'), sub: fromGame?.sub, replayMistake: fromGame?.replay, subtitle: file?.family.name } : { ...item.line, title: lineTitle(item) }
   const mode = item.kind === 'review' ? 'review' : item.mode
   return (
     <div>

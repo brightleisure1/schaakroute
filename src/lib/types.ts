@@ -143,6 +143,8 @@ export interface TrainingLine {
   subtitle?: string
   /** Regel onder de titel in de training (anders de standaardtekst voor een losse positie) */
   sub?: string
+  /** Fout uit je eigen partij: eerst wordt deze zet (SAN) op het bord gespeeld en als fout getoond, daarna teruggenomen */
+  replayMistake?: { san: string; label?: string }
   uci: string[]
   san: string[]
   side: Side

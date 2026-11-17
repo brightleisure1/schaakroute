@@ -17,8 +17,10 @@ export function gameCardText(s: CardSource) {
   const date = new Date(s.playedAt).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
   return {
     title: t('Je partij tegen {name}', { name: playerName(s.opponent) }),
-    sub: t('Je speelde {move} ({date}). Vind de betere zet.', { move: s.played, date }),
+    sub: t('Uit je partij van {date}. Vind de betere zet.', { date }),
     short: t('Tegen {name}', { name: playerName(s.opponent) }),
     date,
+    /** Voor de training: eerst deze zet laten zien als fout, dan terugnemen */
+    replay: { san: s.played, label: s.cls === 'blunder' ? t('blunder') : s.cls === 'miss' ? t('gemiste kans') : t('fout') },
   }
 }
