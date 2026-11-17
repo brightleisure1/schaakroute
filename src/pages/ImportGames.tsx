@@ -133,14 +133,14 @@ function AnalysisView({ games }: { games: ImportedGame[] }) {
         <h2 className="text-lg font-bold">{t('Analyse van {n} partijen', { n: analysis.games })}</h2>
         <button className="btn btn-quiet text-sm" onClick={async () => { if (confirm(t('Alle geïmporteerde partijen verwijderen?'))) await db.games.clear() }}>{t('Partijen wissen')}</button>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="card p-4">
           <h3 className="mb-2 font-semibold">{t('Welke openingen speel je?')}</h3>
           <table className="w-full text-sm">
             <thead className="text-xs text-muted"><tr><th className="text-left">{t('Opening')}</th><th>{t('Kleur')}</th><th className="text-right">{t('Partijen')}</th><th className="text-right">{t('Score')}</th></tr></thead>
             <tbody>{analysis.byFamily.slice(0, 12).map(f => (
               <tr key={f.familyId + f.color} className="border-t border-line">
-                <td className="py-1.5"><Link to={`/opening/${f.familyId}`} className="hover:underline">{f.name}</Link>{f.inMyOpenings && <span className="chip chip-sm chip-on ml-1.5">{t('mijn opening')}</span>}</td>
+                <td className="py-1.5 pr-2"><span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5"><Link to={`/opening/${f.familyId}`} className="hover:underline">{f.name}</Link>{f.inMyOpenings && <span className="chip chip-sm chip-on">{t('mijn opening')}</span>}</span></td>
                 <td className="text-center text-xs">{sideLabel(f.color)}</td>
                 <td className="text-right tabular-nums">{f.games}</td>
                 <td className="text-right tabular-nums">{pct(f.score)}</td>

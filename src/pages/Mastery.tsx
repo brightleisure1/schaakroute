@@ -80,7 +80,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
     const now = Date.now()
     const list = extraMode
       ? mine.sort((a, b) => masteryScore(a) - masteryScore(b)).slice(0, 20)
-      : mine.filter(c => c.dueAt <= now).sort((a, b) => b.lapses - a.lapses || a.dueAt - b.dueAt).slice(0, 50)
+      : mine.filter(c => c.dueAt <= now).sort((a, b) => b.lapses - a.lapses || a.dueAt - b.dueAt) // alles wat openstaat, zodat het getal klopt met het bolletje in het menu; stoppen kan altijd
     await begin(list, extraMode)
   }
   async function begin(list: TrainingCard[], extraMode: boolean) {
@@ -100,6 +100,8 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   }, [])
 
   const inSession = started && !!queue && index < queue.length
+  // De training staat op dezelfde pagina: zonder dit begon hij halverwege gescrold en sprong hij daarna omhoog
+  useEffect(() => { if (started) window.scrollTo({ top: 0 }) }, [started])
   useEffect(() => { onSession(inSession) }, [inSession, onSession])
   const startWith = (list: TrainingCard[], extraMode: boolean) => { void begin(list, extraMode); setStarted(true) }
 
@@ -228,7 +230,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const line = { ...base, subtitle: file?.family.name, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
   return (
     <div>
-    <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? t('Zwakste posities') : t('Herhalen')} onClose={() => setStarted(false)} closeLabel={t('Stoppen, je gaat later verder')} />
+    <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? t('Zwakste posities') : t('Herhalen')} onClose={() => { setStarted(false); if (extra) void build(false) }} closeLabel={t('Stoppen, je gaat later verder')} />
     <ReviewPiles todo={queue.length - index - (answered === index ? 1 : 0)} wrong={stats.bad} correct={stats.good} />
     <Trainer
       key={card.id + index}
@@ -318,6 +320,7 @@ function LineReview({ family, onSession }: { family: string; onSession: (on: boo
   const cards = useCardMap()
   const [current, setCurrent] = useState<{ file: FamilyFile; v: Variation } | null>(null)
   const [sessionId, setSessionId] = useState<number>()
+  useEffect(() => { if (current) window.scrollTo({ top: 0 }) }, [current])
   useEffect(() => {
     let sid: number | undefined
     startSession('mastery').then(s => { sid = s; setSessionId(s) })

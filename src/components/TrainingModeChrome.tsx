@@ -71,8 +71,9 @@ const HEADING_TONE = { danger: 'text-danger-ink', info: 'text-info-ink', accent:
 
 export function TrainingHeading({ label, title, tone, action, sub }: { label: ReactNode; title: ReactNode; tone: keyof typeof HEADING_TONE; action?: ReactNode; sub?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-3">
-      <div className="min-w-0">
+    // Mag naar twee regels: zonder flex-wrap duwden de zetknopjes de pagina breder dan het scherm (bord schoof rechts uit beeld)
+    <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-3 gap-y-1.5">
+      <div className="min-w-0 flex-[1_1_12rem]">
         <div className={`truncate text-xs font-bold uppercase tracking-[0.04em] ${HEADING_TONE[tone]}`}>{label}</div>
         <h1 className="mt-0.5 text-xl font-extrabold leading-tight tracking-tight lg:text-2xl">{title}</h1>
         {sub && <div className="mt-0.5 truncate text-sm text-muted">{sub}</div>}

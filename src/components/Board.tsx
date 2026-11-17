@@ -175,6 +175,9 @@ export function Board({ fen, orientation, movable, onMove, lastMove, arrows = []
           darkSquareStyle: { backgroundColor: 'var(--board-dark)' },
           lightSquareNotationStyle: { color: 'var(--notation-on-light)', fontWeight: 600 },
           darkSquareNotationStyle: { color: 'var(--notation-on-dark)', fontWeight: 600 },
+          // Kleinere letters en cijfers, dichter in de hoek: de standaard (13px) liep over de stukken op de eerste rij
+          alphaNotationStyle: { fontSize: 'clamp(8px, 2.4vw, 11px)', lineHeight: 1, position: 'absolute', bottom: 2, right: 2, userSelect: 'none' },
+          numericNotationStyle: { fontSize: 'clamp(8px, 2.4vw, 11px)', lineHeight: 1, position: 'absolute', top: 2, left: 2, userSelect: 'none' },
           dropSquareStyle: { boxShadow: 'inset 0 0 1px 5px rgba(47, 125, 79, 0.6)' },
         }}
       />

@@ -129,6 +129,8 @@ body {
 body {
   font-family: var(--font-sans);
   min-height: 100dvh;
+  /* Iets dat per ongeluk breder is dan het scherm mag de pagina nooit opzij laten schuiven (iOS) */
+  overflow-x: clip;
   font-feature-settings: "cv11", "ss01";
   caret-color: var(--brand);
   scrollbar-color: var(--line) transparent;
