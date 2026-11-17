@@ -141,6 +141,8 @@ export interface TrainingLine {
   repertoireId?: number
   title: string
   subtitle?: string
+  /** Regel onder de titel in de training (anders de standaardtekst voor een losse positie) */
+  sub?: string
   uci: string[]
   san: string[]
   side: Side

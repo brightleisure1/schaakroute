@@ -400,4 +400,13 @@ export const training: Record<string, string> = {
   'Kies opening': 'Choose opening',
   'mijn opening': 'my opening',
   'Varianten': 'Variations',
+  // gameCards.ts en Herhalen: fouten uit je eigen partijen
+  'Je partij tegen {name}': 'Your game vs {name}',
+  'Je speelde {move} ({date}). Vind de betere zet.': 'You played {move} ({date}). Find the better move.',
+  'Tegen {name}': 'Vs {name}',
+  'Fouten uit je partijen': 'Mistakes from your games',
+  'Je partij': 'Your game',
+  'Nog geen fouten uit je partijen': 'No mistakes from your games yet',
+  'Laat een eigen partij analyseren: je fouten en blunders komen daarna vanzelf hier terug.': 'Review one of your own games: your mistakes and blunders will then show up here automatically.',
+  'Naar partij-analyse': 'Go to game review',
 }

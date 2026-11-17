@@ -376,4 +376,6 @@ export const app: Record<string, string> = {
   'Schermgrootte': 'Screen size',
   'Taal': 'Language',
   'Datum': 'Date',
+  'Fouten uit je partijen herhalen': 'Review mistakes from your games',
+  'na elke analyse van je eigen partij': 'after each review of your own game',
 }

@@ -25,6 +25,8 @@ export interface UserSettings {
   lastRouteLabel?: string
   /** Wanneer de laatste back-up is bewaard (om eraan te herinneren) */
   lastBackupAt?: number
+  /** Fouten uit je eigen geanalyseerde partijen vanzelf in Herhalen zetten (leeg = aan) */
+  gameMistakesToReview?: boolean
   createdAt: number
 }
 
@@ -41,6 +43,18 @@ export interface TrainingCard extends SrsState {
   lineUci: string[]
   createdAt: number
   suspended?: boolean
+  /** Waar de kaart vandaan komt als het geen openingsvariant is: een fout uit je eigen partij */
+  source?: CardSource
+}
+
+/** Herkomst van een kaart uit een geanalyseerde partij */
+export interface CardSource {
+  kind: 'game'
+  gameId: string
+  opponent: string
+  playedAt: number
+  /** De zet die je in de partij speelde (SAN) */
+  played: string
 }
 
 /** UserProgress per variant */
@@ -158,6 +172,8 @@ export interface GameReviewRecord {
   rating?: { white: number | null; black: number | null }
   /** Aantal blunders van wit en zwart (voor de partijlijst) */
   blunders?: { white: number; black: number }
+  /** Zoveel eigen fouten uit deze partij zijn automatisch in Herhalen gezet (gezet = niet nog eens doen) */
+  mistakesAdded?: number
 }
 
 export interface Badge {

@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type TrainingCard } from '../lib/db'
 import { cardLine, variationLine } from '../lib/daily'
 import { loadFamily } from '../lib/data'
-import { useAsync, useCardMap, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
+import { useAsync, useCardMap, useDueCount, useFamilies, useManifest, useProgressMap, variationMastery } from '../lib/hooks'
 import { DAY, masteryScore, stageOf } from '../lib/srs'
 import { endSession, startSession } from '../lib/progress'
 import { Trainer } from '../components/Trainer'
@@ -15,6 +15,7 @@ import { EmptyKnight } from '../components/PieceMotion'
 import { Empty, FocusBar, ProgressBar, Spinner, Tabs, useSettings, useTrainingFocus } from '../components/ui'
 import type { FamilyFile, Variation } from '../lib/types'
 import { locale, t, tn, tr } from '../lib/i18n'
+import { GAMES_FILTER, gameCardText, inReviewFilter } from '../lib/gameCards'
 
 export function Mastery() {
   const [search, setSearch] = useSearchParams()
@@ -24,7 +25,7 @@ export function Mastery() {
   const [session, setSession] = useState(false)
   useTrainingFocus(session)
   // Nog nooit iets geleerd: geen keuzes bovenaan, alleen uitleg en de ene knop (ontwerp 12g)
-  const anyLearned = useLiveQuery(async () => (await db.cards.filter(c => !c.suspended && c.correct + c.wrong > 0).first()) !== undefined, [], undefined)
+  const anyLearned = useLiveQuery(async () => (await db.cards.filter(c => !c.suspended && (c.correct + c.wrong > 0 || !!c.source)).first()) !== undefined, [], undefined)
   if (anyLearned === false) {
     return (
       <div className="lg:max-w-xl">
@@ -49,6 +50,7 @@ export function Mastery() {
             {manifest && (
               <select className="input sm:w-56" value={family} onChange={e => setSearch({ type, ...(e.target.value ? { family: e.target.value } : {}) })} aria-label={t('Filter op opening')}>
                 <option value="">{t('Alle openingen')}</option>
+                <option value={GAMES_FILTER}>{t('Fouten uit je partijen')}</option>
                 {manifest.families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
             )}
@@ -72,11 +74,11 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const advance = (from: number) => { if (advanced.current === from) return; advanced.current = from; setIndex(from + 1) }
   const [sessionId, setSessionId] = useState<number>()
   const [files, setFiles] = useState<Map<string, FamilyFile>>(new Map())
-  const dueCount = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended && (!family || c.familyIds.includes(family))).count(), [family], 0)
+  const dueCount = useDueCount(c => inReviewFilter(c, family), [family])
 
   async function build(extraMode: boolean) {
     const all = await db.cards.toArray()
-    const mine = all.filter(c => !c.suspended && (!family || c.familyIds.includes(family)))
+    const mine = all.filter(c => !c.suspended && inReviewFilter(c, family))
     const now = Date.now()
     const list = extraMode
       ? mine.sort((a, b) => masteryScore(a) - masteryScore(b)).slice(0, 20)
@@ -109,7 +111,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const cardMap = useCardMap()
   const overview = useMemo(() => {
     // Zelfde posities als de herhaalwachtrij: alles wat je al eens gespeeld hebt (ook alleen fout)
-    const mine = [...cardMap.values()].filter(c => !c.suspended && c.correct + c.wrong > 0 && (!family || c.familyIds.includes(family)))
+    const mine = [...cardMap.values()].filter(c => !c.suspended && (c.correct + c.wrong > 0 || !!c.source) && inReviewFilter(c, family))
     const stages = { learning: 0, young: 0, mature: 0 }
     for (const c of mine) { const st = stageOf(c); stages[st === 'new' ? 'learning' : st]++ }
     const day0 = new Date()
@@ -129,7 +131,7 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   if (!started) {
     const left = Math.max(0, queue.length - index)
     const { mine, stages, forecast, weakest } = overview
-    if (!mine.length) return <ReviewEmpty filtered={!!family} />
+    if (!mine.length) return family === GAMES_FILTER ? <GamesEmpty /> : <ReviewEmpty filtered={!!family} />
     const max = Math.max(1, ...forecast.map(f => f.n))
     const stageRows = [
       { key: 'learning', label: t('Lerend'), hint: t('komt binnen een dag terug'), n: stages.learning, c: 'bg-accent' },
@@ -188,13 +190,14 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
               const f = fileMap.get(c.familyIds[0])
               const v = f?.variations.find(x => x.id === c.variationIds[0])
               const score = masteryScore(c)
-              const title = v?.path[v.path.length - 1] ?? f?.family.name ?? t('Positie')
+              const fromGame = c.source ? gameCardText(c.source) : null
+              const title = fromGame?.short ?? v?.path[v.path.length - 1] ?? f?.family.name ?? t('Positie')
               return (
                 <button key={c.id} className="tap flex flex-col gap-3 p-2.5 text-left sm:p-3" onClick={() => startWith([c], true)} aria-label={t('Oefen {title}, beheersing {score}%', { title, score })}>
                   <CropBoard epd={c.epd} uci={c.lineUci} orientation={c.side} inset={4} />
                   <span className="block w-full px-0.5">
                     <span className="flex items-center justify-between gap-2"><span className="truncate font-bold">{title}</span>{c.lapses > 0 && <span className="shrink-0 rounded-full bg-danger-soft px-2 text-xs font-bold text-danger-ink">{t('{n}× fout', { n: c.lapses })}</span>}</span>
-                    <span className="block truncate text-xs text-muted">{f ? `${f.family.name}${v ? ` · ${v.eco}` : ''}` : '…'}</span>
+                    <span className="block truncate text-xs text-muted">{fromGame ? `${t('Je partij')} · ${fromGame.date}` : f ? `${f.family.name}${v ? ` · ${v.eco}` : ''}` : '…'}</span>
                     <span className="mt-2.5 flex items-center gap-2"><ProgressBar value={score / 100} tone="accent" className="flex-1" /><span className="text-xs font-bold tabular-nums">{score}%</span></span>
                   </span>
                 </button>
@@ -225,9 +228,10 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
   const card = queue[index]
   const file = files.get(card.familyIds[0])
   const v = file?.variations.find(x => x.id === card.variationIds[0])
-  const base = cardLine(card, v ? t('Vind de zet: {name}', { name: v.path.join(', ') || file!.family.name }) : t('Vind de zet'))
+  const fromGame = card.source ? gameCardText(card.source) : null
+  const base = cardLine(card, fromGame ? fromGame.title : v ? t('Vind de zet: {name}', { name: v.path.join(', ') || file!.family.name }) : t('Vind de zet'))
   // De laatste zetten voor de stelling worden voorgespeeld, zodat je niet zomaar in een losse stelling springt
-  const line = { ...base, subtitle: file?.family.name, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
+  const line = { ...base, subtitle: file?.family.name, sub: fromGame?.sub, previewFrom: Math.max(0, (base.startPly ?? 0) - PREVIEW_PLIES) }
   return (
     <div>
     <FocusBar value={index / queue.length} count={`${index + 1} / ${queue.length}`} sub={extra ? t('Zwakste posities') : t('Herhalen')} onClose={() => { setStarted(false); if (extra) void build(false) }} closeLabel={t('Stoppen, je gaat later verder')} />
@@ -257,6 +261,18 @@ function PositionReview({ family, onSession }: { family: string; onSession: (on:
 }
 
 /** Herhalen zonder posities (ontwerp 12g): wat er komt, één knop en in drie stappen hoe het werkt */
+/** Nog geen fouten uit je partijen in Herhalen: verwijs naar de partij-analyse */
+function GamesEmpty() {
+  return (
+    <section className="card flex flex-col items-center gap-1.5 px-5 py-7 text-center lg:max-w-xl" aria-labelledby="games-empty-title">
+      <EmptyKnight size={64} />
+      <h2 id="games-empty-title" className="mt-2 text-lg font-extrabold tracking-[-0.01em]">{t('Nog geen fouten uit je partijen')}</h2>
+      <p className="max-w-[300px] text-sm leading-snug text-muted">{t('Laat een eigen partij analyseren: je fouten en blunders komen daarna vanzelf hier terug.')}</p>
+      <Link to="/analyse" className="btn btn-primary mt-3 w-full">{t('Naar partij-analyse')}</Link>
+    </section>
+  )
+}
+
 function ReviewEmpty({ filtered }: { filtered?: boolean }) {
   const steps = [
     { title: t('Leer een variant'), text: t('in de dagtraining of de cursus') },
@@ -314,7 +330,7 @@ function ReviewPiles({ todo, wrong, correct }: { todo: number; wrong: number; co
 function LineReview({ family, onSession }: { family: string; onSession: (on: boolean) => void }) {
   const settings = useSettings()
   const { data: manifest } = useManifest()
-  const ids = family ? [family] : settings?.openings.length ? settings.openings : manifest?.families.map(f => f.id) ?? []
+  const ids = family && family !== GAMES_FILTER ? [family] : settings?.openings.length ? settings.openings : manifest?.families.map(f => f.id) ?? []
   const files = useAsync(() => Promise.all(ids.map(loadFamily)), [ids.join(',')])
   const progress = useProgressMap()
   const cards = useCardMap()

@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'rea
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Chess } from 'chess.js'
-import { ChevronLeft, ChevronRight, Dumbbell, ExternalLink, FlipVertical2, Play, Share2, SkipForward, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Dumbbell, ExternalLink, FlipVertical2, Play, Repeat, Share2, SkipForward, X } from 'lucide-react'
 import { db, saveSettings, type GameReviewRecord } from '../lib/db'
 import { analyse } from '../lib/engine'
 import { loadNames } from '../lib/data'
@@ -12,7 +12,7 @@ import {
   type Highlight, type HighlightKind, type MoveClass, type PosEval, type ReviewGame, type ReviewedMove,
 } from '../lib/review'
 import { Board, MiniBoard } from '../components/Board'
-import { mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
+import { AUTO_REVIEW_CLASSES, mistakeItems, saveMistakeCards, type MistakeItem } from '../lib/mistakes'
 import { MoveClassIcon } from '../components/MoveClassIcon'
 import { renderShareImage, SHARE_TITLE } from '../components/ShareImage'
 import { Empty, ErrorBox, FocusBar, PageHeader, STICKY_ACTIONS, Spinner, Tabs, useSettings } from '../components/ui'
@@ -569,6 +569,9 @@ export function ReviewReplayView() {
 const NOTABLE: MoveClass[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder']
 const ERRORS: MoveClass[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
 
+/** Partijen waarvan de fouten in deze sessie al naar Herhalen gaan (tegen dubbel werk bij twee schermen tegelijk) */
+const autoAdded = new Set<string>()
+
 /** Alles wat overzicht en naspelen delen: engine-analyse, theorie, beoordeling per zet, en het bewaren van de cijfers */
 function useReview(record: GameReviewRecord) {
   const game = record.game
@@ -596,6 +599,19 @@ function useReview(record: GameReviewRecord) {
       db.reviews.update(record.id, { accuracy, rating, blunders })
     }
   }, [ready, names.data, moves]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Je eigen fouten uit deze partij vanzelf in Herhalen (eenmalig per partij; uit te zetten in Instellingen)
+  const settings = useSettings()
+  useEffect(() => {
+    if (!ready || !names.data || !moves.length || !settings || record.mistakesAdded !== undefined) return
+    if (settings.gameMistakesToReview === false || record.shared) return
+    const mine = [settings.lichessUser, settings.chesscomUser].filter((n): n is string => !!n)
+    if (!isOwnGame(game, mine, record.shared) || autoAdded.has(record.id)) return
+    autoAdded.add(record.id)
+    const items = mistakeItems(moves, game.myColor, fens).filter(i => (AUTO_REVIEW_CLASSES as readonly string[]).includes(i.played.cls))
+    const opp = game.myColor === 'white' ? game.black : game.white
+    void saveMistakeCards(items, () => false, game.myColor, db, { kind: 'game', gameId: record.id, opponent: opp.name, playedAt: game.playedAt })
+      .then(() => db.reviews.update(record.id, { mistakesAdded: items.length }))
+  }, [ready, names.data, moves, settings]) // eslint-disable-line react-hooks/exhaustive-deps
   return { game, evals, error, progress, fens, book, done, ready, moves }
 }
 
@@ -723,6 +739,13 @@ function ReviewOverview({ record }: { record: GameReviewRecord }) {
         {ENGINE_NAME} · {t('diepte {n}', { n: record.depth })}{record.depth >= DEEP_DEPTH ? ` (${t('grondig')})` : ''} · {t('op je eigen apparaat')}
         {ready && record.depth < DEEP_DEPTH && !progress?.deepening && <> · <button className="underline hover:text-ink" onClick={() => db.reviews.update(record.id, { deep: { depth: DEEP_DEPTH, evals: [] } })}>{t('Grondiger analyseren')}</button></>}
       </p>
+
+      {!!record.mistakesAdded && (
+        <Link to="/mastery?family=__games" className="tap flex items-center gap-3 p-3.5 text-sm">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-info-soft text-info-ink" aria-hidden><Repeat size={18} /></span>
+          <span className="min-w-0 flex-1"><b className="block">{tn(record.mistakesAdded, '{n} fout staat in Herhalen', '{n} fouten staan in Herhalen')}</b><span className="text-muted">{t('Daar vind je de betere zet terug tot hij erin zit.')}</span></span>
+        </Link>
+      )}
 
       <div className={`grid gap-2 ${myErrors > 0 ? 'grid-cols-[1.4fr_1fr]' : 'grid-cols-1'} ${STICKY_ACTIONS}`}>
         {myErrors > 0 && (

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { BookMarked, Cpu, Languages, MessageSquare, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
+import { BookMarked, Cpu, Languages, MessageSquare, Repeat, ShieldCheck, Gauge, HardDriveDownload, HardDriveUpload, KeyRound, ScrollText, SunMoon, Timer, Trash2 } from 'lucide-react'
 import { db, saveSettings, type UserSettings } from '../lib/db'
 import { analyse, engineStatus } from '../lib/engine'
 import { importBackup, summarizeBackup } from '../lib/progress'
@@ -122,6 +122,7 @@ export function Settings() {
           </div>
         </ExpandRow>
         <LinkRow to="/welkom" icon={BookMarked} tone="info" label={t('Openingen en kleur')} value={t('{n} gekozen', { n: s.openings.length })} />
+        <SwitchRow icon={Repeat} label={t('Fouten uit je partijen herhalen')} sub={t('na elke analyse van je eigen partij')} checked={s.gameMistakesToReview !== false} onChange={v => set({ gameMistakesToReview: v })} />
       </SettingsGroup>
 
       <SettingsGroup

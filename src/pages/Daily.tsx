@@ -14,6 +14,7 @@ import { BadgesEarned, Confetti, Empty, FocusBar, Spinner, useSettings, useTrain
 import type { FamilyFile } from '../lib/types'
 import { BADGES, type BadgeDef } from '../lib/gamification'
 import { locale, t, tn, tr } from '../lib/i18n'
+import { gameCardText } from '../lib/gameCards'
 
 /** Titel van een variant in de huidige taal (een bewaarde dagroute kan nog in de andere taal zijn opgeslagen) */
 const lineTitle = (i: Extract<DailyItem, { kind: 'new' | 'hard' }>) => displayName(i.variation, i.line.subtitle?.split(' · ')[0])
@@ -324,7 +325,8 @@ export function Daily() {
     )
   }
   const file = item.kind === 'review' ? files.get(item.card.familyIds[0]) : files.get(item.familyId)
-  const line = item.kind === 'review' ? { ...item.line, title: t('Vind de zet'), subtitle: file?.family.name } : { ...item.line, title: lineTitle(item) }
+  const fromGame = item.kind === 'review' && item.card.source ? gameCardText(item.card.source) : null
+  const line = item.kind === 'review' ? { ...item.line, title: fromGame?.title ?? t('Vind de zet'), sub: fromGame?.sub, subtitle: file?.family.name } : { ...item.line, title: lineTitle(item) }
   const mode = item.kind === 'review' ? 'review' : item.mode
   return (
     <div>

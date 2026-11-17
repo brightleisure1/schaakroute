@@ -249,4 +249,8 @@ export const analysis: Record<string, string> = {
   'Nuttig om te leren': 'Worth learning',
   'Geen aanbevelingen: de varianten die je tegenkomt heb je al geleerd.': 'No recommendations: you’ve already learned the lines you run into.',
   '{n}× in je partijen': '{n}× in your games',
+  // Fouten naar Herhalen
+  '{n} fout staat in Herhalen': '{n} mistake is in Review',
+  '{n} fouten staan in Herhalen': '{n} mistakes are in Review',
+  'Daar vind je de betere zet terug tot hij erin zit.': 'There you practice the better move until it sticks.',
 }

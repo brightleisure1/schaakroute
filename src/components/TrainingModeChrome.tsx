@@ -76,7 +76,7 @@ export function TrainingHeading({ label, title, tone, action, sub }: { label: Re
       <div className="min-w-0 flex-[1_1_12rem]">
         <div className={`truncate text-xs font-bold uppercase tracking-[0.04em] ${HEADING_TONE[tone]}`}>{label}</div>
         <h1 className="mt-0.5 text-xl font-extrabold leading-tight tracking-tight lg:text-2xl">{title}</h1>
-        {sub && <div className="mt-0.5 truncate text-sm text-muted">{sub}</div>}
+        {sub && <div className="mt-0.5 line-clamp-2 text-sm text-muted">{sub}</div>}
       </div>
       {action}
     </div>

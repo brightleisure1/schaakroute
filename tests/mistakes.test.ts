@@ -4,6 +4,7 @@ import { Chess } from 'chess.js'
 import { SchaakDB } from '../src/lib/db'
 import { classifyGame, type PosEval } from '../src/lib/review'
 import { mistakeItems, saveMistakeCards } from '../src/lib/mistakes'
+import { GAMES_FILTER, gameCardText, inReviewFilter } from '../src/lib/gameCards'
 
 // Herdersmat: zwart blundert met 3…Nf6??
 const san = ['e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7#']
@@ -30,5 +31,16 @@ describe('fouten-trainer', () => {
     expect(card.dueAt).toBeLessThanOrEqual(Date.now())
     expect(await saveMistakeCards(items, () => true, 'black', db)).toBe(0)
     expect(await db.cards.count()).toBe(1)
+  })
+  it('onthoudt uit welke partij een fout komt, voor Herhalen', async () => {
+    const db = new SchaakDB('mistakes-source-test')
+    const items = mistakeItems(moves, 'black', fens)
+    await saveMistakeCards(items, () => false, 'black', db, { kind: 'game', gameId: 'lichess:abc', opponent: 'AdamX000', playedAt: Date.UTC(2026, 10, 17) })
+    const [card] = await db.cards.toArray()
+    expect(card.source).toMatchObject({ kind: 'game', gameId: 'lichess:abc', opponent: 'AdamX000', played: 'Nf6' })
+    expect(inReviewFilter(card, GAMES_FILTER)).toBe(true)
+    expect(inReviewFilter(card, '')).toBe(true)
+    expect(inReviewFilter(card, 'italian-game')).toBe(false)
+    expect(gameCardText(card.source!).title).toBe('Je partij tegen AdamX000')
   })
 })

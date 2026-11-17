@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode 
 import { BookMarked, ChartColumn, ChessKnight, ChevronRight, Download, Flame, MessageSquare, Microscope, GitBranch, House, Ellipsis, Repeat, Settings as SettingsIcon, Sun, Swords, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { deviceLang, setLang, t, tn, type Lang } from './lib/i18n'
 import { feedbackHref } from './lib/feedback'
+import { useDueCount } from './lib/hooks'
 import './lib/install' // vangt het installatieverzoek van de browser zo vroeg mogelijk op
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -207,7 +208,7 @@ function PersistStorage() {
 
 function Shell() {
   const settings = useSettings()
-  const due = useLiveQuery(() => db.cards.where('dueAt').belowOrEqual(Date.now()).filter(c => !c.suspended).count(), [], 0)
+  const due = useDueCount()
   const loc = useLocation()
   const [sessionFocus, setSessionFocus] = useState(false)
   if (!settings) return <AppLoading fullscreen />

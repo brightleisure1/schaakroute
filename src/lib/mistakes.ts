@@ -1,4 +1,4 @@
-import { db, type SchaakDB } from './db'
+import { db, type CardSource, type SchaakDB } from './db'
 import { epdOf } from './chess'
 import { newSrsState, DAY } from './srs'
 import type { ReviewedMove } from './review'
@@ -7,6 +7,8 @@ import type { Side } from './types'
 // Fouten-trainer: de stellingen waarin jij in een partij een fout maakte, om de betere zet alsnog te vinden.
 
 export const MISTAKE_CLASSES = ['inaccuracy', 'mistake', 'miss', 'blunder'] as const
+/** Wat vanzelf naar Herhalen gaat na een analyse: echte fouten, geen onnauwkeurigheden (dat zou te veel worden) */
+export const AUTO_REVIEW_CLASSES = ['mistake', 'miss', 'blunder'] as const
 
 export interface MistakeItem {
   ply: number
@@ -30,7 +32,7 @@ export function mistakeItems(moves: ReviewedMove[], myColor: Side, fens: string[
  * Zet de stellingen in Herhalen. Wat je in de trainer niet in één keer goed had komt meteen terug,
  * wat goed ging over een dag. Bestaande kaarten worden alleen naar voren gehaald.
  */
-export async function saveMistakeCards(items: MistakeItem[], solved: (ply: number) => boolean, side: Side, database: SchaakDB = db): Promise<number> {
+export async function saveMistakeCards(items: MistakeItem[], solved: (ply: number) => boolean, side: Side, database: SchaakDB = db, source?: Omit<CardSource, 'played'>): Promise<number> {
   const now = Date.now()
   let added = 0
   for (const it of items) {
@@ -45,6 +47,7 @@ export async function saveMistakeCards(items: MistakeItem[], solved: (ply: numbe
     await database.cards.put({
       ...newSrsState(now), dueAt: due,
       id, epd, uci: it.bestUci, san: it.bestSan, side, familyIds: [], variationIds: [], lineUci: it.lineUci, createdAt: now,
+      ...(source ? { source: { ...source, played: it.played.san } } : {}),
     })
     added++
   }

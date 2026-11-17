@@ -91,3 +91,19 @@ export function familyProgress(file: FamilyFile, progress: Map<string, Variation
   const positions = [...cards.values()].filter(c => c.familyIds.includes(file.family.id) && c.correct > 0).length
   return { learned, mastered, total: file.variations.length, score: Math.round(score / Math.max(1, file.variations.length)), positions, pct: learned / Math.max(1, file.variations.length) }
 }
+
+/**
+ * Aantal openstaande herhalingen. Telt over alle kaarten (niet via een bereik tot 'nu'), zodat nieuw toegevoegde
+ * kaarten meteen meetellen, en kijkt elke minuut opnieuw voor kaarten die intussen aan de beurt zijn.
+ */
+export function useDueCount(extra?: (c: TrainingCard) => boolean, deps: unknown[] = []): number {
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick(n => n + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  return useLiveQuery(() => {
+    const now = Date.now()
+    return db.cards.filter(c => !c.suspended && c.dueAt <= now && (!extra || extra(c))).count()
+  }, [tick, ...deps], 0)
+}

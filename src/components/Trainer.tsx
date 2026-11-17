@@ -474,7 +474,7 @@ export function Trainer({ line, mode, family, sessionId, onComplete, renderEnd, 
       tone={MODE_TONE[mode]}
       label={meta}
       title={<span className="line-clamp-2 text-balance">{line.title}</span>}
-      sub={single ? t('Losse positie: vind de zet die je eerder leerde.') : undefined}
+      sub={line.sub ?? (single ? t('Losse positie: vind de zet die je eerder leerde.') : undefined)}
       action={!wide && recent.length > 0 && (
         <ol className="flex shrink-0 flex-wrap justify-end gap-1.5 pb-0.5" aria-label={t('Laatste zetten')}>
           {recent.map((p, i) => {
