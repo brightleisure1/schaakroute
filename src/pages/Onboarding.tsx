@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { ArrowLeft, CircleCheck, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChessKnight, CircleCheck, Microscope, Repeat, ShieldCheck, User } from 'lucide-react'
 import { saveSettings, type UserSettings } from '../lib/db'
 import { useManifest } from '../lib/hooks'
 import { OpeningPicker } from '../components/OpeningPicker'
 import { PieceIcon } from '../components/CropBoard'
 import { ThickProgress, useCloseTraining } from '../components/TrainingModeChrome'
 import { ErrorBox, Spinner, useSettings } from '../components/ui'
+import { IconField, Segmented } from '../components/Choice'
 import { getLang, t, type Lang } from '../lib/i18n'
 
 // Teksten zijn Nederlandse sleutels; vertaald bij het tekenen met t()
@@ -41,6 +42,10 @@ export function Onboarding() {
   const [openings, setOpenings] = useState<string[]>([])
   const [minutes, setMinutes] = useState<UserSettings['dailyMinutes']>(10)
   const [finished, setFinished] = useState(false)
+  // Welkomscherm met de drie onderdelen: alleen voor wie nog niet begonnen is
+  const [welcome, setWelcome] = useState(true)
+  const [gameSource, setGameSource] = useState<'lichess' | 'chesscom'>('chesscom')
+  const [gameUser, setGameUser] = useState('')
   const close = useCloseTraining()
   const stepRef = useRef<HTMLDivElement>(null)
   const firstRender = useRef(true)
@@ -65,6 +70,8 @@ export function Onboarding() {
       setOpenings(current.openings)
       setMinutes(current.dailyMinutes)
     }
+    if (current?.lichessUser && !current.chesscomUser) setGameSource('lichess')
+    setGameUser(current?.chesscomUser ?? current?.lichessUser ?? '')
   }, [current?.onboarded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <ErrorBox error={error} />
@@ -72,13 +79,17 @@ export function Onboarding() {
 
   async function finish() {
     if (!openings.length) return
-    await saveSettings({ onboarded: true, elo, strength, sides, openings, dailyMinutes: minutes })
+    const user = gameUser.trim()
+    await saveSettings({
+      onboarded: true, elo, strength, sides, openings, dailyMinutes: minutes,
+      ...(user ? (gameSource === 'lichess' ? { lichessUser: user } : { chesscomUser: user }) : {}),
+    })
     setFinished(true)
   }
 
   const steps = [
     <div key="0" className="space-y-4">
-      <LanguagePills />
+      {current?.onboarded && <LanguagePills />}
       <StepTitle title={t('Hoe sterk speel je?')} text={t('Dan kiezen we varianten die bij je passen.')} />
       <div className="grid gap-2 sm:grid-cols-2">
         {STRENGTHS.map(s => (
@@ -128,11 +139,22 @@ export function Onboarding() {
           )
         })}
       </div>
-      <p className="card flex items-center gap-2.5 px-3.5 py-3 text-sm leading-snug text-muted"><ShieldCheck size={18} aria-hidden className="shrink-0 text-brand-strong" />{t('Geen account nodig. Alles blijft op dit apparaat.')}</p>
+    </div>,
+    // Optioneel: je partijen koppelen, zodat partij-analyse en foutentrainer meteen werken
+    <div key="4" className="space-y-3.5">
+      <StepTitle title={t('Waar speel je online?')} text={t('Dan kun je je partijen laten analyseren, en komen je fouten vanzelf in je training. Je kunt dit ook overslaan.')} />
+      <Segmented name="onboarding-source" label={t('Waar speel je online?')} value={gameSource} onChange={setGameSource}
+        options={[{ value: 'chesscom', label: 'Chess.com' }, { value: 'lichess', label: 'Lichess' }]} />
+      <IconField key={gameSource} icon={<User size={18} strokeWidth={2.25} />} label={t('Gebruikersnaam op {source}', { source: gameSource === 'lichess' ? 'Lichess' : 'Chess.com' })}
+        placeholder={t('Gebruikersnaam op {source}', { source: gameSource === 'lichess' ? 'Lichess' : 'Chess.com' })} autoComplete="username" autoCapitalize="none" spellCheck={false}
+        value={gameUser} onChange={e => setGameUser(e.target.value)} />
+      <p className="card flex items-center gap-2.5 px-3.5 py-3 text-sm leading-snug text-muted"><ShieldCheck size={18} aria-hidden className="shrink-0 text-brand-strong" />{t('Geen account en geen wachtwoord nodig: we halen alleen je openbare partijen op. Alles blijft op dit apparaat.')}</p>
     </div>,
   ]
   const needOpening = !openings.length && (step === 2 || step === steps.length - 1)
   const last = step === steps.length - 1
+
+  if (welcome && !current?.onboarded) return <Welcome onStart={() => setWelcome(false)} />
 
   // Ontwerp 10a/12a: geen kop en geen losse Vorige-knop; terug zit linksboven, de voortgang is één balk
   // en de hoofdknop staat vast onderaan
@@ -140,20 +162,59 @@ export function Onboarding() {
     <div className="mx-auto flex min-h-[calc(100dvh-3.25rem)] max-w-2xl flex-col lg:min-h-0">
       <h1 className="sr-only">{t('Welkom bij SchaakRoute')}</h1>
       <div className="flex items-center gap-3">
-        {(step > 0 || current?.onboarded) && (
-          <button type="button" className="-ml-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-surface-2 hover:text-ink" onClick={() => (step > 0 ? setStep(s => s - 1) : close())} aria-label={step > 0 ? t('Vorige stap') : t('Terug zonder op te slaan')}>
+        {(step > 0 || current?.onboarded || welcome === false) && (
+          <button type="button" className="-ml-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-surface-2 hover:text-ink" onClick={() => (step > 0 ? setStep(s => s - 1) : current?.onboarded ? close() : setWelcome(true))} aria-label={step > 0 ? t('Vorige stap') : t('Terug zonder op te slaan')}>
             <ArrowLeft size={22} aria-hidden />
           </button>
         )}
-        <div className={`min-w-0 flex-1 ${step > 0 || current?.onboarded ? '' : 'py-[15px]'}`}><ThickProgress value={(step + 1) / steps.length} label={t('Stap {n} van {m}', { n: step + 1, m: steps.length })} /></div>
+        <div className="min-w-0 flex-1"><ThickProgress value={(step + 1) / steps.length} label={t('Stap {n} van {m}', { n: step + 1, m: steps.length })} /></div>
         <span className="shrink-0 text-sm font-bold tabular-nums text-muted" aria-hidden>{step + 1}/{steps.length}</span>
       </div>
       <div ref={stepRef} tabIndex={-1} className="mt-2.5 outline-none" aria-label={t('Stap {n} van {m}', { n: step + 1, m: steps.length })} role="group">{steps[step]}</div>
       <div className="sticky bottom-0 -mx-4 mt-auto border-t-2 border-line bg-bg px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3.5 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0">
         {!last
           ? <button className="btn btn-primary w-full" onClick={() => setStep(s => s + 1)} disabled={needOpening} aria-describedby={needOpening ? 'onboarding-reason' : undefined}>{t('Volgende')}</button>
-          : <button className="btn btn-primary w-full" onClick={finish} disabled={needOpening} aria-describedby={needOpening ? 'onboarding-reason' : undefined}>{t('Aan de slag')}</button>}
+          : <button className="btn btn-primary w-full" onClick={finish} disabled={needOpening} aria-describedby={needOpening ? 'onboarding-reason' : undefined}>{gameUser.trim() || current?.onboarded ? t('Aan de slag') : t('Overslaan en beginnen')}</button>}
         {needOpening && <p id="onboarding-reason" className="btn-reason text-center">{t('Kies eerst minstens één opening.')}</p>}
+      </div>
+    </div>
+  )
+}
+
+/** De drie onderdelen van SchaakRoute, die op elkaar aansluiten: speel, laat analyseren, train je fouten */
+const PILLARS = [
+  { icon: ChessKnight, tone: 'var(--brand)', title: 'Openingstrainer', text: 'Leer je openingen in een paar minuten per dag. Elke variant komt terug precies voordat je hem vergeet.' },
+  { icon: Microscope, tone: 'var(--teal)', title: 'Partij-analyse', text: 'Laat je partijen van Chess.com of Lichess beoordelen: per zet zie je wat briljant was en wat een blunder.' },
+  { icon: Repeat, tone: 'var(--danger)', title: 'Foutentrainer', text: 'Je fouten uit je eigen partijen komen vanzelf terug in je training, tot je de betere zet kent.' },
+] as const
+
+function Welcome({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="mx-auto flex min-h-[calc(100dvh-3.25rem)] max-w-2xl flex-col lg:min-h-0">
+      <LanguagePills />
+      <div className="mt-3 flex items-center gap-3">
+        <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-12 w-12 rounded-[14px]" />
+        <span className="text-[22px] font-extrabold tracking-[-0.02em]">Schaak<span className="text-brand-strong">Route</span></span>
+      </div>
+      <h1 className="mt-5 text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] sm:text-4xl">{t('Word beter in schaken, met je eigen partijen')}</h1>
+      <p className="mt-2 text-[15px] leading-snug text-muted">{t('Drie onderdelen die op elkaar aansluiten. Gratis, zonder account.')}</p>
+      <ol className="mt-5 space-y-3">
+        {PILLARS.map((p, i) => (
+          <li key={p.title} className="card relative flex gap-3.5 p-4 animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
+            <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px]" style={{ color: p.tone, background: `color-mix(in srgb, ${p.tone} 14%, var(--surface))` }}><p.icon size={24} strokeWidth={2.1} /></span>
+            <span className="min-w-0">
+              <span className="block text-xs font-bold uppercase tracking-[0.04em]" style={{ color: p.tone }}>{t('Stap {n}', { n: i + 1 })}</span>
+              <span className="block text-lg font-extrabold leading-tight">{t(p.title)}</span>
+              <span className="mt-0.5 block text-sm leading-snug text-muted">{t(p.text)}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-bold text-muted" aria-label={t('Speel, analyseer, train je fouten, en herhaal')}>
+        <span>{t('Speel')}</span><ArrowRight size={16} aria-hidden /><span>{t('Analyseer')}</span><ArrowRight size={16} aria-hidden /><span>{t('Train je fouten')}</span><Repeat size={15} aria-hidden />
+      </p>
+      <div className="sticky bottom-0 -mx-4 mt-auto border-t-2 border-line bg-bg px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3.5 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0">
+        <button className="btn btn-primary w-full" onClick={onStart} autoFocus>{t('Begin, het duurt 1 minuut')}</button>
       </div>
     </div>
   )
